@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400" role="img" aria-label="Mock-up of a landscaping website led by a grid of project photographs above a contact form">
+  <rect width="600" height="400" fill="#eef3f7" />
+  <rect x="40" y="24" width="520" height="352" rx="14" fill="#ffffff" stroke="#d7dee5" />
+
+  <rect x="40" y="24" width="520" height="48" rx="14" fill="#14663f" />
+  <rect x="40" y="54" width="520" height="18" fill="#14663f" />
+  <rect x="66" y="40" width="112" height="10" rx="5" fill="#ffffff" opacity="0.92" />
+  <rect x="430" y="36" width="104" height="24" rx="12" fill="#ffffff" opacity="0.9" />
+  <rect x="452" y="44" width="60" height="8" rx="4" fill="#14663f" />
+
+  <rect x="66" y="96" width="468" height="104" rx="10" fill="#dbe9df" />
+  <path d="M66 176c40-28 68-6 104-30 30-20 52 6 84-8 34-15 60 18 96 4 30-12 54 10 84 6v44H66Z" fill="#a8cbb4" />
+  <circle cx="470" cy="126" r="18" fill="#f2d98c" />
+  <rect x="86" y="116" width="150" height="11" rx="5.5" fill="#ffffff" opacity="0.95" />
+  <rect x="86" y="136" width="110" height="8" rx="4" fill="#ffffff" opacity="0.8" />
+
+  <g fill="#f4f7f9" stroke="#d7dee5">
+    <rect x="66" y="216" width="110" height="80" rx="8" />
+    <rect x="186" y="216" width="110" height="80" rx="8" />
+    <rect x="306" y="216" width="110" height="80" rx="8" />
+    <rect x="426" y="216" width="108" height="80" rx="8" />
+  </g>
+  <g fill="#c6ddcd">
+    <rect x="76" y="226" width="90" height="48" rx="6" />
+    <rect x="196" y="226" width="90" height="48" rx="6" />
+    <rect x="316" y="226" width="90" height="48" rx="6" />
+    <rect x="436" y="226" width="88" height="48" rx="6" />
+  </g>
+  <g fill="#4a5a6a" opacity="0.45">
+    <rect x="76" y="280" width="64" height="7" rx="3.5" />
+    <rect x="196" y="280" width="54" height="7" rx="3.5" />
+    <rect x="316" y="280" width="70" height="7" rx="3.5" />
+    <rect x="436" y="280" width="58" height="7" rx="3.5" />
+  </g>
+
+  <rect x="66" y="314" width="468" height="44" rx="10" fill="#e8f1f7" stroke="#c3d7e6" />
+  <rect x="86" y="328" width="120" height="8" rx="4" fill="#0b4a6f" opacity="0.75" />
+  <rect x="360" y="324" width="154" height="24" rx="12" fill="#c2410c" />
+</svg>

@@ -1,0 +1,124 @@
+/*
+ * Design tokens.
+ *
+ * Every colour, size, radius and shadow used anywhere in the application is defined
+ * here. Components reference these variables and never hard-code a raw value, so the
+ * whole site can be re-skinned from this one file.
+ *
+ * Colour pairs were checked against WCAG AA (4.5:1 for body text, 3:1 for large text
+ * and interface borders). The comment next to each foreground colour records the
+ * contrast ratio it achieves on its intended background.
+ */
+
+:root {
+  /* ---------------------------------------------------------------- colour */
+
+  /* Text */
+  --color-ink: #101a26; /* 16.9:1 on white */
+  --color-ink-muted: #4a5a6a; /* 7.1:1 on white, 6.6:1 on --color-surface-muted */
+  --color-ink-inverse: #ffffff;
+
+  /* Surfaces */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f4f7f9;
+  --color-surface-sunken: #e9eef2;
+
+  /* Brand — deep, calm blue. Used for structure: header, footer, section anchors. */
+  --color-brand: #0b4a6f; /* 9.4:1 with white text */
+  --color-brand-strong: #073751;
+  --color-tint-brand: #e8f1f7;
+
+  /* Accent — the call-to-action colour. Deliberately the only warm colour on the page,
+     so the primary action is never ambiguous. */
+  --color-accent: #c2410c; /* 5.1:1 with white text */
+  --color-accent-strong: #9a3412;
+  --color-tint-accent: #fdf0e9;
+
+  /* Lines */
+  --color-border: #d7dee5;
+  --color-border-strong: #a9b6c2;
+
+  /* Feedback */
+  --color-focus: #0b6bcb;
+  --color-success: #14663f; /* 7.0:1 on white */
+  --color-tint-success: #e7f4ed;
+  --color-danger: #b42318; /* 6.6:1 on white */
+  --color-tint-danger: #fdecea;
+
+  /* ---------------------------------------------------------------- type */
+
+  /* A system stack: nothing to download, nothing to block first paint, no layout
+     shift when a web font swaps in. Replace here if a brand typeface is chosen. */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Fluid sizes in rem so they still respond to the reader's browser font size. */
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: clamp(1.125rem, 1.06rem + 0.3vw, 1.25rem);
+  --text-xl: clamp(1.25rem, 1.15rem + 0.5vw, 1.5rem);
+  --text-2xl: clamp(1.5rem, 1.32rem + 0.9vw, 2rem);
+  --text-3xl: clamp(1.875rem, 1.6rem + 1.4vw, 2.5rem);
+  --text-4xl: clamp(2.125rem, 1.7rem + 2.1vw, 3.125rem);
+
+  --leading-tight: 1.15;
+  --leading-snug: 1.3;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.7;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.06em;
+
+  /* ---------------------------------------------------------------- space */
+
+  /* 4px base scale. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 2.5rem;
+  --space-8: 3rem;
+  --space-9: 4rem;
+  --space-10: 5rem;
+  --space-11: 6rem;
+
+  /* Vertical rhythm between page sections, tighter on small screens. */
+  --section-gap: clamp(3rem, 2rem + 5vw, 5.5rem);
+
+  /* ---------------------------------------------------------------- shape */
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  --shadow-sm: 0 1px 2px rgb(16 26 38 / 6%);
+  --shadow-md: 0 4px 12px rgb(16 26 38 / 8%);
+  --shadow-lg: 0 12px 32px rgb(16 26 38 / 12%);
+
+  /* ---------------------------------------------------------------- layout */
+
+  --container-width: 70rem;
+  --container-narrow: 46rem;
+  --container-gutter: clamp(1rem, 0.5rem + 2.5vw, 2rem);
+
+  /* Breakpoints cannot be used inside media queries as custom properties; they are
+     recorded here so the values used across the stylesheets have one stated source.
+       sm  30rem / 480px   — large phone
+       md  48rem / 768px   — tablet, two-column grids
+       lg  64rem / 1024px  — desktop navigation
+       xl  80rem / 1280px  — wide desktop */
+
+  /* ---------------------------------------------------------------- motion */
+
+  --transition-fast: 120ms ease;
+  --transition-base: 180ms ease;
+}

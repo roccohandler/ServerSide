@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Websites for Greater Seattle service businesses">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0b4a6f" />
+      <stop offset="100%" stop-color="#073751" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect x="0" y="600" width="1200" height="30" fill="#c2410c" />
+
+  <text x="80" y="210" fill="#c8dcea" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="30" font-weight="600" letter-spacing="3">
+    WEBSITES FOR LOCAL SERVICE BUSINESSES
+  </text>
+
+  <text x="80" y="300" fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="62" font-weight="700">
+    A website that makes it easy
+  </text>
+  <text x="80" y="374" fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="62" font-weight="700">
+    for local customers to hire you
+  </text>
+
+  <text x="80" y="448" fill="#c8dcea" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="30">
+    HVAC · Plumbing · Electrical · Roofing · Landscaping
+  </text>
+
+  <text x="80" y="520" fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="30" font-weight="600">
+    Greater Seattle
+  </text>
+</svg>

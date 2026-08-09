@@ -1,0 +1,32 @@
+.inner {
+  max-width: 44rem;
+}
+
+.body {
+  margin-top: var(--space-4);
+  font-size: var(--text-lg);
+  color: var(--color-tint-brand);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.phone {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-inverse);
+  text-decoration: none;
+}
+
+.phone:hover {
+  color: var(--color-ink-inverse);
+  text-decoration: underline;
+}

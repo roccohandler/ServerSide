@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+    "noEmit": true,
+    /*
+     * At runtime `@serviceside/server` resolves through the npm workspace symlink to
+     * `server/dist`. That directory only exists after `npm run build:server`, so for
+     * type-checking we point at the TypeScript sources instead. Same module, same types.
+     */
+    "paths": {
+      "@serviceside/server": ["./server/src/index.ts"]
+    }
+  },
+  "include": ["api", "vitest.config.ts"]
+}

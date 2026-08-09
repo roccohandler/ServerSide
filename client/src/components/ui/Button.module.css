@@ -1,0 +1,97 @@
+.base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  min-height: 3rem; /* Comfortable tap target on a phone. */
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.base:disabled,
+.base[aria-disabled='true'] {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------------------------------ variants */
+
+.primary {
+  color: var(--color-ink-inverse);
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.primary:hover:not(:disabled) {
+  color: var(--color-ink-inverse);
+  background-color: var(--color-accent-strong);
+  border-color: var(--color-accent-strong);
+}
+
+.secondary {
+  color: var(--color-brand);
+  background-color: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+.secondary:hover:not(:disabled) {
+  color: var(--color-brand-strong);
+  background-color: var(--color-tint-brand);
+  border-color: var(--color-brand);
+}
+
+.inverse {
+  color: var(--color-brand);
+  background-color: var(--color-surface);
+  border-color: var(--color-surface);
+}
+
+.inverse:hover:not(:disabled) {
+  color: var(--color-brand-strong);
+  background-color: var(--color-tint-brand);
+  border-color: var(--color-tint-brand);
+}
+
+.ghost {
+  color: var(--color-brand);
+  background-color: transparent;
+  border-color: transparent;
+  padding-inline: var(--space-2);
+}
+
+.ghost:hover:not(:disabled) {
+  color: var(--color-brand-strong);
+  background-color: var(--color-tint-brand);
+}
+
+/* ------------------------------------------------------------------ sizes */
+
+.lg {
+  padding: var(--space-4) var(--space-6);
+  min-height: 3.375rem;
+  font-size: var(--text-lg);
+}
+
+/* ------------------------------------------------------------------ layout */
+
+.block {
+  display: flex;
+  width: 100%;
+}
+
+/* Below the smallest breakpoint, stacked full-width buttons are easier to hit. */
+@media (max-width: 29.99rem) {
+  .base {
+    width: 100%;
+  }
+}

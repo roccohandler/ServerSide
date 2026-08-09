@@ -1,0 +1,184 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 4.5rem;
+}
+
+/* ------------------------------------------------------------------ brand */
+
+.brand {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  color: var(--color-ink);
+  text-decoration: none;
+  line-height: 1.15;
+}
+
+.brand:hover {
+  color: var(--color-brand);
+}
+
+.brandName {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.brandTagline {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ desktop nav */
+
+.desktop {
+  display: none;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.navList {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.navLink {
+  display: inline-block;
+  padding-block: var(--space-2);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+.navLink:hover {
+  color: var(--color-brand);
+  border-bottom-color: var(--color-border-strong);
+}
+
+/* The current page is marked by weight and an underline, not by colour alone. */
+.navLinkActive,
+.navLinkActive:hover {
+  color: var(--color-brand);
+  font-weight: var(--weight-semibold);
+  border-bottom-color: var(--color-accent);
+}
+
+.phone {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--weight-semibold);
+  color: var(--color-brand);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.phone:hover {
+  color: var(--color-brand-strong);
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------------ mobile */
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  min-height: 2.75rem;
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.toggle:hover {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+.mobileMenu {
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-surface-muted);
+  padding-block: var(--space-4);
+}
+
+.mobileMenu[hidden] {
+  display: none;
+}
+
+.mobileList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 0;
+  margin: 0 0 var(--space-4);
+  list-style: none;
+}
+
+.mobileLink {
+  display: block;
+  padding: var(--space-3) var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.mobileLink:hover {
+  background-color: var(--color-surface-sunken);
+  color: var(--color-brand);
+}
+
+.mobileLinkActive {
+  color: var(--color-brand);
+  font-weight: var(--weight-semibold);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.mobileActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mobilePhone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  font-weight: var(--weight-semibold);
+  color: var(--color-brand);
+  text-decoration: none;
+}
+
+@media (min-width: 64rem) {
+  .desktop {
+    display: flex;
+  }
+
+  .toggle,
+  .mobileMenu {
+    display: none;
+  }
+}

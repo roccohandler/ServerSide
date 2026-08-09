@@ -1,0 +1,314 @@
+/* ------------------------------------------------------------------ hero */
+
+.hero {
+  padding-block: var(--space-8) var(--space-9);
+  background: linear-gradient(var(--color-tint-brand), var(--color-surface));
+  border-bottom: 1px solid var(--color-border);
+}
+
+.heroInner {
+  display: grid;
+  gap: var(--space-7);
+  grid-template-columns: 1fr;
+  align-items: center;
+}
+
+.heroEyebrow {
+  display: inline-block;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-accent-strong);
+}
+
+.heroSubheading {
+  margin-top: var(--space-5);
+  font-size: var(--text-lg);
+  color: var(--color-ink-muted);
+  max-width: 38rem;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.heroPhone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+  color: var(--color-ink-muted);
+}
+
+.heroPhoneLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-brand);
+  text-decoration: none;
+}
+
+.heroPhoneLink:hover {
+  text-decoration: underline;
+}
+
+.heroVisual {
+  display: none;
+  justify-self: center;
+  width: 100%;
+  max-width: 22rem;
+}
+
+/* ------------------------------------------------------------------ industries */
+
+.industries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-5) 0 0;
+  list-style: none;
+}
+
+.industryChip {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-brand);
+  background-color: var(--color-tint-brand);
+  border-radius: var(--radius-full);
+}
+
+.industryNote {
+  margin-top: var(--space-5);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ checklist */
+
+.checkList {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.checkItem {
+  display: flex;
+  gap: var(--space-4);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.checkMarker {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-accent-strong);
+  background-color: var(--color-tint-accent);
+  border-radius: var(--radius-full);
+}
+
+.checkQuestion {
+  margin-bottom: var(--space-1);
+}
+
+.checkDetail {
+  color: var(--color-ink-muted);
+}
+
+.checkClosing {
+  max-width: 44rem;
+  margin-top: var(--space-7);
+  padding: var(--space-5);
+  font-size: var(--text-lg);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent);
+  border-radius: var(--radius-md);
+}
+
+/* ------------------------------------------------------------------ outcomes */
+
+.outcomeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: var(--space-4);
+  color: var(--color-brand);
+  background-color: var(--color-tint-brand);
+  border-radius: var(--radius-md);
+}
+
+.outcomeTitle {
+  margin-bottom: var(--space-2);
+}
+
+.outcomeBody {
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ process */
+
+.processList {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.processStep {
+  position: relative;
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.processNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-bottom: var(--space-4);
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-brand);
+  border-radius: var(--radius-full);
+}
+
+.processTitle {
+  margin-bottom: var(--space-2);
+}
+
+.processBody {
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ trust */
+
+.disclosure {
+  max-width: 46rem;
+  margin-bottom: var(--space-7);
+  padding: var(--space-5);
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-brand);
+  border-radius: var(--radius-md);
+}
+
+.commitmentList {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.commitment {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.commitmentMarker {
+  flex-shrink: 0;
+  color: var(--color-success);
+}
+
+.commitmentTitle {
+  margin-bottom: var(--space-1);
+}
+
+.commitmentBody {
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ review offer */
+
+.reviewGrid {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+.reviewIncludes {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.reviewItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.reviewCheck {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--color-accent);
+}
+
+.reviewCaveat {
+  margin-top: var(--space-5);
+  font-weight: var(--weight-medium);
+}
+
+/* ------------------------------------------------------------------ responsive */
+
+@media (min-width: 48rem) {
+  .checkList {
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: var(--space-7);
+  }
+
+  .processList,
+  .commitmentList {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .reviewGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+  }
+}
+
+@media (min-width: 64rem) {
+  .heroInner {
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: var(--space-8);
+  }
+
+  .heroVisual {
+    display: block;
+  }
+
+  .processList {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

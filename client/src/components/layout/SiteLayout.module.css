@@ -1,0 +1,64 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main {
+  flex: 1;
+}
+
+/*
+ * The skip link is the first thing in the tab order. It stays out of sight until it is
+ * focused, then appears over the header so a keyboard user can jump past the navigation.
+ */
+.skipLink {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 40;
+  padding: var(--space-3) var(--space-4);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-brand);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skipLink:focus {
+  color: var(--color-ink-inverse);
+  transform: translateY(0);
+}
+
+/* ------------------------------------------------------------------ dev notice */
+
+.placeholderNotice {
+  padding: var(--space-3) 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+  background-color: #fff4d6;
+  border-bottom: 1px solid #e6c65c;
+}
+
+.placeholderTitle {
+  font-weight: var(--weight-semibold);
+}
+
+.placeholderList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-2) 0 0;
+  list-style: none;
+}
+
+.placeholderToken {
+  padding: 0.1rem var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background-color: rgb(255 255 255 / 70%);
+  border: 1px solid #e6c65c;
+  border-radius: var(--radius-sm);
+}
