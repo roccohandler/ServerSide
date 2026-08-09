@@ -52,8 +52,17 @@ const optionalString = z
   .optional()
   .or(z.literal('').transform(() => undefined));
 
+/** Treats a blank value as unset, so an empty variable in a host's UI is not a type error. */
+const optionalEnum = <const T extends readonly [string, ...string[]]>(values: T) =>
+  z.preprocess((value) => (value === '' ? undefined : value), z.enum(values).optional());
+
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  NODE_ENV: optionalEnum(['development', 'test', 'production']),
+  /*
+   * Set automatically by Vercel on every deployment. Used only as a fallback for
+   * NODE_ENV — see `resolveNodeEnv` for why that matters.
+   */
+  VERCEL_ENV: optionalEnum(['production', 'preview', 'development']),
   PORT: z.coerce.number().int().min(1).max(65535).default(5000),
   LOG_LEVEL: z.enum(LOG_LEVELS).optional(),
 
@@ -96,6 +105,26 @@ const PRODUCTION_REQUIRED = [
   'CONTACT_NOTIFICATION_EMAIL',
 ] as const;
 
+/**
+ * Works out which environment we are in.
+ *
+ * NODE_ENV is preferred, but it deliberately cannot be set as a build-time variable on
+ * Vercel: npm reads NODE_ENV during `npm install` and omits devDependencies when it is
+ * `production`, which strips out TypeScript, Vite and tsx and breaks the build. Vercel
+ * sets NODE_ENV=production for the function runtime by itself.
+ *
+ * The VERCEL_ENV fallback exists so that if that ever stops happening, a public
+ * deployment still runs in production mode instead of silently switching to
+ * development mode and returning stack traces to visitors. Failing safe matters more
+ * here than trusting the platform.
+ */
+function resolveNodeEnv(raw: { NODE_ENV?: NodeEnv; VERCEL_ENV?: string }): NodeEnv {
+  if (raw.NODE_ENV) return raw.NODE_ENV;
+  // Both `production` and `preview` deployments are reachable from the internet.
+  if (raw.VERCEL_ENV === 'production' || raw.VERCEL_ENV === 'preview') return 'production';
+  return 'development';
+}
+
 function parseOrigins(value: string | undefined): readonly string[] {
   if (!value) return [];
   return value
@@ -115,7 +144,8 @@ export function loadServerConfig(source: NodeJS.ProcessEnv = process.env): Serve
   }
 
   const raw = parsed.data;
-  const isProduction = raw.NODE_ENV === 'production';
+  const nodeEnv = resolveNodeEnv(raw);
+  const isProduction = nodeEnv === 'production';
 
   if (isProduction) {
     const missing = PRODUCTION_REQUIRED.filter((key) => !raw[key]);
@@ -127,11 +157,11 @@ export function loadServerConfig(source: NodeJS.ProcessEnv = process.env): Serve
   }
 
   return Object.freeze({
-    nodeEnv: raw.NODE_ENV,
+    nodeEnv,
     isProduction,
-    isTest: raw.NODE_ENV === 'test',
+    isTest: nodeEnv === 'test',
     port: raw.PORT,
-    logLevel: raw.LOG_LEVEL ?? (raw.NODE_ENV === 'test' ? 'silent' : 'info'),
+    logLevel: raw.LOG_LEVEL ?? (nodeEnv === 'test' ? 'silent' : 'info'),
     database: {
       uri: raw.MONGODB_URI,
       dbName: raw.MONGODB_DB_NAME,

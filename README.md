@@ -122,20 +122,20 @@ browser** — never give the Resend key or the Mongo URI that prefix.
 
 ### Server
 
-| Variable                         | Required              | Default           | Purpose                                                      |
-| -------------------------------- | --------------------- | ----------------- | ------------------------------------------------------------ |
-| `NODE_ENV`                       | no                    | `development`     | `development` \| `test` \| `production`                      |
-| `PORT`                           | no                    | `5000`            | Local listen port (ignored on Vercel)                        |
-| `MONGODB_URI`                    | **yes in production** | –                 | Connection string                                            |
-| `MONGODB_DB_NAME`                | no                    | –                 | Overrides the database in the URI                            |
-| `RESEND_API_KEY`                 | **yes in production** | –                 | Starts with `re_`                                            |
-| `RESEND_FROM_EMAIL`              | **yes in production** | –                 | Must be on a domain verified in Resend                       |
-| `CONTACT_NOTIFICATION_EMAIL`     | **yes in production** | –                 | Where new leads are delivered                                |
-| `CLIENT_ORIGIN`                  | no                    | –                 | Comma-separated CORS allow list. Leave unset for same-origin |
-| `LOG_LEVEL`                      | no                    | `info`            | `debug` \| `info` \| `warn` \| `error` \| `silent`           |
-| `LEAD_RATE_LIMIT_WINDOW_MINUTES` | no                    | `15`              | Rate-limit window                                            |
-| `LEAD_RATE_LIMIT_MAX`            | no                    | `5`               | Submissions per IP per window                                |
-| `TRUST_PROXY_HOPS`               | no                    | `1` in production | Proxies in front of the app                                  |
+| Variable                         | Required                        | Default           | Purpose                                                              |
+| -------------------------------- | ------------------------------- | ----------------- | -------------------------------------------------------------------- |
+| `NODE_ENV`                       | no — **never set it on Vercel** | `development`     | `development` \| `test` \| `production`. Falls back to `VERCEL_ENV`. |
+| `PORT`                           | no                              | `5000`            | Local listen port (ignored on Vercel)                                |
+| `MONGODB_URI`                    | **yes in production**           | –                 | Connection string                                                    |
+| `MONGODB_DB_NAME`                | no                              | –                 | Overrides the database in the URI                                    |
+| `RESEND_API_KEY`                 | **yes in production**           | –                 | Starts with `re_`                                                    |
+| `RESEND_FROM_EMAIL`              | **yes in production**           | –                 | Must be on a domain verified in Resend                               |
+| `CONTACT_NOTIFICATION_EMAIL`     | **yes in production**           | –                 | Where new leads are delivered                                        |
+| `CLIENT_ORIGIN`                  | no                              | –                 | Comma-separated CORS allow list. Leave unset for same-origin         |
+| `LOG_LEVEL`                      | no                              | `info`            | `debug` \| `info` \| `warn` \| `error` \| `silent`                   |
+| `LEAD_RATE_LIMIT_WINDOW_MINUTES` | no                              | `15`              | Rate-limit window                                                    |
+| `LEAD_RATE_LIMIT_MAX`            | no                              | `5`               | Submissions per IP per window                                        |
+| `TRUST_PROXY_HOPS`               | no                              | `1` in production | Proxies in front of the app                                          |
 
 ### Client
 
@@ -278,8 +278,13 @@ rewrite, `cleanUrls`, cache headers and a content security policy.
    `vercel.json` supplies everything.
 3. **Settings → Environment Variables**, for Production _and_ Preview:
 
+   > **Do not add `NODE_ENV`.** npm reads it during `npm install`, and `production`
+   > makes it skip devDependencies — TypeScript, Vite and tsx disappear and the build
+   > fails within seconds. Vercel sets `NODE_ENV=production` for the function runtime
+   > on its own, and the server also falls back to `VERCEL_ENV`, so production mode is
+   > detected either way.
+
    ```
-   NODE_ENV=production
    MONGODB_URI=mongodb+srv://…
    RESEND_API_KEY=re_…
    RESEND_FROM_EMAIL=Website Leads <leads@yourdomain.com>
@@ -326,18 +331,19 @@ start `node server/dist/server.js`, serve `client/dist` as static files, and set
 
 ## Troubleshooting
 
-| Symptom                                               | Cause and fix                                                                                                                                                   |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Server exits with "Invalid environment configuration" | A required production variable is missing. The message lists all of them.                                                                                       |
-| Form returns 503 "we could not save your request"     | `MONGODB_URI` is unset or unreachable. This is deliberate — the form never claims success it cannot back up.                                                    |
-| Lead is in MongoDB but no email arrived               | Resend failed. Look for `lead.notification_failed` in the logs, and for `notificationStatus: "failed"` on the lead. Persisting first is intentional; see below. |
-| Resend returns "domain not verified"                  | The domain in `RESEND_FROM_EMAIL` is not verified, or the DNS records have not propagated.                                                                      |
-| MongoDB times out on Vercel but works locally         | Atlas Network Access does not include `0.0.0.0/0`.                                                                                                              |
-| Form returns 429                                      | The rate limit is doing its job. Defaults are 5 per IP per 15 minutes; tune with `LEAD_RATE_LIMIT_*`.                                                           |
-| `/about` 404s on Vercel                               | `cleanUrls` is not applied, or the build did not run `build-seo`. Check the build log for `[build-seo] wrote 8 pages`.                                          |
-| Link previews show the wrong title                    | `VITE_SITE_URL` was not set at build time, or the build ran without step 3. Redeploy.                                                                           |
-| Browser console: blocked by CSP                       | The CSP in `vercel.json` allows same-origin only. Adding a third-party script means adding it there deliberately.                                               |
-| Dev banner listing placeholders                       | Working as intended. It never ships to production.                                                                                                              |
+| Symptom                                                 | Cause and fix                                                                                                                                                                |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vercel build fails within seconds, during `npm install` | `NODE_ENV=production` is set in Vercel's environment variables. Delete it and redeploy — npm omits devDependencies when it sees it, so `tsc` and `vite` are never installed. |
+| Server exits with "Invalid environment configuration"   | A required production variable is missing. The message lists all of them.                                                                                                    |
+| Form returns 503 "we could not save your request"       | `MONGODB_URI` is unset or unreachable. This is deliberate — the form never claims success it cannot back up.                                                                 |
+| Lead is in MongoDB but no email arrived                 | Resend failed. Look for `lead.notification_failed` in the logs, and for `notificationStatus: "failed"` on the lead. Persisting first is intentional; see below.              |
+| Resend returns "domain not verified"                    | The domain in `RESEND_FROM_EMAIL` is not verified, or the DNS records have not propagated.                                                                                   |
+| MongoDB times out on Vercel but works locally           | Atlas Network Access does not include `0.0.0.0/0`.                                                                                                                           |
+| Form returns 429                                        | The rate limit is doing its job. Defaults are 5 per IP per 15 minutes; tune with `LEAD_RATE_LIMIT_*`.                                                                        |
+| `/about` 404s on Vercel                                 | `cleanUrls` is not applied, or the build did not run `build-seo`. Check the build log for `[build-seo] wrote 8 pages`.                                                       |
+| Link previews show the wrong title                      | `VITE_SITE_URL` was not set at build time, or the build ran without step 3. Redeploy.                                                                                        |
+| Browser console: blocked by CSP                         | The CSP in `vercel.json` allows same-origin only. Adding a third-party script means adding it there deliberately.                                                            |
+| Dev banner listing placeholders                         | Working as intended. It never ships to production.                                                                                                                           |
 
 To find leads whose notification failed:
 

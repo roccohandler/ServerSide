@@ -145,7 +145,7 @@ Sitemap: ${siteUrl}/sitemap.xml
 `;
 }
 
-async function main(): Promise<void> {
+export async function generateSeoFiles(): Promise<void> {
   const templatePath = join(distDir, 'index.html');
   let template: string;
 
@@ -198,8 +198,3 @@ async function main(): Promise<void> {
     );
   }
 }
-
-main().catch((error: unknown) => {
-  console.error('[build-seo] failed:', error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});

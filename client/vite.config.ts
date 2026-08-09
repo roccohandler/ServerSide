@@ -14,6 +14,10 @@ export default defineConfig({
   /*
    * `.env` lives at the repository root and is shared with the server, so Vite is
    * pointed one level up. Only VITE_-prefixed values are ever exposed to the browser.
+   *
+   * One consequence: Vite also honours a NODE_ENV set in that shared file, which would
+   * silently produce a development build. `scripts/build.ts` pins NODE_ENV before Vite
+   * loads so that cannot happen — see the comment there.
    */
   envDir: '..',
 
