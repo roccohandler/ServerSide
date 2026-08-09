@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Lead-generation website for a web development business serving local service businesses in the Greater Seattle area.",
   "engines": {
-    "node": "22.x"
+    "node": ">=22.0.0"
   },
   "workspaces": [
     "client",

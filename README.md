@@ -276,6 +276,14 @@ rewrite, `cleanUrls`, cache headers and a content security policy.
 1. Push the repository to GitHub.
 2. <https://vercel.com/new> → import it. Leave the framework preset as **Other**;
    `vercel.json` supplies everything.
+
+   > **Root Directory must stay at the repository root.** It is the one setting
+   > `vercel.json` cannot control — and Vercel reads `vercel.json` _from_ the Root
+   > Directory, so pointing it at `client/` makes the whole file invisible. Vercel then
+   > auto-detects the Vite app inside `client/`, builds only the frontend, looks for
+   > `dist` in the wrong place, and never deploys `/api` at all. If a build succeeds but
+   > ends with `No Output Directory named "dist" found`, this is why.
+
 3. **Settings → Environment Variables**, for Production _and_ Preview:
 
    > **Do not add `NODE_ENV`.** npm reads it during `npm install`, and `production`
@@ -331,19 +339,21 @@ start `node server/dist/server.js`, serve `client/dist` as static files, and set
 
 ## Troubleshooting
 
-| Symptom                                                 | Cause and fix                                                                                                                                                                |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vercel build fails within seconds, during `npm install` | `NODE_ENV=production` is set in Vercel's environment variables. Delete it and redeploy — npm omits devDependencies when it sees it, so `tsc` and `vite` are never installed. |
-| Server exits with "Invalid environment configuration"   | A required production variable is missing. The message lists all of them.                                                                                                    |
-| Form returns 503 "we could not save your request"       | `MONGODB_URI` is unset or unreachable. This is deliberate — the form never claims success it cannot back up.                                                                 |
-| Lead is in MongoDB but no email arrived                 | Resend failed. Look for `lead.notification_failed` in the logs, and for `notificationStatus: "failed"` on the lead. Persisting first is intentional; see below.              |
-| Resend returns "domain not verified"                    | The domain in `RESEND_FROM_EMAIL` is not verified, or the DNS records have not propagated.                                                                                   |
-| MongoDB times out on Vercel but works locally           | Atlas Network Access does not include `0.0.0.0/0`.                                                                                                                           |
-| Form returns 429                                        | The rate limit is doing its job. Defaults are 5 per IP per 15 minutes; tune with `LEAD_RATE_LIMIT_*`.                                                                        |
-| `/about` 404s on Vercel                                 | `cleanUrls` is not applied, or the build did not run `build-seo`. Check the build log for `[build-seo] wrote 8 pages`.                                                       |
-| Link previews show the wrong title                      | `VITE_SITE_URL` was not set at build time, or the build ran without step 3. Redeploy.                                                                                        |
-| Browser console: blocked by CSP                         | The CSP in `vercel.json` allows same-origin only. Adding a third-party script means adding it there deliberately.                                                            |
-| Dev banner listing placeholders                         | Working as intended. It never ships to production.                                                                                                                           |
+| Symptom                                                           | Cause and fix                                                                                                                                                                |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vercel build fails within seconds, during `npm install`           | `NODE_ENV=production` is set in Vercel's environment variables. Delete it and redeploy — npm omits devDependencies when it sees it, so `tsc` and `vite` are never installed. |
+| Build succeeds, then `No Output Directory named "dist" found`     | Vercel's Root Directory is set to `client/` instead of the repository root, so `vercel.json` is never read. Fix it in **Settings → General → Root Directory**.               |
+| Only the client builds — no `@serviceside/server` line in the log | Same cause as above: Vercel auto-detected the Vite app and ignored `vercel.json`.                                                                                            |
+| Server exits with "Invalid environment configuration"             | A required production variable is missing. The message lists all of them.                                                                                                    |
+| Form returns 503 "we could not save your request"                 | `MONGODB_URI` is unset or unreachable. This is deliberate — the form never claims success it cannot back up.                                                                 |
+| Lead is in MongoDB but no email arrived                           | Resend failed. Look for `lead.notification_failed` in the logs, and for `notificationStatus: "failed"` on the lead. Persisting first is intentional; see below.              |
+| Resend returns "domain not verified"                              | The domain in `RESEND_FROM_EMAIL` is not verified, or the DNS records have not propagated.                                                                                   |
+| MongoDB times out on Vercel but works locally                     | Atlas Network Access does not include `0.0.0.0/0`.                                                                                                                           |
+| Form returns 429                                                  | The rate limit is doing its job. Defaults are 5 per IP per 15 minutes; tune with `LEAD_RATE_LIMIT_*`.                                                                        |
+| `/about` 404s on Vercel                                           | `cleanUrls` is not applied, or the build did not run `build-seo`. Check the build log for `[build-seo] wrote 8 pages`.                                                       |
+| Link previews show the wrong title                                | `VITE_SITE_URL` was not set at build time, or the build ran without step 3. Redeploy.                                                                                        |
+| Browser console: blocked by CSP                                   | The CSP in `vercel.json` allows same-origin only. Adding a third-party script means adding it there deliberately.                                                            |
+| Dev banner listing placeholders                                   | Working as intended. It never ships to production.                                                                                                                           |
 
 To find leads whose notification failed:
 
