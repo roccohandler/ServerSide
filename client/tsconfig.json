@@ -12,5 +12,5 @@
     /* `node` is needed by scripts/build-seo.ts, which runs under tsx at build time. */
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "scripts", "vite.config.ts"]
+  "include": ["src", "scripts", "vite.config.ts", "vitest.config.ts"]
 }

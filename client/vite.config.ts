@@ -1,5 +1,15 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
+
+/*
+ * Build configuration only.
+ *
+ * This file must not import anything that is not needed to produce the bundle — in
+ * particular not `vitest/config`, which is where the test settings used to live. Doing
+ * so made a production build depend on the test runner, and any environment that
+ * installs without devDependencies could not even load this file. Test settings live
+ * in `vitest.config.ts`, which extends this.
+ */
 
 /**
  * Port the Express server listens on in development. Keep in sync with `PORT` in `.env`.
@@ -32,13 +42,5 @@ export default defineConfig({
     target: 'es2022',
     // No sourcemaps in the published bundle: they are not needed to run the site.
     sourcemap: false,
-  },
-
-  test: {
-    name: 'client',
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}'],
-    restoreMocks: true,
   },
 });
