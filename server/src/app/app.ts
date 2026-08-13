@@ -4,6 +4,12 @@ import helmet from 'helmet';
 import { getServerConfig, type ServerConfig } from '../config/env.js';
 import { createLeadService, type LeadService } from '../features/leads/lead.service.js';
 import { createMongoLeadRepository } from '../features/leads/lead.repository.js';
+import {
+  createSubscriberService,
+  type SubscriberService,
+} from '../features/subscribers/subscriber.service.js';
+import { createMongoSubscriberRepository } from '../features/subscribers/subscriber.repository.js';
+import { PLAYBOOK_CONSENT_TEXT } from '../features/subscribers/subscriber.types.js';
 import { createMongoConnection } from '../infrastructure/database/mongoose.js';
 import { createLogEmailService, type EmailService } from '../infrastructure/email/email.service.js';
 import { createResendEmailService } from '../infrastructure/email/resend.email.service.js';
@@ -23,6 +29,7 @@ export interface CreateAppOptions {
   readonly logger?: Logger;
   /** Injected by tests to run the HTTP layer without MongoDB or Resend. */
   readonly leadService?: LeadService;
+  readonly subscriberService?: SubscriberService;
   /** Defaults to enabled. Tests turn it off except where the limit is what is under test. */
   readonly rateLimitEnabled?: boolean;
 }
@@ -39,38 +46,65 @@ function createEmailService(config: ServerConfig, logger: Logger): EmailService 
 }
 
 /**
- * Composition root for the lead feature: the one place that knows which concrete
- * repository and transport are in use. Everything below here depends on interfaces.
+ * One connection, shared by both features.
+ *
+ * Built once per app rather than once per feature: the Mongoose connection is cached
+ * globally anyway, and two `createMongoConnection` calls would mean two sets of
+ * connection logs saying the same thing.
+ *
+ * When no URI is configured this returns a function that rejects with a message the
+ * visitor can act on. Refusing loudly beats accepting something we cannot store — telling
+ * somebody to call instead is a working fallback; a silent success is a lost customer.
  */
-function createDefaultLeadService(config: ServerConfig, logger: Logger): LeadService {
+function createDatabaseConnect(config: ServerConfig, logger: Logger): () => Promise<void> {
   const { uri, dbName } = config.database;
-
-  let connect: () => Promise<void>;
 
   if (uri) {
     const connection = createMongoConnection({ uri, dbName, logger });
-    connect = () => connection.connect();
-  } else {
-    // Refuse loudly rather than accept a lead we cannot store. The visitor is told to
-    // call or email instead, which is a working fallback rather than a dead end.
-    logger.warn('database.not_configured', {
-      detail: 'Set MONGODB_URI to accept lead submissions.',
-    });
-    connect = () =>
-      Promise.reject(
-        new AppError(
-          'SERVICE_UNAVAILABLE',
-          'We could not save your request right now. Please call or email us and we will pick it up straight away.',
-        ),
-      );
+    return () => connection.connect();
   }
 
-  return createLeadService({
-    repository: createMongoLeadRepository({ connect }),
-    emailService: createEmailService(config, logger),
-    notificationRecipient: config.email.notificationRecipient,
-    logger,
+  logger.warn('database.not_configured', {
+    detail: 'Set MONGODB_URI to accept lead submissions.',
   });
+
+  return () =>
+    Promise.reject(
+      new AppError(
+        'SERVICE_UNAVAILABLE',
+        'We could not save your request right now. Please call or email us and we will pick it up straight away.',
+      ),
+    );
+}
+
+/**
+ * Composition root: the one place that knows which concrete repositories and transport
+ * are in use. Everything below here depends on interfaces.
+ */
+function createDefaultServices(
+  config: ServerConfig,
+  logger: Logger,
+): { leadService: LeadService; subscriberService: SubscriberService } {
+  const connect = createDatabaseConnect(config, logger);
+  const emailService = createEmailService(config, logger);
+  const notificationRecipient = config.email.notificationRecipient;
+
+  return {
+    leadService: createLeadService({
+      repository: createMongoLeadRepository({ connect }),
+      emailService,
+      notificationRecipient,
+      logger,
+    }),
+    subscriberService: createSubscriberService({
+      repository: createMongoSubscriberRepository({ connect }),
+      emailService,
+      notificationRecipient,
+      consentText: PLAYBOOK_CONSENT_TEXT,
+      pdfUrl: config.playbook.pdfUrl,
+      logger,
+    }),
+  };
 }
 
 /**
@@ -88,7 +122,15 @@ export function createApp(options: CreateAppOptions = {}): Express {
       format: config.isProduction ? 'json' : 'pretty',
     });
 
-  const leadService = options.leadService ?? createDefaultLeadService(config, logger);
+  /*
+   * Built lazily so a test that injects both services never opens a database connection
+   * or warns about an unconfigured one.
+   */
+  let defaults: { leadService: LeadService; subscriberService: SubscriberService } | undefined;
+  const resolveDefaults = () => (defaults ??= createDefaultServices(config, logger));
+
+  const leadService = options.leadService ?? resolveDefaults().leadService;
+  const subscriberService = options.subscriberService ?? resolveDefaults().subscriberService;
 
   const app = express();
 
@@ -151,6 +193,8 @@ export function createApp(options: CreateAppOptions = {}): Express {
     '/api',
     createApiRouter({
       leadService,
+      subscriberService,
+      playbookAutoSendEnabled: config.playbook.autoSendEnabled,
       leadRateLimiter,
       isProduction: config.isProduction,
       databaseConfigured: config.database.enabled,

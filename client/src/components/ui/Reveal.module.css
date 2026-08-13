@@ -1,0 +1,31 @@
+/*
+ * The two states behind `Reveal`. Movement is small on purpose: enough to draw the eye
+ * down the page in order, not enough to be noticed as an effect.
+ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 460ms cubic-bezier(0.2, 0.6, 0.2, 1),
+    transform 460ms cubic-bezier(0.2, 0.6, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.visible {
+  opacity: 1;
+  transform: none;
+}
+
+/*
+ * A second guard behind the one in the component. If motion is switched off after the
+ * first paint — a system setting changed in another window — the content is still shown
+ * rather than left waiting on a transition that will never run.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

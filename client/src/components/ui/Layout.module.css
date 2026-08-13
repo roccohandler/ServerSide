@@ -90,12 +90,21 @@
 .cardInteractive {
   transition:
     border-color var(--transition-base),
-    box-shadow var(--transition-base);
+    box-shadow var(--transition-base),
+    transform var(--transition-base);
 }
 
+/* Two pixels. Enough to answer "is this a thing I can interact with", and no more. */
 .cardInteractive:hover {
   border-color: var(--color-border-strong);
   box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardInteractive:hover {
+    transform: none;
+  }
 }
 
 .cardFlush {

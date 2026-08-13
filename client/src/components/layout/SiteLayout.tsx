@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Footer } from './Footer';
 import { Header } from './Header';
@@ -16,7 +16,7 @@ export const MAIN_CONTENT_ID = 'main-content';
  * user would hear nothing to tell them the page had changed.
  */
 export function SiteLayout() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const mainRef = useRef<HTMLElement>(null);
   const isFirstRender = useRef(true);
 
@@ -28,9 +28,26 @@ export function SiteLayout() {
       return;
     }
 
+    /*
+     * A link with a fragment means the visitor asked for a particular part of the new
+     * page — a call to action pointing at the form, say. Scrolling them to the top
+     * instead would be the router quietly ignoring the request.
+     *
+     * Focus moves with the scroll, so somebody on a keyboard or a screen reader arrives
+     * at the form rather than merely being shown it. The target opts in by carrying
+     * `tabIndex={-1}`; anything else is scrolled to without being focused.
+     */
+    const target = hash ? document.getElementById(hash.slice(1)) : null;
+
+    if (target) {
+      target.scrollIntoView({ behavior: 'instant', block: 'start' });
+      if (target.hasAttribute('tabindex')) target.focus({ preventScroll: true });
+      return;
+    }
+
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     mainRef.current?.focus();
-  }, [pathname]);
+  }, [pathname, hash]);
 
   return (
     <div className={styles['shell']}>
@@ -42,7 +59,19 @@ export function SiteLayout() {
       <Header />
 
       <main id={MAIN_CONTENT_ID} className={styles['main']} ref={mainRef} tabIndex={-1}>
-        <Outlet />
+        {/*
+         * The suspense boundary sits inside `<main>`, not around the router, so the
+         * header and footer stay on screen while a lazy route's chunk arrives. Wrapping
+         * `<Routes>` instead would unmount the whole shell for those few frames — the
+         * page would flash empty on the way to the PlayBook.
+         *
+         * The fallback is deliberately empty. The chunk is small and same-origin, so it
+         * lands in a frame or two on any real connection, and a spinner that appears for
+         * 30ms is more distracting than nothing at all.
+         */}
+        <Suspense fallback={null}>
+          <Outlet />
+        </Suspense>
       </main>
 
       <Footer />

@@ -26,6 +26,17 @@ process.env['NODE_ENV'] = 'production';
 
 const { build } = await import('vite');
 const { generateSeoFiles } = await import('./build-seo.js');
+const { checkBudget } = await import('./check-budget.js');
 
 await build();
 await generateSeoFiles();
+
+/*
+ * Last, and it throws.
+ *
+ * The build is the only place the real answer exists — bundling decisions are made by
+ * Rollup, not by anything a test can see — so this is where page weight gets checked.
+ * `npm run verify` runs the build, which means a payload regression fails locally rather
+ * than being discovered from a field measurement later.
+ */
+await checkBudget();

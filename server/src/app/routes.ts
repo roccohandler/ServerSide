@@ -2,9 +2,15 @@ import { Router, type RequestHandler } from 'express';
 import { success } from '../lib/apiResponse.js';
 import { createLeadRouter } from '../features/leads/lead.routes.js';
 import type { LeadService } from '../features/leads/lead.service.js';
+import { createSubscriberRouter } from '../features/subscribers/subscriber.routes.js';
+import type { SubscriberService } from '../features/subscribers/subscriber.service.js';
 
 export interface ApiRouterDependencies {
   readonly leadService: LeadService;
+  readonly subscriberService: SubscriberService;
+  /** True when the workbook is hosted and can be emailed automatically. */
+  readonly playbookAutoSendEnabled: boolean;
+  /** Shared with the lead endpoint. Both are unauthenticated public POSTs. */
   readonly leadRateLimiter?: RequestHandler | undefined;
   readonly isProduction: boolean;
   readonly databaseConfigured: boolean;
@@ -41,6 +47,19 @@ export function createApiRouter(dependencies: ApiRouterDependencies): Router {
     '/leads',
     createLeadRouter({
       leadService: dependencies.leadService,
+      rateLimiter: dependencies.leadRateLimiter,
+    }),
+  );
+
+  /*
+   * PlayBook workbook requests. Rate limited on the same budget as leads — it is a
+   * one-field public POST, which makes it the cheaper of the two to hammer.
+   */
+  router.use(
+    '/subscribers',
+    createSubscriberRouter({
+      subscriberService: dependencies.subscriberService,
+      autoSendEnabled: dependencies.playbookAutoSendEnabled,
       rateLimiter: dependencies.leadRateLimiter,
     }),
   );

@@ -1,4 +1,5 @@
 import { finalCta, primaryCta, site } from '../../content';
+import { track } from '../../lib/analytics';
 import { ButtonLink } from '../ui/Button';
 import { PhoneLink } from '../ui/ContactLink';
 import { Container, Section } from '../ui/Layout';
@@ -31,7 +32,12 @@ export function CtaBanner({
           <p className={styles['body']}>{body}</p>
 
           <div className={styles['actions']}>
-            <ButtonLink to={primaryCta.to} variant="inverse" size="lg">
+            <ButtonLink
+              to={primaryCta.to}
+              variant="inverse"
+              size="lg"
+              onClick={() => track('cta_clicked', { location: 'final' })}
+            >
               {primaryCta.label}
             </ButtonLink>
             <PhoneLink className={styles['phone']} />

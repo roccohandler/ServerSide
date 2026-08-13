@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { site } from '../../content';
+import { industryMeta, site } from '../../content';
 import { routes } from '../../config/routes';
 import { Container } from '../ui/Layout';
 import { EmailLink, PhoneLink } from '../ui/ContactLink';
@@ -28,6 +28,28 @@ export function Footer() {
                 <li key={item.to}>
                   <Link to={item.to} className={styles['link']}>
                     {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/*
+           * The industry pages live here rather than in the header.
+           *
+           * Five more items across the top would push the navigation into a menu on
+           * desktop as well as mobile, and the audience for these pages arrives on one of
+           * them from a search — not by browsing to it. What the footer buys is the
+           * internal linking: every page on the site links to all five, which is how they
+           * get found in the first place.
+           */}
+          <nav aria-label="Industries">
+            <h2 className={styles['groupHeading']}>Industries</h2>
+            <ul className={styles['list']}>
+              {industryMeta.map((industry) => (
+                <li key={industry.slug}>
+                  <Link to={industry.path} className={styles['link']}>
+                    {industry.navLabel}
                   </Link>
                 </li>
               ))}

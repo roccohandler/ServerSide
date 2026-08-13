@@ -5,11 +5,19 @@ import type {
   StoredLead,
   ValidatedLeadInput,
 } from '../features/leads/lead.types.js';
+import type { SubscriberRepository } from '../features/subscribers/subscriber.repository.js';
+import type {
+  NewSubscriberRecord,
+  StoredSubscriber,
+  SubscriberNotificationStatus,
+  ValidatedSubscriberInput,
+} from '../features/subscribers/subscriber.types.js';
 import type { EmailMessage, EmailService } from '../infrastructure/email/email.service.js';
 
 /*
- * Test doubles for the two external systems. Everything the lead feature does can be
- * exercised against these, so the suite needs neither MongoDB nor a Resend account.
+ * Test doubles for the two external systems. Everything the lead and subscriber features
+ * do can be exercised against these, so the suite needs neither MongoDB nor a Resend
+ * account.
  */
 
 export interface InMemoryLeadRepository extends LeadRepository {
@@ -83,6 +91,96 @@ export function createInMemoryLeadRepository(
     },
   };
 }
+
+/* ------------------------------------------------------------------ subscribers */
+
+export interface InMemorySubscriberRepository extends SubscriberRepository {
+  readonly subscribers: StoredSubscriber[];
+  /** Makes the next `create` reject, to exercise the persistence failure path. */
+  failNextCreate(error: Error): void;
+  failNextStatusUpdate(error: Error): void;
+}
+
+export function createInMemorySubscriberRepository(
+  options: { now?: () => Date } = {},
+): InMemorySubscriberRepository {
+  const now = options.now ?? (() => new Date());
+  const subscribers: StoredSubscriber[] = [];
+  let createError: Error | null = null;
+  let statusUpdateError: Error | null = null;
+  let nextId = 1;
+
+  return {
+    subscribers,
+
+    failNextCreate(error) {
+      createError = error;
+    },
+
+    failNextStatusUpdate(error) {
+      statusUpdateError = error;
+    },
+
+    async create(record: NewSubscriberRecord) {
+      if (createError) {
+        const error = createError;
+        createError = null;
+        throw error;
+      }
+
+      const timestamp = now();
+      const subscriber: StoredSubscriber = {
+        ...record,
+        id: `subscriber-${nextId++}`,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+      subscribers.push(subscriber);
+      return subscriber;
+    },
+
+    async findExisting(query) {
+      return (
+        subscribers.find(
+          (subscriber) =>
+            subscriber.email === query.email &&
+            subscriber.asset === query.asset &&
+            subscriber.createdAt >= query.since,
+        ) ?? null
+      );
+    },
+
+    async updateNotificationStatus(id: string, status: SubscriberNotificationStatus) {
+      if (statusUpdateError) {
+        const error = statusUpdateError;
+        statusUpdateError = null;
+        throw error;
+      }
+
+      const index = subscribers.findIndex((subscriber) => subscriber.id === id);
+      if (index >= 0) {
+        subscribers[index] = {
+          ...(subscribers[index] as StoredSubscriber),
+          notificationStatus: status,
+        };
+      }
+    },
+  };
+}
+
+/** A subscribe request that passes validation, for tests that are not about validation. */
+export function buildValidSubscriberInput(
+  overrides: Partial<ValidatedSubscriberInput> = {},
+): ValidatedSubscriberInput {
+  return {
+    email: 'dana@cascadeheating.example',
+    asset: 'playbook-workbook',
+    isBotSubmission: false,
+    ...overrides,
+  };
+}
+
+/* ------------------------------------------------------------------ email */
 
 export interface RecordingEmailService extends EmailService {
   readonly sent: EmailMessage[];

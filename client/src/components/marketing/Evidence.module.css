@@ -1,0 +1,104 @@
+/*
+ * The evidence citation.
+ *
+ * Deliberately quiet. A statistic set in a huge accent-coloured display face is how a
+ * page announces that it is selling; the persuasive part of a citation is that it is
+ * checkable, not that it is loud. So the claim gets the weight of a lede and nothing
+ * more, and the source and the limitation are given equal billing beneath it.
+ *
+ * Every colour here is a neutral or a border token, so the block reads correctly on the
+ * default and muted surfaces. It is not designed for `tone="brand"` — see the note in
+ * `Evidence.tsx`.
+ */
+
+.list {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+@media (min-width: 60rem) {
+  .list {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+  }
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+/*
+ * The finding. Sized as a lede rather than as a display figure: the number is doing the
+ * work, and making it enormous would be the site adopting the register it spends the
+ * rest of the page arguing against.
+ */
+.claim {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  color: var(--color-ink);
+}
+
+.why {
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The limitation, given a visible left rule so it reads as part of the citation rather
+ * than as a disclaimer somebody could have left off. That is the whole editorial point:
+ * the limits are why the number is trustworthy.
+ */
+.limitation {
+  padding-left: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+  border-left: 2px solid var(--color-border-strong);
+}
+
+.limitationLabel {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+/* Pushed to the bottom of the card so the three sources line up across the row. */
+.source {
+  margin-top: auto;
+  padding-top: var(--space-3);
+  font-size: var(--text-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.sourceLabel {
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-muted);
+}
+
+.dataset {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+}
+
+.closing {
+  max-width: 52rem;
+  margin-top: var(--space-6);
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+}

@@ -1,0 +1,577 @@
+/*
+ * The Website Revenue Audit.
+ *
+ * The scoring controls deliberately mirror `features/playbook/Assessment.module.css` —
+ * same 0/1/2 buttons, same fieldset-per-category shape — because they are the same
+ * instrument and a visitor who has met one should recognise the other. What is new below
+ * is everything after the score: the diagnosis findings, the funnel inputs, the lever and
+ * the scenario panels.
+ */
+
+.heroSupporting {
+  margin-top: var(--space-4);
+  font-size: var(--text-lg);
+  color: var(--color-ink-muted);
+}
+
+/* The step marker. Small, uppercase, and above the heading rather than beside it. */
+.stepLabel {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-accent-strong);
+}
+
+.tradeContext {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+  background-color: var(--color-surface);
+  border-left: 3px solid var(--color-brand);
+  border-radius: var(--radius-md);
+}
+
+/* Quieter than the context above it — it is an aside, not the next step. */
+.tradeLink {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ scoring */
+
+.instructions {
+  max-width: 44rem;
+  margin-bottom: var(--space-5);
+  color: var(--color-ink-muted);
+}
+
+.scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: 0;
+  margin: 0 0 var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+  list-style: none;
+}
+
+.scalePoint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.scaleValue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-weight: var(--weight-bold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-brand);
+  border-radius: var(--radius-full);
+}
+
+.totalPanel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-6);
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+}
+
+.total {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+}
+
+.totalValue {
+  color: var(--color-brand);
+}
+
+.totalMax {
+  font-size: var(--text-xl);
+  color: var(--color-ink-muted);
+}
+
+.totalProgress {
+  margin-right: auto;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.categories {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+@media (min-width: 60rem) {
+  .categories {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.category {
+  height: 100%;
+}
+
+.fieldset {
+  height: 100%;
+  padding: var(--space-4);
+  margin: 0;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.legend {
+  padding: 0;
+  font-weight: var(--weight-semibold);
+}
+
+.prompt {
+  margin: var(--space-2) 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.options {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/*
+ * The radio itself is visually hidden but never `display: none` — it has to stay
+ * focusable and reachable by keyboard. The label is the visible control, and the focus
+ * ring is drawn on it via `:focus-visible` on the input beside it.
+ */
+.radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.option {
+  position: relative;
+  flex: 1;
+}
+
+.optionLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  font-size: var(--text-xs);
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  transition: var(--transition-fast);
+}
+
+.optionLabel:hover {
+  border-color: var(--color-brand);
+}
+
+.radio:focus-visible + .optionLabel {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.optionLabelSelected {
+  color: var(--color-ink-inverse);
+  background-color: var(--color-brand);
+  border-color: var(--color-brand);
+}
+
+.optionValue {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+}
+
+.optionText {
+  line-height: var(--leading-tight);
+}
+
+.storageNote {
+  margin-top: var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ diagnosis */
+
+.pending {
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+}
+
+.pendingHeading {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-lg);
+}
+
+.pendingBody {
+  color: var(--color-ink-muted);
+}
+
+.band {
+  padding: var(--space-5);
+  margin-bottom: var(--space-6);
+  background-color: var(--color-surface);
+  border-left: 4px solid var(--color-accent);
+  border-radius: var(--radius-md);
+}
+
+.bandRange {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-accent-strong);
+}
+
+.bandTitle {
+  margin: var(--space-1) 0 var(--space-2);
+}
+
+.bandBody {
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The band's caveat. Inside the band panel, not under the section — a reader who takes in
+ * the verdict and stops has still been told what kind of verdict it is.
+ */
+.bandDisclaimer {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+  border-top: 1px solid var(--color-border);
+}
+
+.findings {
+  display: grid;
+  gap: var(--space-5);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.finding {
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+/*
+ * The category label is demoted to a caption. It is a UX term, and the sentence about
+ * what a customer actually does is what the owner came for — so that leads instead.
+ */
+.findingCategory {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.findingScore {
+  padding: 0 var(--space-2);
+  color: var(--color-danger);
+  background-color: var(--color-tint-danger);
+  border-radius: var(--radius-full);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.findingHeading {
+  margin-bottom: var(--space-4);
+  font-size: var(--text-xl);
+  line-height: var(--leading-snug);
+}
+
+.findingDetail {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+@media (min-width: 48rem) {
+  .findingDetail {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.findingLabel {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-brand);
+}
+
+.findingValue {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.findingActions {
+  padding-left: var(--space-5);
+  margin-top: var(--space-2);
+}
+
+.findingActions li {
+  margin-bottom: var(--space-1);
+}
+
+/* ------------------------------------------------------------------ funnel */
+
+.funnelFields {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 48rem) {
+  .funnelFields {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.lever {
+  padding: var(--space-5);
+  margin-top: var(--space-6);
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+}
+
+.leverLabel {
+  display: block;
+  font-weight: var(--weight-semibold);
+}
+
+.leverHint {
+  margin: var(--space-1) 0 var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.leverRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.leverInput {
+  flex: 1;
+  min-width: 12rem;
+  accent-color: var(--color-brand);
+}
+
+.leverValue {
+  font-weight: var(--weight-semibold);
+  color: var(--color-brand);
+}
+
+/* ------------------------------------------------------------------ scenario */
+
+.scenarioGrid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 48rem) {
+  .scenarioGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.scenarioPanel {
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+/* The modelled side, tinted so the two panels are never mistaken for each other. */
+.scenarioPanelChange {
+  background-color: var(--color-tint-accent);
+  border-color: var(--color-accent);
+}
+
+.scenarioPanelHeading {
+  margin-bottom: var(--space-4);
+  font-size: var(--text-lg);
+}
+
+.scenarioList {
+  margin: 0;
+}
+
+.scenarioRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.scenarioRow:last-child {
+  border-bottom: 0;
+}
+
+.scenarioRow dt {
+  color: var(--color-ink-muted);
+}
+
+.scenarioRow dd {
+  margin: 0;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The disclaimer, beside the numbers rather than at the foot of the page. Given a real
+ * border and body-size type: a caveat set in 11px grey is a caveat designed not to be
+ * read.
+ */
+.disclaimer {
+  padding: var(--space-4) var(--space-5);
+  margin-top: var(--space-5);
+  color: var(--color-ink-muted);
+  background-color: var(--color-surface);
+  border-left: 3px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.disclaimerNote {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ send */
+
+.freeNote {
+  max-width: 44rem;
+  margin-bottom: var(--space-5);
+  color: var(--color-ink-muted);
+}
+
+.sendForm {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.consent {
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.alert {
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-5);
+  background-color: var(--color-tint-danger);
+  border-left: 3px solid var(--color-danger);
+  border-radius: var(--radius-md);
+}
+
+.alertHeading {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-base);
+}
+
+.sent {
+  padding: var(--space-6);
+  text-align: center;
+  background-color: var(--color-tint-success);
+  border-radius: var(--radius-lg);
+}
+
+.sentHeading {
+  margin-bottom: var(--space-2);
+}
+
+.sentBody {
+  color: var(--color-ink-muted);
+}
+
+.closingBody {
+  margin-bottom: var(--space-5);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------- where the assessment leads */
+
+/*
+ * The recommendation, after the findings.
+ *
+ * The audit used to end at the findings list, so the best asset on the site pointed
+ * nowhere. Bordered rather than filled: it is a conclusion drawn from what is above it,
+ * not a separate advert bolted to the bottom.
+ */
+.recommendation {
+  padding-top: var(--space-6);
+  margin-top: var(--space-7);
+  border-top: 1px solid var(--color-border);
+}
+
+.recommendationHeading {
+  font-size: var(--text-xl);
+}
+
+.recommendationLead {
+  margin-top: var(--space-2);
+  font-size: var(--text-lg);
+}
+
+.recommendationTier {
+  color: var(--color-brand);
+}
+
+.recommendationBestFor {
+  max-width: 46rem;
+  margin-top: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+/* The qualifier sits with the recommendation, never under the button. */
+.recommendationNote {
+  max-width: 46rem;
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}

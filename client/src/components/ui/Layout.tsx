@@ -1,4 +1,4 @@
-import type { ElementType, ReactNode } from 'react';
+import type { ElementType, Ref, ReactNode } from 'react';
 import styles from './Layout.module.css';
 
 /*
@@ -37,6 +37,12 @@ export interface SectionProps {
   readonly id?: string;
   /** Ties the section to its own heading for assistive technology. */
   readonly labelledBy?: string;
+  /**
+   * Forwarded to the rendered element. Exists so a whole section can be watched by
+   * `useInViewOnce` — "did anybody scroll this far" — without wrapping it in a div that
+   * means nothing. React 19 passes `ref` as an ordinary prop, so no forwardRef is needed.
+   */
+  readonly ref?: Ref<HTMLElement>;
   readonly className?: string;
   readonly children: ReactNode;
 }
@@ -47,12 +53,14 @@ export function Section({
   tight,
   id,
   labelledBy,
+  ref,
   className,
   children,
 }: SectionProps) {
   return (
     <Element
       id={id}
+      ref={ref}
       aria-labelledby={labelledBy}
       className={cx(
         styles['section'],

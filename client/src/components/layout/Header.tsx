@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { primaryCta, site } from '../../content';
 import { routes } from '../../config/routes';
+import { track } from '../../lib/analytics';
+import { getPhoneChannel } from '../../lib/contact';
 import { ButtonLink } from '../ui/Button';
 import { Container } from '../ui/Layout';
 import { Icon } from '../ui/Icon';
@@ -15,6 +17,10 @@ export function Header() {
   const [menuPath, setMenuPath] = useState<string | null>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const { pathname } = useLocation();
+
+  // Null while the number is still a placeholder, in which case no call button renders
+  // rather than a `tel:` that dials nothing.
+  const phone = getPhoneChannel();
 
   /*
    * Navigating with the menu open should not leave it covering the new page.
@@ -84,21 +90,52 @@ export function Header() {
 
           <PhoneLink className={styles['phone']} />
 
-          <ButtonLink to={primaryCta.to}>{primaryCta.label}</ButtonLink>
+          {/*
+           * The short label, and only here. Same destination as every other primary
+           * action on the site — this is the sticky bar's wording, not a second offer.
+           */}
+          <ButtonLink
+            to={primaryCta.to}
+            className={styles['navCta']}
+            onClick={() => track('cta_clicked', { location: 'nav' })}
+          >
+            {site.cta.navLabel}
+          </ButtonLink>
         </div>
 
-        <button
-          ref={toggleRef}
-          type="button"
-          className={styles['toggle']}
-          // Announces the open/closed state and points at the region it controls.
-          aria-expanded={isMenuOpen}
-          aria-controls={MENU_ID}
-          onClick={isMenuOpen ? closeMenu : openMenu}
-        >
-          <Icon name={isMenuOpen ? 'close' : 'menu'} size={20} />
-          {isMenuOpen ? 'Close' : 'Menu'}
-        </button>
+        {/*
+         * The mobile bar.
+         *
+         * Every action used to live inside the collapsed menu, which meant a visitor on a
+         * phone — most of them — saw no way to act until they opened it. The call button
+         * is here instead: one tap, the highest-intent thing a service-business owner can
+         * do, and the reason the phone number is in `content/site.ts` at all.
+         */}
+        <div className={styles['mobileBar']}>
+          {phone.href ? (
+            <a
+              href={phone.href}
+              className={styles['callButton']}
+              aria-label={`Call ${phone.display}`}
+            >
+              <Icon name="phone" size={20} />
+              <span className={styles['callLabel']}>Call</span>
+            </a>
+          ) : null}
+
+          <button
+            ref={toggleRef}
+            type="button"
+            className={styles['toggle']}
+            // Announces the open/closed state and points at the region it controls.
+            aria-expanded={isMenuOpen}
+            aria-controls={MENU_ID}
+            onClick={isMenuOpen ? closeMenu : openMenu}
+          >
+            <Icon name={isMenuOpen ? 'close' : 'menu'} size={20} />
+            {isMenuOpen ? 'Close' : 'Menu'}
+          </button>
+        </div>
       </Container>
 
       <div className={styles['mobileMenu']} id={MENU_ID} hidden={!isMenuOpen}>
@@ -116,7 +153,11 @@ export function Header() {
           </nav>
 
           <div className={styles['mobileActions']}>
-            <ButtonLink to={primaryCta.to} block>
+            <ButtonLink
+              to={primaryCta.to}
+              block
+              onClick={() => track('cta_clicked', { location: 'nav_mobile' })}
+            >
               {primaryCta.label}
             </ButtonLink>
             <PhoneLink className={styles['mobilePhone']} />

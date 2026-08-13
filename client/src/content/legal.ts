@@ -1,50 +1,90 @@
+import { prices } from './offer';
+
 /*
  * ============================================================================
- * PLACEHOLDER LEGAL PAGES — NOT REVIEWED BY A LAWYER
+ * LEGAL PAGES — PLAIN ENGLISH, NOT REVIEWED BY A LAWYER
  * ============================================================================
  *
- * These exist because the contact form collects personal information and a site that
- * does that should say what happens to it. What is written below is a plain-English
- * description of what this application actually does — nothing more.
+ * These describe what this application actually does and what the business has actually
+ * agreed to. They are written in plain English on purpose: a page nobody reads protects
+ * nobody.
  *
- * It is NOT a privacy policy, it is NOT legal advice, and it makes no claim that any
- * particular law has been complied with. Have both pages written or reviewed properly
- * before the site handles real enquiries.
+ * What they are NOT: legal advice, or a claim that any particular law has been complied
+ * with. Have both reviewed properly before the site handles significant volumes of real
+ * enquiries. The retention periods below are operational defaults chosen by the business,
+ * not periods any regulator has been consulted about.
+ *
+ * Three things must stay true here or the page becomes a lie:
+ *
+ *   1. The privacy page says this site runs no analytics or advertising tracking. That is
+ *      true today — `lib/analytics.ts` fires events into nothing. The moment a provider is
+ *      wired into `index.html`, this file has to change in the same commit.
+ *   2. **It has to enumerate everything, including the things that never leave the
+ *      browser.** The PlayBook assessment and the Website Revenue Audit both persist to
+ *      `localStorage`, and the audit transmits a generated summary of somebody's scores
+ *      and their own business figures rather than a message they wrote. A page that lists
+ *      "any message you write" and stops there is describing a smaller site than this one.
+ *      `content.test.ts` asserts both are named.
+ *   3. The commercial terms below must match `commercialTerms` in `content/offer.ts` and
+ *      the written client agreement. Three copies of the same facts is two too many
+ *      places for them to drift, so figures are interpolated rather than retyped.
  * ============================================================================
  */
 
 export const legalNotice =
-  'Placeholder text. These pages describe how the site currently works and have not been reviewed by a lawyer. Replace them before launch.';
+  'Written in plain English by the business rather than by a lawyer. These pages describe how this website and this service actually work; they are not legal advice.';
 
 export const privacyContent = {
   heading: 'Privacy',
   intro:
-    'This page describes what happens to the information you send through this website. It is written in plain English and reflects how the site actually works today.',
+    'What happens to the information you send through this website. Written in plain English, and describing how the site actually works today rather than how a template says it should.',
   sections: [
     {
       id: 'what',
       heading: 'What is collected',
-      body: 'Only what you type into the contact form: your name, your business name, your email address, your phone number, your website address if you give one, what you need help with, and any message you write. Nothing else is collected, and there is no analytics or advertising tracking on this site.',
+      body: 'Three things, all of which you enter yourself. From the contact form: your name, your business name, your email address, your phone number, your website address if you give one, what you need help with, and any message you write. From the Website Revenue Audit, if you choose to send it: the same contact details, plus a written summary of the answers you gave — your score, the five categories that came out weakest, and whichever of the traffic, enquiry, close-rate and job-value figures you filled in. From the PlayBook form: your email address, and the fact that you asked for the workbook. Nothing else is collected, and nothing is gathered about you in the background.',
+    },
+    {
+      id: 'tracking',
+      heading: 'Analytics and tracking',
+      body: 'There is none. No analytics product, no advertising pixels, no third-party scripts, no cookies set for tracking. The site does not know who you are, where you came from, or which pages you looked at. If that ever changes this page changes with it, because the alternative is a privacy policy that quietly stops being true.',
+    },
+    /*
+     * The section this page did not have and needed. Two surfaces write to browser
+     * storage — the PlayBook's self-assessment and the audit — and a privacy page that
+     * enumerates transmitted data while staying silent about stored data is describing a
+     * smaller site than this one. It is also the section that makes the audit's own
+     * consent line credible rather than reassuring.
+     */
+    {
+      id: 'browser',
+      heading: 'What stays in your browser',
+      body: 'The PlayBook self-assessment and the Website Revenue Audit both keep your answers in your own browser’s local storage while you work, so a refresh or a phone call does not cost you twenty questions. That is storage on your device, not a copy held anywhere else: the PlayBook assessment is never transmitted at all, and the audit is transmitted only if you fill in your details and press send. Both pages have a button that clears everything, and clearing your browser data removes it just as effectively.',
     },
     {
       id: 'why',
       heading: 'Why it is collected',
-      body: 'To reply to your enquiry and, if we end up working together, to carry out that work. It is not used for anything else.',
+      body: 'Contact form: to reply to your enquiry, and if we end up working together, to carry out that work. Audit: to reply about the specific things it flagged, which is not possible without seeing what it flagged. PlayBook form: to send you the workbook. That is the whole list.',
     },
     {
       id: 'where',
       heading: 'Where it goes',
-      body: 'Your submission is stored in a database and emailed to the business owner so it is not lost. It is not sold, rented or shared with anyone else, and there is no mailing list.',
+      body: 'Your submission is stored in a database and emailed to the business owner so it cannot be lost to a bounced email. Two services are involved: MongoDB stores it, and Resend delivers the notification. Neither is given permission to use it for anything. It is not sold, rented, shared or added to anybody else’s list.',
+    },
+    {
+      id: 'playbook',
+      heading: 'The PlayBook email',
+      body: 'Asking for the workbook gets you the workbook. There is no follow-up sequence, no newsletter and no drip campaign — if that ever changes, you will be asked to opt in to it separately rather than discovering it in your inbox. Your address is stored with the date you gave it and the fact that you consented, so there is a record of what you actually agreed to.',
     },
     {
       id: 'how-long',
       heading: 'How long it is kept',
-      body: '[DATA_RETENTION_POLICY]',
+      body: 'Enquiries and sent audits are kept for 24 months after the last meaningful contact, then deleted — unless a longer period is genuinely needed for accounting, a live project, or a dispute. PlayBook subscriptions are kept until you ask for them to be removed, or until they are no longer needed for the reason you gave the address. Anything still sitting in your own browser is yours and is not on any schedule. These are operational choices made by the business, not periods imposed by anybody.',
     },
     {
       id: 'rights',
       heading: 'Asking for a copy or a deletion',
-      body: 'Email or call using the details on the contact page and ask. Your enquiry will be sent to you or deleted.',
+      body: 'Email or call using the details on the contact page and ask. You will get a copy of what is held, or it will be deleted, and you do not have to give a reason or quote a regulation to get either.',
     },
   ],
 } as const;
@@ -52,27 +92,63 @@ export const privacyContent = {
 export const termsContent = {
   heading: 'Terms',
   intro:
-    'Placeholder terms of use for this website. Terms for actual project work are agreed separately and in writing before anything starts.',
+    'How this website may be used, and the business terms for project and management work. The written agreement you sign is what governs the work; this is the same thing in plain English so you can read it before you get in touch rather than after.',
   sections: [
     {
       id: 'site',
       heading: 'Using this website',
-      body: 'The information on this site is provided to describe the services offered. It is not a quote, an offer, or a contract.',
+      body: 'The information on this site describes the services offered. It is not a quote, an offer, or a contract. Prices shown are the standard prices for standard scope; what your project actually costs is confirmed in writing before any work starts.',
     },
     {
       id: 'examples',
       heading: 'The examples shown',
-      body: 'Anything on this site labelled as a demonstration was built to show an approach. Demonstrations are not client work and are not presented as such.',
+      body: 'Anything on this site labelled as a demonstration was built to show an approach. Demonstrations are not client work and are not presented as such. There are no testimonials on this site because there are no clients to quote yet — when there are, they will be real people who agreed to be quoted.',
     },
     {
-      id: 'work',
-      heading: 'Project work',
-      body: '[PROJECT_TERMS] Scope, price, timeline and ownership are agreed in writing before any project begins.',
+      id: 'launch',
+      heading: 'The project fee',
+      body: `Projects are priced in three tiers, starting at ${prices.from}. The tier, the scope and the fee are agreed in writing before any work begins. Payment is half to begin and half on the day the site goes live. Each tier includes two revision rounds; a revision round is a consolidated set of requested changes submitted together. New pages, new functionality, new services or a materially changed brief after sign-off are additional scope and are quoted separately before that work begins. Typical launch is two to four weeks from receiving the materials required from you; timing depends on how quickly content, approvals, access and feedback come back.`,
+    },
+    {
+      /*
+       * The founding-client price is a commercial term with a condition attached, so it
+       * belongs in the terms rather than only in the marketing copy. Somebody who takes
+       * the offer is agreeing to the case-study permission, and they should be able to
+       * read that here rather than discover it in an email.
+       */
+      id: 'founding',
+      heading: 'Founding-client pricing',
+      body: `A limited number of projects are offered below the standard price in exchange for permission to publish the work as a case study — including the state of the site beforehand, the reasoning behind the changes, and what changed after launch. Nothing is published without written approval of the specific material first, and any figures shared are only those you agree to share. The standard price is the price the work is offered at outside this arrangement; it is not a former price and no claim is made that anyone previously paid it. There is no deadline: the offer is limited by the number of projects, and when those are taken the standard price applies.`,
+    },
+    {
+      id: 'management',
+      heading: 'The ongoing plan',
+      body: `The plan after launch is separate from the project and is not a condition of it. It is ${prices.managementDisplay}, beginning on the launch date, with a three-month minimum. After the minimum it continues month-to-month and either of us can end it with 30 days' written notice. An annual prepayment option is available at ${prices.annual}; if the plan ends part-way through a prepaid year, unused whole months are refunded at the ${prices.management} monthly rate. Hosting and domain renewal costs are included in the monthly fee while the plan is active.`,
+    },
+    {
+      id: 'scope',
+      heading: 'What management includes',
+      body: 'Hosting, certificates, backups, security and software updates, uptime and form monitoring, bug fixes, and content, service and photo changes. Ongoing conversion and user-experience improvements. Four seasonal refreshes per year. Up to one campaign landing page and up to two campaign copy alignments per calendar month, which do not accumulate if unused. A/B testing where site traffic supports a statistically meaningful result. It does not include managing advertising accounts, budgets, bidding or media buying.',
+    },
+    {
+      id: 'response',
+      heading: 'The response guarantee',
+      body: 'While management is active, a request raised through the website support form or the designated business email receives a substantive reply within 24 business hours. Business hours are Monday to Friday, 8am to 6pm Pacific; weekends and US federal holidays are excluded and pause the clock. A qualifying response is acknowledgement plus an answer, a next step, or a statement of what is needed to proceed — it is a response, not a resolution, and does not commit to completing any work within that period. If a qualifying request does not receive a qualifying response in time, that calendar month’s management fee is waived in full and applied without you having to request it. Excluded: requests sent through other channels; duplicate or automated messages; delays waiting on information, approval or access from you; outages at hosting providers, registrars or other third parties; work outside the agreed scope; security incidents requiring third-party action first; and events outside either party’s reasonable control.',
+    },
+    {
+      id: 'ownership',
+      heading: 'Ownership',
+      body: 'The domain, the hosting account, the content and the website belong to you. Accounts are registered in your name wherever it is technically practical, and I administer them on your behalf while management is active. If management ends, those accounts stay with you and billing reverts to you. Campaign landing pages built as part of your website remain part of your website. Any active A/B test is ended and the designated version left live.',
+    },
+    {
+      id: 'client',
+      heading: 'What is needed from you',
+      body: 'The information and materials required to do the work: your service list, business details, service area, and photographs of your own completed jobs, plus access to any systems I need and reasonably prompt decisions. Timelines are measured from when those are received.',
     },
     {
       id: 'contact',
       heading: 'Questions',
-      body: 'Use the contact details on this site.',
+      body: 'Use the contact details on this site. Ask to see the written agreement before you commit to anything — that is what it is for.',
     },
   ],
 } as const;

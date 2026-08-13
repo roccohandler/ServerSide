@@ -29,6 +29,17 @@ export interface ServerConfig {
     readonly notificationRecipient: string | undefined;
     readonly enabled: boolean;
   };
+  /**
+   * The PlayBook workbook.
+   *
+   * `pdfUrl` being set is what turns automatic delivery on. Until it is, a request is
+   * stored and the owner is notified — which is a working flow rather than a broken one,
+   * and stops the site promising an email that nothing sends.
+   */
+  readonly playbook: {
+    readonly pdfUrl: string | undefined;
+    readonly autoSendEnabled: boolean;
+  };
   readonly cors: {
     /** Empty means same-origin only: no cross-origin browser requests are permitted. */
     readonly allowedOrigins: readonly string[];
@@ -72,6 +83,15 @@ const envSchema = z.object({
   RESEND_API_KEY: optionalString,
   RESEND_FROM_EMAIL: optionalString,
   CONTACT_NOTIFICATION_EMAIL: optionalString,
+  /*
+   * Where the PlayBook workbook PDF is hosted.
+   *
+   * Optional, and it is the switch on automatic delivery. Set it and a subscriber gets an
+   * email with the workbook link; leave it unset and the request is stored and I am
+   * notified instead. Deliberately not `VITE_`-prefixed: the browser never needs to know
+   * it, and the server decides which of the two emails to send.
+   */
+  PLAYBOOK_PDF_URL: optionalString,
 
   CLIENT_ORIGIN: optionalString,
 
@@ -174,6 +194,11 @@ export function loadServerConfig(source: NodeJS.ProcessEnv = process.env): Serve
       enabled: Boolean(
         raw.RESEND_API_KEY && raw.RESEND_FROM_EMAIL && raw.CONTACT_NOTIFICATION_EMAIL,
       ),
+    },
+    playbook: {
+      pdfUrl: raw.PLAYBOOK_PDF_URL,
+      /** True when the workbook can actually be delivered automatically. */
+      autoSendEnabled: Boolean(raw.PLAYBOOK_PDF_URL),
     },
     cors: {
       allowedOrigins: parseOrigins(raw.CLIENT_ORIGIN),

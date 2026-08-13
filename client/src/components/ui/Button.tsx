@@ -51,16 +51,30 @@ export function Button({ variant, size, block, className, children, ...rest }: B
 export interface ButtonLinkProps extends SharedProps {
   /** Internal route path, or an absolute/`tel:`/`mailto:` URL. */
   readonly to: string;
+  /**
+   * Fired before navigation. Used to record which call to action was clicked — see
+   * `lib/analytics.ts`. Never do anything here that could delay or prevent the
+   * navigation itself.
+   */
+  readonly onClick?: () => void;
 }
 
 /** Navigates. Renders a router link for internal paths and a plain anchor otherwise. */
-export function ButtonLink({ to, variant, size, block, className, children }: ButtonLinkProps) {
+export function ButtonLink({
+  to,
+  variant,
+  size,
+  block,
+  className,
+  children,
+  onClick,
+}: ButtonLinkProps) {
   const classes = classesFor({ variant, size, block, className, children });
   const isInternal = to.startsWith('/') && !to.startsWith('//');
 
   if (isInternal) {
     return (
-      <Link to={to} className={classes}>
+      <Link to={to} className={classes} onClick={onClick}>
         {children}
       </Link>
     );
@@ -72,6 +86,7 @@ export function ButtonLink({ to, variant, size, block, className, children }: Bu
     <a
       href={to}
       className={classes}
+      onClick={onClick}
       {...(isExternalHttp ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
     >
       {children}

@@ -8,7 +8,13 @@
  * safety. If the contract grows, extract it then.
  */
 
-export const INQUIRY_TYPES = ['new-website', 'improve-website', 'no-website', 'not-sure'] as const;
+export const INQUIRY_TYPES = [
+  'new-website',
+  'improve-website',
+  'manage-website',
+  'no-website',
+  'not-sure',
+] as const;
 
 export type InquiryType = (typeof INQUIRY_TYPES)[number];
 
@@ -28,6 +34,37 @@ export interface LeadRequest {
 
 export interface LeadSubmissionData {
   readonly submittedAt: string;
+}
+
+/* ------------------------------------------------------------------ subscribers */
+
+/**
+ * The PlayBook workbook request. Mirrors
+ * `server/src/features/subscribers/subscriber.types.ts`.
+ *
+ * One field, because asking for anything else would be collecting data to have it. The
+ * asset is optional: the server defaults it, so the client never has to name it.
+ */
+export const SUBSCRIPTION_ASSETS = ['playbook-workbook'] as const;
+
+export type SubscriptionAsset = (typeof SUBSCRIPTION_ASSETS)[number];
+
+export interface SubscriberRequest {
+  readonly email: string;
+  readonly asset?: SubscriptionAsset;
+  readonly [HONEYPOT_FIELD]?: string;
+}
+
+export interface SubscriptionData {
+  readonly requestedAt: string;
+  /**
+   * What actually happened, so the confirmation can say it.
+   *
+   * `sent` — the workbook was emailed to them. `queued` — the request reached the owner,
+   * who sends it. The page picks its copy from this rather than assuming, so it can never
+   * tell somebody to check their inbox when nothing is coming.
+   */
+  readonly delivery: 'sent' | 'queued';
 }
 
 export type ApiErrorCode =

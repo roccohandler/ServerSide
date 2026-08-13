@@ -20,18 +20,19 @@ export const trust = {
   intro: 'A few things I will commit to in writing before you spend anything.',
 
   /**
-   * Shown next to the examples. Delete this line only when it stops being true —
-   * that is, when there is real client work on the page.
+   * Shown on both the homepage and the examples page, where the grid sits above it in
+   * one place and below it in the other — so the wording points at neither. Delete this
+   * line only when it stops being true: when there is real client work on the page.
    */
   disclosure:
-    'Straight answer: this is a new business, so there are no client testimonials or case studies here yet. The examples below are demonstration sites I built to show the approach, and they are labelled as such. When there is real client work to show, it will replace them.',
+    'Straight answer: this is a new business, so there are no client testimonials or case studies here yet. The examples on this site are demonstration sites I built to show the approach, and they are labelled as such. When there is real client work to show, it will replace them.',
 
   commitments: [
     {
       id: 'ownership',
       title: 'You own everything',
       description:
-        'The domain, the hosting account and the content are registered in your name. If you ever want to work with someone else, you take the site with you and I hand over the keys.',
+        'The domain, the hosting account and the content are registered in your name, even though I am the one managing them. If you ever want to work with someone else, you take the site with you and I hand over the keys.',
     },
     {
       id: 'plain-english',
@@ -43,13 +44,13 @@ export const trust = {
       id: 'pricing',
       title: 'Scoped and priced before work starts',
       description:
-        'You will know what is being built and what it costs before you commit. [PRICING_APPROACH]',
+        'You will know what is being built and what it costs before you commit. The prices are published on this site rather than extracted from you on a call, and neither number moves unless you ask for something different.',
     },
     {
-      id: 'direct',
-      title: 'You work with me directly',
+      id: 'responsibility',
+      title: 'The same person, before and after launch',
       description:
-        'One person builds it and one person answers the phone. No account managers, no handing your project to someone you have never spoken to.',
+        'The person who builds your website is the person who maintains it and the person who answers when you call. No account managers, and no handover to somebody you have never spoken to.',
     },
     {
       id: 'quality',

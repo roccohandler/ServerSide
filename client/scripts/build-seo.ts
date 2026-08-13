@@ -4,8 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { loadEnv } from 'vite';
 import { buildDocumentTitle } from '../src/content/pages';
 import { notFoundPage, pages } from '../src/content/pages';
+import { faqItems } from '../src/content/faq';
 import { site } from '../src/content/site';
-import { isPlaceholder } from '../src/lib/placeholders';
+import { containsPlaceholder, isPlaceholder } from '../src/lib/placeholders';
 import type { PageMeta } from '../src/types/content';
 
 /*
@@ -74,12 +75,43 @@ function buildStructuredData(): string | null {
     })),
   };
 
-  // JSON is embedded in a <script> element, so any "</script>" inside it must be broken up.
+  return embedJsonLd(data);
+}
+
+/**
+ * FAQ structured data, built from the questions the homepage already shows.
+ *
+ * Two rules are enforced here. Google requires the marked-up answer to be visible on the
+ * page, which is why this is generated from `faqItems` rather than written separately.
+ * And an answer still carrying a `[PLACEHOLDER]` is dropped rather than published — an
+ * unfinished sentence in a search result is worse than no rich result at all.
+ */
+function buildFaqData(): string | null {
+  const answered = faqItems.filter(
+    (item) => !containsPlaceholder(item.question) && !containsPlaceholder(item.answer),
+  );
+
+  if (answered.length < 3) return null;
+
+  return embedJsonLd({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: answered.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
+    })),
+  });
+}
+
+/** JSON is embedded in a <script> element, so any "</script>" inside it must be broken up. */
+function embedJsonLd(data: unknown): string {
   const json = JSON.stringify(data, null, 2).replace(/<\//g, '<\\/');
   return `<script type="application/ld+json">\n${json}\n    </script>`;
 }
 
 const structuredData = buildStructuredData();
+const faqData = buildFaqData();
 
 function buildHead(page: PageMeta): string {
   const title = buildDocumentTitle(page);
@@ -106,8 +138,9 @@ function buildHead(page: PageMeta): string {
   ];
 
   // Structured data belongs on the homepage only; repeating it on every page adds nothing.
-  if (structuredData && page.path === '/') {
-    tags.push(structuredData);
+  if (page.path === '/') {
+    if (structuredData) tags.push(structuredData);
+    if (faqData) tags.push(faqData);
   }
 
   return tags.join('\n    ');
@@ -190,6 +223,10 @@ export async function generateSeoFiles(): Promise<void> {
     console.log(
       '[build-seo] structured data skipped: business name, phone or email is still a placeholder.',
     );
+  }
+
+  if (!faqData) {
+    console.log('[build-seo] FAQ structured data skipped: too few answers are finished.');
   }
 
   if (siteUrl.includes('localhost')) {

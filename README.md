@@ -16,7 +16,7 @@ One job: get a service-business owner to make contact.
 
 1. [Requirements](#requirements)
 2. [Local installation](#local-installation)
-3. [Replacing the placeholders](#replacing-the-placeholders)
+3. [The commercial model](#the-commercial-model)
 4. [Environment variables](#environment-variables)
 5. [Commands](#commands)
 6. [Testing](#testing)
@@ -68,49 +68,70 @@ origin — the same as in production.
 
 ---
 
-## Replacing the placeholders
+## The commercial model
 
-The business name, phone number, pricing and personal details are not invented anywhere
-in this repository. They are written as `[PLACEHOLDER]` tokens, all of which live in
-`client/src/content/`.
+**[`docs/business-offer.md`](docs/business-offer.md) is the authoritative record** of what
+is sold, for how much, and on what terms. Read it before changing anything that touches
+price, scope, guarantees or terms — those are commercial commitments, not implementation
+details.
 
-**In development the site shows a banner at the top listing every placeholder that is
-still in place.** That banner is the authoritative checklist — it disappears from the
-production bundle entirely. Until a value is replaced:
+The short version:
 
-- the phone number and email render as plain text rather than as dead `tel:`/`mailto:` links;
-- `ProfessionalService` structured data is omitted from the built HTML rather than
-  published with a fake business name.
+|                             |                                                                 |
+| --------------------------- | --------------------------------------------------------------- |
+| Website launch              | **$2,500** one-time — $1,250 to start, $1,250 at launch         |
+| Website management + growth | **$299/month**, or $2,990/year                                  |
+| Minimum term                | 3 months from launch, then month-to-month with 30 days' notice  |
+| Launch timeline             | 2–4 weeks after the client's materials arrive                   |
+| Revisions                   | 2 rounds; up to 6 service pages                                 |
+| Response guarantee          | A reply within 24 business hours, or that month's fee is waived |
+| Ownership                   | Domain, hosting and content in the client's name throughout     |
 
-| Placeholder                      | File                                  | What it needs                                       |
-| -------------------------------- | ------------------------------------- | --------------------------------------------------- |
-| `[BUSINESS_NAME]`                | `content/site.ts`                     | Trading name, used in the header, footer and titles |
-| `[OWNER_NAME]`                   | `content/site.ts`                     | Your name                                           |
-| `[PHONE_NUMBER]`                 | `content/site.ts`                     | e.g. `(206) 555-0134`                               |
-| `[BUSINESS_EMAIL]`               | `content/site.ts`                     | Public contact address                              |
-| `[CONTACT_HOURS]`                | `content/site.ts`                     | When calls are answered — or delete the line        |
-| `[PRICING_APPROACH]`             | `content/home.ts`, `content/trust.ts` | One sentence on how you price                       |
-| `[PRICING_ANSWER]`               | `content/faq.ts`                      | The real answer to "what does it cost?"             |
-| `[TIMELINE_ANSWER]`              | `content/faq.ts`                      | Typical turnaround                                  |
-| `[SERVICE_AREA_ANSWER]`          | `content/faq.ts`                      | Whether you work outside Greater Seattle            |
-| `[ABOUT_INTRO]`                  | `content/about.ts`                    | One or two sentences introducing yourself           |
-| `[ABOUT_WHO_I_AM]`               | `content/about.ts`                    | Background — specific beats impressive              |
-| `[ABOUT_WHY_SERVICE_BUSINESSES]` | `content/about.ts`                    | Your actual reason for this focus                   |
-| `[DATA_RETENTION_POLICY]`        | `content/legal.ts`                    | How long enquiries are kept                         |
-| `[PROJECT_TERMS]`                | `content/legal.ts`                    | How project work is agreed                          |
+Everything renders from `client/src/content/offer.ts` and `client/src/content/growth.ts`.
+**`offer.ts` is the only file in the content layer allowed to state a currency figure** —
+a test sweeps every string and fails the build on any figure that is not one of the
+sanctioned prices, because "$299 on the homepage, $149 in an FAQ" is invisible in review
+and obvious to a customer.
 
-Also worth doing before launch:
+### Replacing the placeholders
 
-- **Turning the free review off.** Set `site.offer.freeReview.enabled` to `false` in
-  `content/site.ts`. Every mention of a free review disappears and the primary button
-  falls back to `cta.primaryFallback`. Nothing else needs editing.
+Values that have not been decided are written as `[PLACEHOLDER]` tokens in
+`client/src/content/`. **In development the site shows a banner listing every one still in
+place**; it disappears from the production bundle entirely. Until a value is replaced the
+phone number and email render as plain text rather than dead `tel:`/`mailto:` links, and
+`ProfessionalService` structured data is omitted rather than published with a fake name.
+
+**There are currently none.** Every commercial and personal placeholder has been replaced,
+and `content.test.ts` fails the build if one reappears anywhere in the content layer.
+
+### Still worth doing before launch
+
 - **The social preview image.** `client/public/og-image.svg` is on-brand but most social
   platforms will not render SVG. Export a 1200×630 PNG to `client/public/og-image.png`
   and update `seo.ogImage` / `seo.ogImageType` in `content/site.ts`.
-- **The legal pages.** `content/legal.ts` describes what the application actually does.
-  It is not a reviewed privacy policy, and the pages say so on screen. Replace them.
+- **The legal pages.** `content/legal.ts` is written in plain English by the business and
+  describes what the application actually does and what has actually been agreed. It has
+  not been reviewed by a lawyer, and the pages say so on screen.
+- **A business email address.** `site.contact.email` and `site.contact.supportEmail` are
+  currently a personal Gmail. `supportEmail` is the designated channel for the response
+  guarantee, and it is separate from the public address precisely so it can be moved to a
+  domain mailbox later without touching the terms.
 - **The examples.** Everything in `content/portfolio.ts` is flagged `isDemo: true` and
   renders a visible "Demonstration" badge. Real client work goes in with `isDemo: false`.
+- **Testimonials.** `content/testimonials.ts` is empty and the section renders nothing
+  while it is. Add real quotes from real people who agreed to be quoted, or leave it.
+- **Turning the free assessment off**, if it stops being part of the offer. Set
+  `site.offer.freeReview.enabled` to `false`; every mention disappears and the primary
+  button falls back to `cta.primaryFallback`. Nothing else needs editing.
+
+### Changing a commercial term
+
+1. Change it in the written client agreement first.
+2. Change it in `content/offer.ts` or `content/growth.ts`.
+3. Update the decision register in `docs/business-offer.md`.
+4. Run `npm run verify`. Several of these are pinned by tests on purpose — the response
+   guarantee's response-not-resolution wording, the price consistency sweep, the
+   no-unlimited-revisions guard and the no-placeholder guard among them.
 
 ---
 
@@ -131,6 +152,7 @@ browser** — never give the Resend key or the Mongo URI that prefix.
 | `RESEND_API_KEY`                 | **yes in production**           | –                 | Starts with `re_`                                                    |
 | `RESEND_FROM_EMAIL`              | **yes in production**           | –                 | Must be on a domain verified in Resend                               |
 | `CONTACT_NOTIFICATION_EMAIL`     | **yes in production**           | –                 | Where new leads are delivered                                        |
+| `PLAYBOOK_PDF_URL`               | no                              | –                 | Hosted workbook PDF. Setting it turns on automatic PlayBook delivery |
 | `CLIENT_ORIGIN`                  | no                              | –                 | Comma-separated CORS allow list. Leave unset for same-origin         |
 | `LOG_LEVEL`                      | no                              | `info`            | `debug` \| `info` \| `warn` \| `error` \| `silent`                   |
 | `LEAD_RATE_LIMIT_WINDOW_MINUTES` | no                              | `15`              | Rate-limit window                                                    |
@@ -350,7 +372,7 @@ start `node server/dist/server.js`, serve `client/dist` as static files, and set
 | Resend returns "domain not verified"                              | The domain in `RESEND_FROM_EMAIL` is not verified, or the DNS records have not propagated.                                                                                   |
 | MongoDB times out on Vercel but works locally                     | Atlas Network Access does not include `0.0.0.0/0`.                                                                                                                           |
 | Form returns 429                                                  | The rate limit is doing its job. Defaults are 5 per IP per 15 minutes; tune with `LEAD_RATE_LIMIT_*`.                                                                        |
-| `/about` 404s on Vercel                                           | `cleanUrls` is not applied, or the build did not run `build-seo`. Check the build log for `[build-seo] wrote 8 pages`.                                                       |
+| `/about` 404s on Vercel                                           | `cleanUrls` is not applied, or the build did not run `build-seo`. Check the build log for `[build-seo] wrote 17 pages`.                                                      |
 | Link previews show the wrong title                                | `VITE_SITE_URL` was not set at build time, or the build ran without step 3. Redeploy.                                                                                        |
 | Browser console: blocked by CSP                                   | The CSP in `vercel.json` allows same-origin only. Adding a third-party script means adding it there deliberately.                                                            |
 | Dev banner listing placeholders                                   | Working as intended. It never ships to production.                                                                                                                           |
@@ -388,11 +410,76 @@ db.leads.find({ notificationStatus: 'failed' }).sort({ createdAt: -1 });
     ├── app/                  app assembly, route table
     ├── config/               validated environment
     ├── features/leads/       controller, service, repository, model, schema, email
+    ├── features/subscribers/ the same shape, for PlayBook workbook requests
     ├── infrastructure/       mongoose connection, Resend transport
     ├── middleware/           errors, 404, rate limit, request context
     ├── lib/                  AppError, logger, API envelope, HTML escaping
     └── testing/              in-memory fakes
 ```
+
+### API
+
+| Endpoint                | What it does                                                           |
+| ----------------------- | ---------------------------------------------------------------------- |
+| `GET /api/health`       | Liveness. Reports database and email configuration outside production. |
+| `POST /api/leads`       | A contact-form submission. Stored, then the owner is notified.         |
+| `POST /api/subscribers` | A PlayBook workbook request. One field: an email address.              |
+
+Both POSTs are public, rate limited on the same budget, protected by the same honeypot,
+and answer every accepted outcome — stored, duplicate, or caught bot — with an identical
+202, so the response never tells a script which trick worked.
+
+### The PlayBook
+
+Twenty improvements, a forty-point self-assessment and a printable workbook — the free
+resource and the top of the funnel. **[`docs/playbook.md`](docs/playbook.md) explains how
+it is built and the rules it follows.**
+
+| Route                | What it is                                                                          |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `/playbook`          | The whole thing, unfolded. No email required for any of it — and the form is on it. |
+| `/playbook/workbook` | `noindex`, unlinked. Print it to PDF.                                               |
+
+There was a `/playbook/get` — a second page carrying the same email form, linked from
+nowhere. It was removed; see [`docs/VALUE-PER-SECOND.md`](docs/VALUE-PER-SECOND.md) §4.
+A salesperson reads out `/playbook`, which is shorter to say.
+
+`POST /api/subscribers` stores the address with a consent record, then either emails the
+subscriber the workbook or notifies the owner to send it — decided entirely by whether
+`PLAYBOOK_PDF_URL` is set. The response carries which happened, and **the confirmation
+copy is chosen from it**, so the page can never tell somebody to check an inbox nothing is
+filling.
+
+To turn on automatic delivery: open `/playbook/workbook`, print to PDF, host the file, set
+`PLAYBOOK_PDF_URL`. That is also why there is no PDF-generation dependency in a repository
+with three runtime dependencies — the browser already has an excellent PDF renderer.
+
+The consent wording is duplicated as `PLAYBOOK_CONSENT_TEXT` on the server and pinned by a
+test on both sides, so what gets stored always matches what the person was shown.
+
+### The audit, the industry pages and the teardown
+
+The conversion layer. **[`docs/CONVERSION-UPGRADE-PLAN.md`](docs/CONVERSION-UPGRADE-PLAN.md)
+records why each of these exists and what it is not allowed to claim.**
+
+| Route                | What it is                                                                      |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `/audit`             | The Website Revenue Audit. The useful half is free and needs no email address.  |
+| `/hvac-websites` etc | Five industry pages, one per trade with `hasPage` in `config/trades.ts`.        |
+| `/website-teardown`  | Six findings on a composite first screen, plus a sample of the free assessment. |
+
+Three rules hold this together, and each is enforced by a test rather than by memory:
+
+- **The audit submits through the existing lead contract.** No server file changed for it;
+  the audit renders into the `message` field, which is already 2000 characters, already
+  not whitespace-collapsed, and already rendered as multiline in the owner's email.
+- **The industry routes, page metadata and content are all derived from one list.** Adding
+  a sixth trade is an entry in `config/trades.ts` and an entry in `content/industries.ts`;
+  `industryPath()` produces the URL and a test asserts nothing drifted.
+- **No borrowed figure is published without what it does not show.** `EvidenceCitation`
+  makes `limitation` a required field, and `content.test.ts` sweeps the whole content
+  barrel structurally: anything carrying a `conversionRate` or a LocaliQ attribution must
+  also carry the exact advertising-benchmark label, wherever it lives.
 
 ---
 
@@ -419,12 +506,82 @@ phone number costs more than accepting an odd one.
 **Content is data, not JSX.** Every word lives in `client/src/content/`. Changing the
 business name, the service list, the FAQ or the geography is an edit to a data file.
 
+**The offer has one source of truth.** `client/src/content/offer.ts` holds the name of
+the offer, its ten components, the ongoing service, the value stack, the prices, the
+published terms and the guarantee. The homepage sections and the services page both render
+that file, so the two can never describe different services, and testing a different offer
+is one file to edit.
+
+**One file may state a price.** `offer.ts` exports `prices`; everything else interpolates
+it. A test walks every string in the content layer and fails on any currency figure that
+is not one of the sanctioned amounts. The bug it prevents — $299 on the homepage and $149
+in an FAQ answer added six months later — is invisible in a diff and obvious to the
+customer who finds it.
+
+**Commercial terms are published, not buried.** The minimum term, the notice period, the
+payment schedule, the revision count and the exit terms are all on the homepage. Each one
+is a question a buyer asks before they will make contact, and answering it up front costs
+nothing. `docs/business-offer.md` is the authoritative record, and it exists so that a
+future agent cannot change the business model by accident.
+
+**The response guarantee is generated from the business hours.** `site.contact.hours` is
+load-bearing: widening the window widens a commitment with a fee waiver attached, and the
+terms page will say so on the next build. A test asserts the two cannot disagree, and
+another asserts the promise stays a _response_ rather than becoming a resolution SLA on
+somebody else's hosting company.
+
+**Nothing promises a result.** Rankings, lead volume and revenue depend on the market,
+the pricing and the phone being answered. What the site promises is work — what gets
+built, maintained and improved. `content.test.ts` sweeps every string in the content
+layer for the claims this business has decided not to make, so a hurried edit that adds
+"guaranteed leads" fails the build rather than reaching a customer.
+
+**The hero asks for three things, then three more.** `features/contact/HeroLeadForm.tsx`
+splits the ask so somebody who arrived already convinced can start in the time it takes
+to read the headline. It is progressive _disclosure_, not progressive capture: the API
+takes a whole lead or nothing, so there is exactly one request, sent at the end of step
+two. It shares the contact page's validators, honeypot and API client — there is one lead
+system, not two.
+
+**The hero has two versions, and neither is a guess dressed up as a decision.**
+`site.hero.variant` switches between the inline form and the original
+buttons-and-illustration hero. Both are built. Flip the value and compare
+`hero_form_started` against `cta_clicked` rather than arguing about it.
+
+**Events exist; tracking does not.** `lib/analytics.ts` names the funnel and is called
+from the places it happens, but `track()` finds no sink and returns. Wire a tag manager
+into `index.html` and it starts reporting — and `content/legal.ts` has to be updated at
+the same time, because the privacy page currently says this site does no analytics
+tracking. That is true today.
+
+**The business case comes before the product.** `content/value.ts` explains what a
+website is for in an owner's terms, and `sections/DemoSection.tsx` shows the difference
+rather than describing it. The mock websites are markup built from a spec, not
+screenshots: the differences being demonstrated are mostly wording, and a screenshot of
+a sentence is unreadable at that size — and a screenshot of a real business's homepage
+would be somebody's actual website used as a bad example on a stranger's sales page.
+
+**Motion is an IntersectionObserver and a CSS transition.** `components/ui/Reveal.tsx`
+is the whole animation system. An element starts hidden only when the browser supports
+the observer _and_ the visitor has not asked for reduced motion, so no text is ever
+gated on JavaScript. The hero's `<h1>` is deliberately never animated: it is the
+largest-contentful-paint candidate.
+
 **No Redux, no React Query, no CSS framework, no icon library.** One form and no shared
 state; one POST in the site's entire lifetime; sixteen inline SVG icons; CSS Modules
 over design tokens. Each of those would have been a dependency bought with nothing.
 
+**The PlayBook is lazy-loaded; nothing else is.** Twenty improvements written out in full,
+a forty-point assessment, and a workbook that renders all of it again for print came to
+roughly a third of the bundle — carried by every homepage visitor, most of whom never open
+it. On a page whose own improvement 07 tells owners to be honest about whether every
+script is earning its place, shipping that to everybody was hard to defend. The marketing
+pages stay eagerly imported: they are small and share almost all of their components.
+
 **Static HTML per route instead of a rendering framework.** A hundred-line build script
-gets crawlable, previewable pages without adopting Next.js for a five-page site.
+gets crawlable, previewable pages without adopting Next.js for a marketing site. It scales
+by content rather than by code: the five industry pages added seventeen lines to
+`content/pages.ts` and nothing at all to the build.
 
 **System font stack.** Nothing to download, nothing blocking first paint, no layout
 shift when a web font swaps in. Swap `--font-sans` in `styles/tokens.css` to change it.
@@ -448,10 +605,22 @@ Stated plainly rather than discovered later:
   `server/src/features/leads/lead.types.ts`. Both files have a test pinning the list, so
   drift fails the build rather than reaching production. A shared package would cost a
   build step on every deploy for fifteen lines.
-- **The legal pages are placeholders** and say so on screen. They have not been reviewed
-  by a lawyer.
-- **No analytics.** There is a clean place to add it — `SiteLayout` already tracks route
-  changes — but nothing is installed and nothing is tracked.
+- **The legal pages have not been reviewed by a lawyer**, and say so on screen. They are
+  written in plain English by the business and describe what the application actually does
+  and what has actually been agreed — which is not the same as being compliant with any
+  particular law.
+- **The PlayBook workbook is delivered by hand.** A request is stored and the owner is
+  notified; the owner prints `/playbook/workbook` to PDF and sends it. That is deliberate
+  rather than unfinished — automating a send to a file that does not exist at a stable URL
+  would be faking the feature — but it does not scale past a modest volume.
+- **No analytics is actually collected.** `lib/analytics.ts` names and fires the funnel
+  events, but with no sink configured they go nowhere in production. Until a provider is
+  wired in, every conversion question — where people drop out of the hero form, how many
+  reach the price — is unanswerable.
+- **A visitor who abandons the hero form on step two is lost.** The API has no endpoint
+  that accepts a partial lead, and inventing one that drops half-leads into a collection
+  nobody reads would be worse than not having it. If `hero_form_step_completed` ever
+  turns out to be much larger than `lead_form_submitted`, that is the moment to build it.
 - **No admin interface.** Leads are read from MongoDB directly, or from the notification
   email. Building a dashboard before there are leads to look at would be premature.
 - **ESLint is pinned to v9** because `eslint-plugin-jsx-a11y` does not yet support v10,

@@ -11,9 +11,10 @@ import type { InquiryType, StoredLead } from './lead.types.js';
 /** Human-readable versions of the inquiry slugs, for the owner's inbox. */
 const INQUIRY_LABELS: Record<InquiryType, string> = {
   'new-website': 'Needs a new website',
-  'improve-website': 'Has a website that needs improvement',
+  'improve-website': 'Has a website that is outdated or not bringing in work',
+  'manage-website': 'Wants their existing website managed',
   'no-website': "Doesn't have a website yet",
-  'not-sure': 'Not sure yet',
+  'not-sure': 'Not sure what needs fixing',
 };
 
 export function describeInquiryType(inquiryType: InquiryType): string {

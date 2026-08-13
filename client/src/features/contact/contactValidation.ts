@@ -63,43 +63,78 @@ function isInquiryType(value: string): value is InquiryType {
   return (INQUIRY_TYPES as readonly string[]).includes(value);
 }
 
+/*
+ * One validator per field, exported individually.
+ *
+ * The hero form asks for a subset of these, one step at a time, and must apply exactly
+ * the same rules as the full contact form — otherwise a value the hero accepts gets
+ * rejected by the server a step later, which is the worst possible moment to find out.
+ * Composing the whole-form check from the same functions is what keeps that honest.
+ *
+ * Each returns `undefined` when the value is acceptable, or a message that says what to
+ * fix rather than merely that something is wrong.
+ */
+
+export function validateName(value: string): string | undefined {
+  return value.trim().length < 2 ? 'Please enter your name.' : undefined;
+}
+
+export function validateBusinessName(value: string): string | undefined {
+  return value.trim().length === 0 ? 'Please enter your business name.' : undefined;
+}
+
+export function validateEmail(value: string): string | undefined {
+  const email = value.trim();
+  if (email.length === 0) return 'Please enter your email address.';
+  if (!looksLikeEmail(email)) return 'Please enter a valid email address.';
+  return undefined;
+}
+
+export function validatePhone(value: string): string | undefined {
+  const phone = value.trim();
+  if (phone.length === 0) return 'Please enter a phone number.';
+  if (!hasDialableDigits(phone)) {
+    return 'Please enter a phone number we can reach you on, including the area code.';
+  }
+  return undefined;
+}
+
+/** Optional everywhere it is asked for, so an empty value is always acceptable. */
+export function validateWebsite(value: string): string | undefined {
+  const website = value.trim();
+  if (website.length === 0) return undefined;
+  if (!looksLikeWebsite(website)) {
+    return 'Please enter a valid website address, for example acmeplumbing.com.';
+  }
+  return undefined;
+}
+
+export function validateInquiryType(value: string): string | undefined {
+  return isInquiryType(value.trim()) ? undefined : 'Please choose what you need help with.';
+}
+
+export function validateMessage(value: string): string | undefined {
+  return value.trim().length > MESSAGE_MAX_LENGTH
+    ? `Please keep your message under ${MESSAGE_MAX_LENGTH} characters.`
+    : undefined;
+}
+
 export function validateContactForm(values: ContactFormValues): ContactFieldErrors {
   const errors: ContactFieldErrors = {};
-  const trimmed = (field: ContactFieldName) => values[field].trim();
 
-  if (trimmed('name').length < 2) {
-    errors.name = 'Please enter your name.';
-  }
+  const checks: Record<ContactFieldName, string | undefined> = {
+    name: validateName(values.name),
+    businessName: validateBusinessName(values.businessName),
+    email: validateEmail(values.email),
+    phone: validatePhone(values.phone),
+    website: validateWebsite(values.website),
+    inquiryType: validateInquiryType(values.inquiryType),
+    message: validateMessage(values.message),
+  };
 
-  if (trimmed('businessName').length === 0) {
-    errors.businessName = 'Please enter your business name.';
-  }
-
-  const email = trimmed('email');
-  if (email.length === 0) {
-    errors.email = 'Please enter your email address.';
-  } else if (!looksLikeEmail(email)) {
-    errors.email = 'Please enter a valid email address.';
-  }
-
-  const phone = trimmed('phone');
-  if (phone.length === 0) {
-    errors.phone = 'Please enter a phone number.';
-  } else if (!hasDialableDigits(phone)) {
-    errors.phone = 'Please enter a phone number we can reach you on, including the area code.';
-  }
-
-  const website = trimmed('website');
-  if (website.length > 0 && !looksLikeWebsite(website)) {
-    errors.website = 'Please enter a valid website address, for example acmeplumbing.com.';
-  }
-
-  if (!isInquiryType(trimmed('inquiryType'))) {
-    errors.inquiryType = 'Please choose what you need help with.';
-  }
-
-  if (trimmed('message').length > MESSAGE_MAX_LENGTH) {
-    errors.message = `Please keep your message under ${MESSAGE_MAX_LENGTH} characters.`;
+  for (const field of CONTACT_FIELDS) {
+    const message = checks[field];
+    if (message) errors[field] = message;
   }
 
   return errors;

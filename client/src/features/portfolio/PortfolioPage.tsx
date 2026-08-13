@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { routes } from '../../config/routes';
 import { findPageMeta, trust } from '../../content';
 import { useDocumentMeta } from '../../hooks/useDocumentMeta';
@@ -26,7 +27,23 @@ export function PortfolioPage() {
           {/* Stated in plain language before anything is shown. */}
           <p className={styles['demoNotice']}>{trust.disclosure}</p>
 
-          <PortfolioGrid />
+          {/* Level 2: the grid is directly under the page's own h1 here, unlike on the
+              homepage where a section heading already occupies that level. */}
+          <PortfolioGrid headingLevel={2} />
+
+          {/*
+           * The examples show what a finished site looks like. The teardown shows the
+           * reasoning, on a site that is deliberately wrong first — which is the half a
+           * sceptical reader actually wants, and the reason this link is here rather than
+           * only in the footer.
+           */}
+          <p className={styles['teardownLink']}>
+            Want the reasoning rather than the result?{' '}
+            <Link to={routes.teardown}>
+              Read the teardown of a composite service-business website
+            </Link>{' '}
+            — six findings on one first screen, ordered by what they cost.
+          </p>
         </Container>
       </Section>
 

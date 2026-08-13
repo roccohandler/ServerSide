@@ -2,7 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { AppError } from '../../lib/appError.js';
 import { buildValidLeadRequestBody } from '../../testing/fakes.js';
 import { parseLeadRequest } from './lead.schema.js';
-import { HONEYPOT_FIELD, LEAD_FIELD_LIMITS } from './lead.types.js';
+import { HONEYPOT_FIELD, INQUIRY_TYPES, LEAD_FIELD_LIMITS } from './lead.types.js';
+
+/*
+ * The slug list is the API contract, duplicated in `client/src/types/api.ts` because a
+ * shared package would cost a build step on every deploy for five strings. This is the
+ * server half of the pin; `client/src/content/content.test.ts` holds the other. Change
+ * the list and both fail, which is the point — drift fails the build instead of
+ * reaching production as a silently rejected submission.
+ */
+describe('the inquiry-type contract', () => {
+  it('is exactly the list the client offers', () => {
+    expect([...INQUIRY_TYPES]).toEqual([
+      'new-website',
+      'improve-website',
+      'manage-website',
+      'no-website',
+      'not-sure',
+    ]);
+  });
+});
 
 function expectRejection(body: unknown): AppError {
   try {

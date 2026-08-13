@@ -6,11 +6,22 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/*
+ * The bar is a single row and has to stay one.
+ *
+ * It carries a name, a tagline, five nav items, a phone number and a button, and every
+ * one of those was allowed to wrap — so at full desktop width "Free audit" broke across
+ * two lines, the button became the largest object on the screen, and the whole header
+ * grew to two rows. Nothing here wraps now: the items that can shrink do, and `min-width:
+ * 0` on the brand is what lets flex actually shrink it instead of honouring its content
+ * width forever.
+ */
 .inner {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-5);
   min-height: 4.5rem;
 }
 
@@ -20,6 +31,8 @@
   display: inline-flex;
   flex-direction: column;
   gap: 0.1rem;
+  /* Lets flex shrink this before it shrinks the nav — without it the tagline sets a floor. */
+  min-width: 0;
   color: var(--color-ink);
   text-decoration: none;
   line-height: 1.15;
@@ -33,18 +46,28 @@
   font-size: var(--text-lg);
   font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-tight);
+  white-space: nowrap;
 }
 
+/*
+ * One line, or nothing. A tagline that wraps turns the brand into a two-line block and
+ * takes the whole bar with it, and a half-shown tagline reads as a bug rather than as a
+ * description — so it is truncated rather than allowed to reflow.
+ */
 .brandTagline {
+  overflow: hidden;
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   color: var(--color-ink-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ------------------------------------------------------------------ desktop nav */
 
 .desktop {
   display: none;
+  flex-shrink: 0;
   align-items: center;
   gap: var(--space-5);
 }
@@ -58,13 +81,26 @@
   list-style: none;
 }
 
+/*
+ * `white-space: nowrap` is the fix for the defect that started this: "Free audit" is the
+ * only two-word item in the navigation, and without it the label broke across two lines
+ * at every width, which pushed the bar to two rows and left one nav item visibly taller
+ * than its neighbours.
+ */
 .navLink {
   display: inline-block;
   padding-block: var(--space-2);
   font-weight: var(--weight-medium);
   color: var(--color-ink);
   text-decoration: none;
+  white-space: nowrap;
   border-bottom: 2px solid transparent;
+}
+
+/* The button is the last thing that should shrink, and it must never wrap. */
+.navCta {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .navLink:hover {
@@ -96,6 +132,46 @@
 }
 
 /* ------------------------------------------------------------------ mobile */
+
+.mobileBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/*
+ * Tap-to-call, in the bar rather than buried in the menu. 2.75rem square clears the
+ * minimum comfortable touch target on every phone.
+ */
+.callButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  font-weight: var(--weight-semibold);
+  color: var(--color-brand);
+  background-color: var(--color-tint-brand);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+}
+
+.callButton:hover {
+  color: var(--color-brand-strong);
+  border-color: var(--color-brand);
+}
+
+/* On the narrowest phones the icon carries it; the accessible name is on the link. */
+.callLabel {
+  display: none;
+}
+
+@media (min-width: 26rem) {
+  .callLabel {
+    display: inline;
+  }
+}
 
 .toggle {
   display: inline-flex;
@@ -172,13 +248,37 @@
   text-decoration: none;
 }
 
+/* The tagline is the first thing to go when the bar has to hold two actions. */
+@media (max-width: 25.999rem) {
+  .brandTagline {
+    display: none;
+  }
+}
+
 @media (min-width: 64rem) {
   .desktop {
     display: flex;
   }
 
-  .toggle,
+  .mobileBar,
   .mobileMenu {
     display: none;
+  }
+
+  /*
+   * The tightest band on the whole site: the full desktop navigation switches on at 64rem,
+   * and between there and 80rem the bar is holding five nav items, a phone number and a
+   * button in about a thousand pixels. The tagline is the one item that is decoration
+   * rather than a destination, so it is what goes — and it comes back below, where there
+   * is room for it.
+   */
+  .brandTagline {
+    display: none;
+  }
+}
+
+@media (min-width: 80rem) {
+  .brandTagline {
+    display: block;
   }
 }

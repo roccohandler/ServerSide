@@ -18,7 +18,7 @@ const WHAT_HAPPENS_NEXT = [
  * same central config as the header and footer.
  */
 export function ContactDetails() {
-  const { availability } = site.contact;
+  const { availability, outOfHours } = site.contact;
 
   return (
     <aside className={styles['details']} aria-labelledby="contact-details-heading">
@@ -43,6 +43,13 @@ export function ContactDetails() {
         {isPlaceholder(availability) ? null : (
           <p className={styles['detailsBody']}>{availability}</p>
         )}
+
+        {/*
+         * What happens outside those hours, worded as best effort. It sits next to the
+         * hours rather than in the terms because the person reading this page at 9pm on
+         * a Sunday with a dead website is exactly who needs to know it.
+         */}
+        {isPlaceholder(outOfHours) ? null : <p className={styles['detailsNote']}>{outOfHours}</p>}
       </div>
 
       <div>

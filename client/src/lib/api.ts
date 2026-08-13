@@ -1,15 +1,22 @@
 import { env } from '../config/env';
-import type { ApiFailure, ApiResult, LeadRequest, LeadSubmissionData } from '../types/api';
+import type {
+  ApiFailure,
+  ApiResult,
+  LeadRequest,
+  LeadSubmissionData,
+  SubscriberRequest,
+  SubscriptionData,
+} from '../types/api';
 
 /**
  * The typed API client.
  *
- * Deliberately a plain `fetch` wrapper. The site makes exactly one request in its
+ * Deliberately a plain `fetch` wrapper. The site makes two kinds of request in its
  * entire lifetime, so a data-fetching library would add a dependency, a provider and a
- * cache for a single POST.
+ * cache for two POSTs.
  *
- * `submitLead` never throws: every outcome, including a dead network, comes back as a
- * discriminated result. That means the form has one code path for failure instead of a
+ * Neither function throws: every outcome, including a dead network, comes back as a
+ * discriminated result. That means a form has one code path for failure instead of a
  * try/catch wrapped around a promise chain.
  */
 
@@ -48,12 +55,13 @@ function isApiResult<TData>(value: unknown): value is ApiResult<TData> {
   );
 }
 
-export async function submitLead(payload: LeadRequest): Promise<ApiResult<LeadSubmissionData>> {
+/** One POST, one timeout, one shape of answer. Shared by both endpoints. */
+async function post<TData>(path: string, payload: unknown): Promise<ApiResult<TData>> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch(`${env.apiBaseUrl}/api/leads`, {
+    const response = await fetch(`${env.apiBaseUrl}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(payload),
@@ -62,7 +70,7 @@ export async function submitLead(payload: LeadRequest): Promise<ApiResult<LeadSu
 
     const body: unknown = await response.json().catch(() => null);
 
-    if (!isApiResult<LeadSubmissionData>(body)) {
+    if (!isApiResult<TData>(body)) {
       // A response we cannot read is a server problem, not something to show raw.
       return UNEXPECTED_FAILURE;
     }
@@ -74,4 +82,22 @@ export async function submitLead(payload: LeadRequest): Promise<ApiResult<LeadSu
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function submitLead(payload: LeadRequest): Promise<ApiResult<LeadSubmissionData>> {
+  return post<LeadSubmissionData>('/api/leads', payload);
+}
+
+/**
+ * Asks for the PlayBook workbook.
+ *
+ * The server stores the request and notifies the owner, who sends the workbook. Nothing
+ * is auto-delivered, and the success copy on the page says so in those terms — a
+ * confirmation that implied an automatic email would be describing a feature that does
+ * not exist.
+ */
+export async function requestPlaybook(
+  payload: SubscriberRequest,
+): Promise<ApiResult<SubscriptionData>> {
+  return post<SubscriptionData>('/api/subscribers', payload);
 }

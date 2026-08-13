@@ -6,7 +6,16 @@ import styles from './Portfolio.module.css';
 
 export interface PortfolioGridProps {
   readonly limit?: number;
-  readonly headingLevel?: 3 | 4;
+  /**
+   * Rank for each project's name. **It has to match where the grid is on the page.**
+   *
+   * `2` on `/portfolio`, where the grid sits directly under the page's `h1`; `3` on the
+   * homepage, where a section heading already occupies level 2. It defaulted to `3` and
+   * `/portfolio` took the default, which put an `h3` immediately after the `h1` — a
+   * screen-reader user navigating by heading hears a level missing and has no way to
+   * tell what was in it.
+   */
+  readonly headingLevel?: 2 | 3 | 4;
 }
 
 /**
@@ -18,7 +27,7 @@ export interface PortfolioGridProps {
  */
 export function PortfolioGrid({ limit, headingLevel = 3 }: PortfolioGridProps) {
   const visible = limit ? portfolioProjects.slice(0, limit) : portfolioProjects;
-  const Heading = headingLevel === 3 ? 'h3' : 'h4';
+  const Heading = `h${headingLevel}` as const;
 
   return (
     <Grid as="ul" columns={3}>

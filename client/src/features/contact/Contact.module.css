@@ -1,3 +1,14 @@
+/*
+ * The link to the sample review. Above the form rather than beside it: the question it
+ * answers — what comes back — is one somebody has before they start typing, not after.
+ */
+.sampleLink {
+  max-width: 46rem;
+  margin-bottom: var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
 .layout {
   display: grid;
   gap: var(--space-7);
@@ -133,6 +144,13 @@
 }
 
 .detailsBody {
+  color: var(--color-ink-muted);
+}
+
+/* Best-effort out-of-hours cover, set quieter than the hours it qualifies. */
+.detailsNote {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
   color: var(--color-ink-muted);
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildNewLeadEmail } from './lead.email.js';
+import { buildNewLeadEmail, describeInquiryType } from './lead.email.js';
 import type { StoredLead } from './lead.types.js';
 
 function buildStoredLead(overrides: Partial<StoredLead> = {}): StoredLead {
@@ -34,7 +34,7 @@ describe('buildNewLeadEmail', () => {
       '(206) 555-0134',
       'dana@cascadeheating.example',
       'https://cascadeheating.example',
-      'Has a website that needs improvement',
+      describeInquiryType('improve-website'),
       'Our site is slow on phones.',
       '2026-03-04 17:45 UTC',
     ]) {

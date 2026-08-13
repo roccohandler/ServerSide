@@ -5,7 +5,19 @@
  * (`client/src/content/contact.ts`) and can be reworded freely, but the slugs here and
  * there must stay in sync — both sides have a test asserting this exact list.
  */
-export const INQUIRY_TYPES = ['new-website', 'improve-website', 'no-website', 'not-sure'] as const;
+export const INQUIRY_TYPES = [
+  'new-website',
+  'improve-website',
+  /*
+   * Added when the business moved from selling websites to managing them. Without it
+   * the most valuable enquiry there is — "I have a site, I want you to run it" — had to
+   * arrive as `improve-website`, which is a different conversation. Adding a value to
+   * this list is backward compatible: existing documents keep their slug.
+   */
+  'manage-website',
+  'no-website',
+  'not-sure',
+] as const;
 
 export type InquiryType = (typeof INQUIRY_TYPES)[number];
 
