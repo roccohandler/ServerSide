@@ -9,7 +9,7 @@ import { AuthProvider } from '../AuthContext';
 import { useAuth } from '../useAuth';
 import { LoginPage } from './LoginPage';
 import { SignupPage } from './SignupPage';
-import { VerifyEmailPage } from './PasswordPages';
+import { ForgotPasswordPage, VerifyEmailPage } from './PasswordPages';
 
 /*
  * ============================================================================
@@ -34,6 +34,7 @@ const authApi = {
   continueWithGoogle: vi.fn(),
   logout: vi.fn(),
   verifyEmail: vi.fn(),
+  requestPasswordReset: vi.fn(),
 };
 
 vi.mock('../api/authApi', () => ({
@@ -44,6 +45,7 @@ vi.mock('../api/authApi', () => ({
   continueWithGoogle: (...args: unknown[]) => authApi.continueWithGoogle(...args),
   logout: (...args: unknown[]) => authApi.logout(...args),
   verifyEmail: (...args: unknown[]) => authApi.verifyEmail(...args),
+  requestPasswordReset: (...args: unknown[]) => authApi.requestPasswordReset(...args),
 }));
 
 const submitAssessment = vi.fn();
@@ -69,6 +71,17 @@ const DRAFT = {
 
 const PASSPHRASE = 'a-long-enough-passphrase';
 
+/*
+ * `{ selector: 'input' }` on every password query, and it is not noise.
+ *
+ * A password field's label text is on two elements: the input, and the show/hide toggle
+ * beside it. The toggle's accessible name names the password it reveals — "Show password:
+ * Type it again" — because sign-up puts two of them on one screen and two buttons with one
+ * name is a coin toss for anybody navigating by button. See `ui/Field`. So a bare
+ * `getByLabelText(/type it again/i)` now matches both, and the selector says which of the
+ * two an assertion is about. Always the input.
+ */
+
 /**
  * Both credential forms are stepped now, so every assertion about what happens *after*
  * submission has to walk the steps first.
@@ -90,8 +103,14 @@ async function signUp(
   await user.type(await screen.findByLabelText(/your name/i), 'Dana Reyes');
   await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
-  await user.type(await screen.findByLabelText(/choose a password/i), password);
-  await user.type(screen.getByLabelText(/type it again/i), options.confirm ?? password);
+  await user.type(
+    await screen.findByLabelText(/choose a password/i, { selector: 'input' }),
+    password,
+  );
+  await user.type(
+    screen.getByLabelText(/type it again/i, { selector: 'input' }),
+    options.confirm ?? password,
+  );
   await user.click(screen.getByRole('button', { name: /create my account/i }));
 }
 
@@ -194,6 +213,15 @@ describe('the sign-in page', () => {
     const field = await screen.findByLabelText(/email address/i);
     await waitFor(() => expect(field).toHaveAccessibleDescription(/valid email address/i));
     expect(screen.queryByRole('alert')).toBeNull();
+
+    /*
+     * And the other half of that decision. Keeping the message out of the summary is only
+     * right if the message reaches somebody — and a field error is wired up through
+     * `aria-describedby`, which is read when the field takes focus and at no other time.
+     * Without the move, the whole rejection was a red line beside an input, announced to
+     * nobody: the summary branch has `role="alert"`, this branch had nothing.
+     */
+    expect(field).toHaveFocus();
   });
 
   /*
@@ -238,6 +266,63 @@ describe('the sign-in page', () => {
 
     const email = await screen.findByLabelText(/email address/i);
     expect(email).toHaveValue('dana@cascadeheating.example');
+  });
+
+  /*
+   * The same address a third time, and this one is not for the reader.
+   *
+   * A password manager decides what to save, and what to offer next time, by looking for a
+   * username field beside the password field. A stepped form has none — the email input is
+   * gone by the time the password appears — so the manager sees a password with nothing to
+   * file it under, and saves an entry with no username or offers nothing at all.
+   */
+  it('keeps the address beside the password for a password manager', async () => {
+    const user = userEvent.setup();
+    const { container } = renderPage(LoginPage);
+
+    await user.type(screen.getByLabelText(/email address/i), 'dana@cascadeheating.example');
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await screen.findByLabelText(/^password$/i);
+
+    const username = container.querySelector('input[autocomplete="username"]');
+    expect(username).toHaveValue('dana@cascadeheating.example');
+
+    // For the manager only: the visible echo above is the copy people read, and this one
+    // must never be somewhere a keyboard lands or a second thing to fill in.
+    expect(username).toHaveAttribute('readonly');
+    expect(username).toHaveAttribute('tabindex', '-1');
+    expect(username).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  /*
+   * `disabled` on a submit button cannot hold focus, so the browser blurs it the instant
+   * the request starts and focus lands on `<body>`. The keyboard user has lost their place
+   * mid-submission, and the screen reader has lost the one element whose label reports
+   * what is happening — so "Signing you in…" is announced to nobody, and neither is
+   * whatever comes back.
+   */
+  it('keeps focus on the submit button while the request is in flight', async () => {
+    const user = userEvent.setup();
+    let settle: (value: unknown) => void = () => {};
+    authApi.login.mockReturnValue(
+      new Promise((resolve) => {
+        settle = resolve;
+      }),
+    );
+
+    renderPage(LoginPage);
+
+    await user.type(screen.getByLabelText(/email address/i), 'dana@cascadeheating.example');
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await user.type(await screen.findByLabelText(/^password$/i), PASSPHRASE);
+    await user.click(screen.getByRole('button', { name: /^sign in$/i }));
+
+    const busy = await screen.findByRole('button', { name: /signing you in/i });
+    expect(busy).toHaveFocus();
+    expect(busy).toHaveAttribute('aria-disabled', 'true');
+
+    settle({ success: true, data: { user: USER } });
+    await screen.findByRole('heading', { name: 'Dashboard' });
   });
 
   it('offers a show/hide toggle on the password', async () => {
@@ -390,7 +475,10 @@ describe('the sign-up page', () => {
     await user.type(await screen.findByLabelText(/your name/i), 'Dana Reyes');
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
-    await user.type(await screen.findByLabelText(/choose a password/i), PASSPHRASE);
+    await user.type(
+      await screen.findByLabelText(/choose a password/i, { selector: 'input' }),
+      PASSPHRASE,
+    );
 
     // Back to step two, then step one. The control is "Previous step" — the shell's own
     // Back control is on the same screen, so the two cannot share a name.
@@ -407,7 +495,9 @@ describe('the sign-up page', () => {
     await screen.findByLabelText(/your name/i);
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
-    expect(await screen.findByLabelText(/choose a password/i)).toHaveValue(PASSPHRASE);
+    expect(await screen.findByLabelText(/choose a password/i, { selector: 'input' })).toHaveValue(
+      PASSPHRASE,
+    );
   });
 
   /*
@@ -421,7 +511,9 @@ describe('the sign-up page', () => {
 
     await signUp(user, { password: PASSPHRASE, confirm: 'a-different-passphrase' });
 
-    expect(screen.getByLabelText(/type it again/i)).toHaveAccessibleDescription(/do not match/i);
+    expect(
+      screen.getByLabelText(/type it again/i, { selector: 'input' }),
+    ).toHaveAccessibleDescription(/do not match/i);
     expect(authApi.signup).not.toHaveBeenCalled();
   });
 
@@ -464,12 +556,21 @@ describe('the sign-up page', () => {
     await user.type(await screen.findByLabelText(/your name/i), 'Dana Reyes');
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
-    const password = await screen.findByLabelText(/choose a password/i);
-    const confirm = screen.getByLabelText(/type it again/i);
+    const password = await screen.findByLabelText(/choose a password/i, { selector: 'input' });
+    const confirm = screen.getByLabelText(/type it again/i, { selector: 'input' });
     expect(password).toHaveAttribute('type', 'password');
     expect(confirm).toHaveAttribute('type', 'password');
 
     const [showPassword, showConfirm] = screen.getAllByRole('button', { name: /show password/i });
+
+    /*
+     * And they are not called the same thing. Two of them are on this screen doing
+     * different things, so each names the password it reveals — a button list with "Show
+     * password" twice in it is a coin toss for anybody navigating by name.
+     */
+    expect(showPassword).toHaveAccessibleName('Show password: Choose a password');
+    expect(showConfirm).toHaveAccessibleName('Show password: Type it again');
+
     await user.click(showPassword as HTMLElement);
 
     expect(password).toHaveAttribute('type', 'text');
@@ -518,7 +619,9 @@ describe('the sign-up page', () => {
     const field = await screen.findByLabelText(/email address/i);
     await waitFor(() => expect(field).toHaveAccessibleDescription(/valid email address/i));
     // Still on the last step: what they typed there is not thrown away to show them this.
-    expect(screen.getByLabelText(/choose a password/i)).toHaveValue(PASSPHRASE);
+    expect(screen.getByLabelText(/choose a password/i, { selector: 'input' })).toHaveValue(
+      PASSPHRASE,
+    );
   });
 
   /*
@@ -534,9 +637,9 @@ describe('the sign-up page', () => {
 
     // The server's own sentence, so the wording does not change depending on who caught
     // it. Matched on the half the field's hint does not already say.
-    expect(screen.getByLabelText(/choose a password/i)).toHaveAccessibleDescription(
-      /harder to guess/i,
-    );
+    expect(
+      screen.getByLabelText(/choose a password/i, { selector: 'input' }),
+    ).toHaveAccessibleDescription(/harder to guess/i);
     expect(authApi.signup).not.toHaveBeenCalled();
   });
 
@@ -835,5 +938,59 @@ describe('the email confirmation link', () => {
 
     // The token is single-use. Adopting the user must not re-run the request that got it.
     expect(authApi.verifyEmail).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+   * A link that has already been used is the common failure, not a rare one, and it is the
+   * outcome somebody is least equipped to guess at.
+   */
+  it('announces a dead link rather than quietly rendering one', async () => {
+    authApi.verifyEmail.mockResolvedValue({
+      success: false,
+      error: { code: 'INVALID_TOKEN', message: 'That link has already been used.' },
+    });
+
+    renderVerification(null);
+
+    const outcome = await screen.findByRole('alert');
+    expect(outcome).toHaveTextContent(/that link did not work/i);
+    expect(outcome).toHaveFocus();
+  });
+});
+
+/*
+ * ==========================================================================
+ * AN OUTCOME THAT REPLACES THE FORM
+ * ==========================================================================
+ *
+ * All three of the email-link pages answer by swapping the whole panel: the form goes,
+ * "Check your inbox" arrives. On screen that is unmissable. To anybody not looking at the
+ * screen it used to be nothing at all — the button they pressed was destroyed, so focus
+ * fell to `<body>`, and the sentence that replaced it was ordinary text with nothing to
+ * make a screen reader read it out.
+ *
+ * A password reset that silently succeeds cannot be told apart from one that silently
+ * failed, which is why this is pinned rather than left as a property of the markup.
+ * ==========================================================================
+ */
+describe('the panel a page swaps in when it has an answer', () => {
+  it('announces a sent reset link, and leaves the reader standing on it', async () => {
+    const user = userEvent.setup();
+    authApi.requestPasswordReset.mockResolvedValue({ success: true, data: {} });
+
+    render(
+      <MemoryRouter initialEntries={[routes.forgotPassword]}>
+        <Routes>
+          <Route path={routes.forgotPassword} element={<ForgotPasswordPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText(/email address/i), 'dana@cascadeheating.example');
+    await user.click(screen.getByRole('button', { name: /send me a link/i }));
+
+    const outcome = await screen.findByRole('status');
+    expect(outcome).toHaveTextContent(/check your inbox/i);
+    expect(outcome).toHaveFocus();
   });
 });

@@ -173,6 +173,30 @@ export function CredentialForm({
    */
   const summary = failure && Object.keys(serverFields).length === 0 ? failure.error.message : null;
 
+  /*
+   * …and the other half of that decision, which was missing.
+   *
+   * Keeping a field error out of the summary is right — it belongs against the input it is
+   * about, not repeated at the top. But a field error reaches a screen reader through
+   * `aria-describedby`, which is read when the field takes focus and at no other moment. So
+   * on its own it announced nothing: the visitor pressed "Create my account", the server
+   * rejected their address, and the only thing that happened was a red line beside an input
+   * they could not see. The summary branch was announced by `role="alert"`; this branch had
+   * nothing.
+   *
+   * Focus goes to the first disputed field, which is what `handleSubmit` already does with
+   * the problems this form finds itself — so a rejection behaves the same way whoever
+   * caught it. The field is guaranteed to be on screen: `shows` renders anything the server
+   * disputed regardless of which step owns it.
+   */
+  useEffect(() => {
+    const disputed = Object.keys(failure?.error.fields ?? {}) as CredentialField[];
+    if (disputed.length === 0) return;
+
+    const first = disputed.find((field) => fieldRefs.current[field]);
+    if (first) fieldRefs.current[first]?.focus();
+  }, [failure]);
+
   const errorFor = (field: CredentialField): string | undefined =>
     localErrors[field] ?? serverFields[field];
 
@@ -324,6 +348,34 @@ export function CredentialForm({
         </p>
       ) : null}
 
+      {/*
+       * The same address once more, this time for a password manager rather than a reader.
+       *
+       * A manager decides what to save, and what to offer next time, by looking for a
+       * username field beside the password field. On a stepped form there is not one: the
+       * email input is unmounted the moment the visitor moves past step one, so by the time
+       * the password appears the manager can see a password and nothing to file it under.
+       * The result is a saved entry with no username, or no offer to save at all.
+       *
+       * Off-screen rather than `type="hidden"` or `display: none`, because a manager skips
+       * both — this is the same trick, and the same reasoning, as the honeypot in
+       * `ui/Field`. `readOnly` keeps it out of the way of the real field, which stays the
+       * only writer of the value; `aria-hidden` and `tabIndex={-1}` keep it out of the way
+       * of everybody else, who already have the visible echo above.
+       */}
+      {!shows('email') && values.email ? (
+        <input
+          className={styles['shadowEmail']}
+          type="text"
+          name="email"
+          autoComplete="username"
+          value={values.email}
+          readOnly
+          tabIndex={-1}
+          aria-hidden="true"
+        />
+      ) : null}
+
       {shows('email') ? (
         <TextField
           id={`${prefix}-email`}
@@ -371,6 +423,9 @@ export function CredentialForm({
           autoComplete="organization"
           value={values.businessName}
           error={errorFor('businessName')}
+          ref={(node: HTMLInputElement | null) => {
+            fieldRefs.current.businessName = node;
+          }}
           onChange={(event) => set('businessName', event.target.value)}
         />
       ) : null}
@@ -438,7 +493,22 @@ export function CredentialForm({
       ) : null}
 
       <div className={styles['actions']}>
-        <Button type="submit" size="lg" block disabled={busy}>
+        {/*
+         * `aria-disabled` rather than `disabled`, and the difference is where focus goes.
+         *
+         * A `disabled` button cannot hold focus, so the browser blurs it the instant the
+         * request starts — and focus lands on `<body>`. The visitor who pressed the button
+         * with the keyboard has lost their place mid-submission, and a screen reader loses
+         * the element whose label is the only thing reporting progress: "Signing you in…"
+         * is announced to nobody, and neither is the error that follows.
+         *
+         * `aria-disabled` says the same thing to assistive technology while leaving the
+         * button focusable, so the label change *is* the progress announcement and the
+         * outcome arrives where they are standing. It does not stop a second press, which
+         * is why `handleSubmit` returns early on `busy` — the guard is the real protection
+         * and always was; the attribute was only ever advisory.
+         */}
+        <Button type="submit" size="lg" block aria-disabled={busy || undefined}>
           {submitLabel()}
         </Button>
 

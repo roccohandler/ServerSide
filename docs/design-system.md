@@ -182,6 +182,11 @@ The geometry exists in **three** places, and they must be changed together:
 `public/og-image.svg` carries a fourth copy inside a full social card; `npm run capture`
 rasterises it.
 
+`public/favicon.ico` is **not** a fifth copy — `npm run icons` rasterises it out of
+`public/favicon.svg` at 16/32/48px, so it cannot drift on its own. It exists because
+Safari has never supported an SVG favicon and because `/favicon.ico` is requested by
+consumers that never read the HTML. Re-run `npm run icons` after changing the mark.
+
 ---
 
 ## 6. What is enforced, and how

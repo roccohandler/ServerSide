@@ -136,6 +136,21 @@ export function PasswordField({
 }: PasswordFieldProps) {
   const [revealed, setRevealed] = useState(false);
 
+  /*
+   * The toggle's accessible name carries the field's own label.
+   *
+   * A constant "Show password" is only safe while there is one of these on screen, and
+   * two pages render two: sign-up asks for a password and a confirmation, and so does the
+   * reset page. Two buttons with one name doing different things is a coin toss for
+   * anybody navigating by button, so each says which password it reveals.
+   *
+   * The label is dropped where it would only stutter. A field called exactly "Password" is
+   * the single-password case by definition — "Show password: Password" would be noise, and
+   * "Show password" is already unique on that page.
+   */
+  const revealName =
+    label.trim().toLowerCase() === 'password' ? 'Show password' : `Show password: ${label}`;
+
   return (
     <FieldShell {...{ id, label, hint, error, optionalLabel }}>
       {(describedBy) => (
@@ -154,10 +169,11 @@ export function PasswordField({
             /*
              * Pressed means "the password is showing". The accessible name stays constant
              * so the state is carried by the attribute rather than by a name that changes
-             * under the reader — which is what `aria-pressed` is for.
+             * under the reader — which is what `aria-pressed` is for. See `revealName`
+             * above for why that constant name is built from the field's label.
              */
             aria-pressed={revealed}
-            aria-label="Show password"
+            aria-label={revealName}
             onClick={() => setRevealed((current) => !current)}
           >
             <Icon name={revealed ? 'eye-off' : 'eye'} size={18} />

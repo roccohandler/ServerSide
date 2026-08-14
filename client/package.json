@@ -7,6 +7,7 @@
     "dev": "vite --open",
     "build": "tsx scripts/build.ts",
     "capture": "tsx scripts/capture-previews.ts",
+    "icons": "tsx scripts/build-icons.ts",
     "media": "tsx scripts/fetch-media.ts",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit"
