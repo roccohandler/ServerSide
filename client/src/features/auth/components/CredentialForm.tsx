@@ -442,9 +442,16 @@ export function CredentialForm({
           {submitLabel()}
         </Button>
 
+        {/*
+         * "Previous step", not "Back". The shell's own control is also called Back, and on
+         * every step after the first the two sat on one screen doing entirely different
+         * things — one returns a step, the other leaves the flow. Two controls with the
+         * same accessible name and different destinations is a coin toss for anyone
+         * navigating by button.
+         */}
         {stepIndex > 0 ? (
           <Button type="button" variant="ghost" className={styles['back']} onClick={goBack}>
-            Back
+            Previous step
           </Button>
         ) : null}
       </div>

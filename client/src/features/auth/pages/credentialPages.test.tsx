@@ -392,11 +392,12 @@ describe('the sign-up page', () => {
 
     await user.type(await screen.findByLabelText(/choose a password/i), PASSPHRASE);
 
-    // Back to step two, then step one.
-    await user.click(screen.getByRole('button', { name: /^back$/i }));
+    // Back to step two, then step one. The control is "Previous step" — the shell's own
+    // Back control is on the same screen, so the two cannot share a name.
+    await user.click(screen.getByRole('button', { name: /^previous step$/i }));
     expect(await screen.findByLabelText(/your name/i)).toHaveValue('Dana Reyes');
 
-    await user.click(screen.getByRole('button', { name: /^back$/i }));
+    await user.click(screen.getByRole('button', { name: /^previous step$/i }));
     expect(await screen.findByLabelText(/email address/i)).toHaveValue(
       'dana@cascadeheating.example',
     );

@@ -66,18 +66,21 @@
   text-decoration: none;
 }
 
-.brandMark {
-  --mark-size: 1.75rem;
-}
-
+/*
+ * No `--mark-size` override here, and that is deliberate rather than an omission.
+ *
+ * It used to carry `--mark-size: 1.75rem`, which did nothing: `Logo` forwards `className`
+ * to the lockup `<span>`, and `Logo.module.css` sets `--mark-size` directly on the `<svg>`
+ * inside it — a property set on the element beats one inherited from its parent, so the
+ * mark stayed at the lockup's designed 1.35em and the rule was decoration.
+ *
+ * The designed proportion is the right one, so the lockup is left to size itself. If this
+ * ever does need a different mark size, `Logo` takes a `size` prop that reaches the svg.
+ */
 .brand:hover {
   color: var(--color-ink);
 }
 
-/*
- * The card is centred in what is left after the bar, so it sits optically centred on a
- * tall screen and simply scrolls on a short one.
- */
 /*
  * The card is centred in what is left after the bar, so it sits optically centred on a
  * tall screen and simply scrolls on a short one.

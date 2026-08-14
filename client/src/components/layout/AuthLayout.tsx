@@ -26,10 +26,17 @@ export const AUTH_CONTENT_ID = 'auth-content';
  *
  * ## What "back" means here
  *
- * `location.key` is `'default'` only for the first entry in a history stack — a bookmark,
- * a typed URL, a link from an email. Going "back" from there leaves the site entirely,
+ * There has to be somewhere to go back *to*. On the first entry in a history stack — a
+ * bookmark, a typed URL, a link from an email — going "back" leaves the site entirely,
  * which is not what the control appears to offer. In that case it becomes a link home
  * instead, so the control never does something the reader did not ask for.
+ *
+ * The test is React Router's history index, not `location.key`. `key` looks like it would
+ * work, because it is `'default'` on an entry nobody navigated to — but the case that
+ * matters most here defeats it. An anonymous visitor opening a deep `/app` URL is sent to
+ * `/login` by `RequireAuth` with `<Navigate replace>`, and a replace mints a fresh key on
+ * an entry that is still the first in the stack. `key` would say "go back"; `idx` counts
+ * the entries actually behind this one, and says the truth.
  *
  * ## Why the wordmark is here, when the rest of the chrome is not
  *
@@ -47,7 +54,7 @@ export const AUTH_CONTENT_ID = 'auth-content';
  * announce itself.
  */
 export function AuthLayout() {
-  const { pathname, key } = useLocation();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const mainRef = useRef<HTMLElement>(null);
   const isFirstRender = useRef(true);
@@ -61,7 +68,15 @@ export function AuthLayout() {
     mainRef.current?.focus();
   }, [pathname]);
 
-  const canGoBack = key !== 'default';
+  /*
+   * The history index, not `location.key`. A key is `'default'` only on an entry nobody
+   * navigated to — but `RequireAuth` sends an anonymous visitor to `/login` with
+   * `<Navigate replace>`, and a replace mints a fresh key on an entry that is still the
+   * first in the stack. React Router keeps its own `idx` in `history.state`, and that is
+   * the thing that actually counts entries behind this one.
+   */
+  const historyIndex = (window.history.state as { idx?: number } | null)?.idx;
+  const canGoBack = typeof historyIndex === 'number' && historyIndex > 0;
 
   return (
     <div className={styles['shell']}>
@@ -92,7 +107,7 @@ export function AuthLayout() {
            * than a mark and a span at every call site. See `brand/Logo`.
            */}
           <Link to={routes.home} className={styles['brand']}>
-            <Logo className={styles['brandMark'] ?? ''} />
+            <Logo />
           </Link>
         </Container>
       </header>
