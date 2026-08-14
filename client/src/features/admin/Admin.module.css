@@ -1,0 +1,337 @@
+/*
+ * ============================================================================
+ * THE INTERNAL SURFACE
+ * ============================================================================
+ *
+ * Visually unlike the customer workspace on purpose. A staff member operating five customers'
+ * projects must never be in doubt about which surface they are on, and the mistake that
+ * prevents is a specific one: writing something intended as an internal note into a thread the
+ * customer reads.
+ *
+ * So the bar is charcoal and permanently says "Internal", and the page ground is the sunken
+ * tone rather than the cream the marketing site and the workspace both use.
+ *
+ * ## Deliberately plain
+ *
+ * No animation, no reveal, no cards that lift. This is a tool used by one person who already
+ * knows what it does; every byte of decoration here is a byte on a surface that will never
+ * persuade anybody of anything. Tokens throughout, so it inherits the type scale and the
+ * contrast guarantees without restating them.
+ * ============================================================================
+ */
+
+.shell {
+  background: var(--color-surface-sunken);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ------------------------------------------------------------------ the bar */
+
+.bar {
+  background: var(--color-surface-dark);
+  border-bottom: 3px solid var(--color-accent-strong);
+  position: sticky;
+  top: 0;
+  /* `--z-sticky` is the layer the site header and the demo disclosure bar use. This is the
+     same kind of thing, so it names the layer rather than picking a number — the token file's
+     guard fails the build on a raw stacking value, which is how this was caught. */
+  z-index: var(--z-sticky);
+}
+
+.barInner {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 80rem;
+  padding: var(--space-3) var(--space-5);
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * The word that stops a mistake. Ember on charcoal, uppercase, and it never changes — an
+ * operator glancing at a tab strip should be able to tell this apart from the workspace
+ * without reading anything.
+ */
+.mark {
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-extrabold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.who {
+  color: var(--color-ink-inverse-muted);
+  font-size: var(--text-xs);
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.navLink {
+  border-bottom: 2px solid transparent;
+  color: var(--color-ink-inverse-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  padding-bottom: var(--space-1);
+  text-decoration: none;
+}
+
+.navLink:hover {
+  color: var(--color-ink-inverse);
+}
+
+.navLinkActive {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-ink-inverse);
+}
+
+.main {
+  display: grid;
+  gap: var(--space-5);
+  margin: 0 auto;
+  max-width: 80rem;
+  padding: var(--space-6) var(--space-5) var(--space-9);
+  width: 100%;
+}
+
+/* ------------------------------------------------------------------ panels */
+
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: var(--space-4);
+  justify-items: start;
+  padding: var(--space-5);
+}
+
+.detail {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.heading {
+  font-size: var(--text-2xl);
+  margin: 0;
+}
+
+.subheading {
+  font-size: var(--text-lg);
+  margin: 0;
+}
+
+.formHeading {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  margin: 0;
+}
+
+.muted {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  margin: 0;
+  max-width: 70ch;
+}
+
+.back {
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.notes {
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  line-height: var(--leading-relaxed);
+  margin: 0;
+  padding: var(--space-4);
+  width: 100%;
+}
+
+/*
+ * Warnings, and the only colour with a job on this surface.
+ *
+ * `--color-danger` rather than the accent: an unattached account is a thing that will make an
+ * operation fail, not a thing being emphasised. Never colour alone — every use of this class
+ * wraps text that says what is wrong.
+ */
+.warn {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+/* One place for a rejected operation, so it cannot be missed among four forms. */
+.problem {
+  background: var(--color-tint-danger);
+  border-left: 4px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink);
+  line-height: var(--leading-normal);
+  margin: 0;
+  padding: var(--space-4);
+}
+
+/* ------------------------------------------------------------------ tables */
+
+/*
+ * Focusable scroll container with an accessible name — the same pattern as the offer's
+ * comparison tables, and required rather than optional: a keyboard user on a narrow window can
+ * otherwise see a cut-off table with no way to move it. See WCAG 2.1.1 and the
+ * `jsx-a11y/no-noninteractive-tabindex` allowance in `eslint.config.js`.
+ */
+.tableScroll {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  width: 100%;
+}
+
+.table {
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  width: 100%;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.table thead th {
+  background: var(--color-surface-muted);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.table tbody th {
+  font-weight: var(--weight-semibold);
+}
+
+.rowLink {
+  font-weight: var(--weight-semibold);
+}
+
+.rowSub {
+  color: var(--color-ink-muted);
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ facts */
+
+.facts {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  margin: 0;
+  width: 100%;
+}
+
+.facts dt {
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.facts dd {
+  margin: var(--space-1) 0 0;
+}
+
+/* ------------------------------------------------------------------ lists */
+
+.list {
+  display: grid;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.list li {
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  padding-bottom: var(--space-3);
+}
+
+.list li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* ------------------------------------------------------------------ threads */
+
+.threads {
+  display: grid;
+  gap: var(--space-5);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.thread {
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.threadBody {
+  line-height: var(--leading-relaxed);
+  margin: 0;
+}
+
+.reply {
+  background: var(--color-surface);
+  border-left: 3px solid var(--color-border-strong);
+  border-radius: var(--radius-xs);
+  padding: var(--space-3);
+}
+
+.reply p {
+  line-height: var(--leading-normal);
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------ forms */
+
+.inlineForm {
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding-top: var(--space-4);
+  width: 100%;
+}
+
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

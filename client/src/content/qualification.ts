@@ -17,10 +17,10 @@ import { idealCustomer, serviceArea } from '../config/market';
  *   2. Describe the profile with qualities, not just revenue. A $700k business with four
  *      crews, good reviews and adverts running is a better fit than a $1.2m one with no
  *      capacity to take more work.
- *   3. **Nobody is ever told they do not qualify.** This is a recommendation: below the
+ *   3. **Nobody is ever turned away.** This is a recommendation: below the
  *      profile, the recommendation is the free PlayBook, which is genuinely the same
  *      framework and genuinely free. And there is always a way to say "I still think I am
- *      a fit" and be heard. A business that is too small this year is a client in three.
+ *      a fit" and be heard. A business below the profile this year is a client in three.
  *
  * A test asserts no rejection language appears anywhere in this file.
  * ============================================================================
@@ -34,7 +34,7 @@ export const qualification = {
    * The reason first. Somebody reading this can hold it against their own numbers without
    * being told a threshold, which is a more respectful way to let them self-select.
    */
-  lede: `The managed service is built for established service businesses in ${serviceArea.short} with ${idealCustomer.rationale}. That is the honest condition for it being worth paying for every month rather than once.`,
+  lede: `Growth Partner, the ongoing half of the system, is built for established service businesses in ${serviceArea.short} with ${idealCustomer.rationale}. That is the honest condition for it being worth paying for every month rather than once.`,
 
   signalsHeading: 'That usually looks like',
   signals: idealCustomer.signals,
@@ -58,10 +58,10 @@ export const qualification = {
    */
   otherwise: {
     heading: 'And if that is not you yet',
-    body: 'Then the honest recommendation is to start with the PlayBook. It is the same framework I use when I look at a service-business website, published in full, and there is no email address required to read any of it. Most of what is in it you can do yourself over a few afternoons.',
+    body: 'Then the honest recommendation is to start with the PlayBook. It is the same framework we use when we look at a service-business website, published in full, and there is no email address required to read any of it. Most of what is in it you can do yourself over a few afternoons.',
     ctaLabel: 'Read the PlayBook',
     reviewNote:
-      'The free website assessment is also open to anybody, whatever size you are. You send me your site, I send back what I would change first. No obligation and no catch — you get the list either way.',
+      'The free website assessment is also open to anybody, whatever size you are. You send us your site, we send back what we would change first. No obligation and no catch — you get the list either way.',
   },
 
   /*
@@ -70,7 +70,7 @@ export const qualification = {
    */
   exception: {
     heading: 'Think you are a fit anyway?',
-    body: 'Then say so. The description above is a generalisation, and generalisations are wrong about individual businesses constantly. If you are outside it and you believe this would work for you, tell me about the business and what you need — I would rather read that than have you talk yourself out of getting in touch.',
-    ctaLabel: 'Tell me about your business',
+    body: 'Then say so. The description above is a generalisation, and generalisations are wrong about individual businesses constantly. If you are outside it and you believe this would work for you, tell us about the business and what you need — we would rather read that than have you talk yourself out of getting in touch.',
+    ctaLabel: 'Tell us about your business',
   },
 } as const;

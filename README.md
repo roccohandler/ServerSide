@@ -1,14 +1,23 @@
-# ServiceSide
+# JobForge
 
-A lead-generation website for a web development business serving local service
-businesses — HVAC, plumbing, electrical, roofing, landscaping and similar trades — in
-the Greater Seattle area.
+The marketing site, customer platform and lead capture for JobForge — a software and
+digital growth company that builds customer-acquisition websites and digital growth
+systems for local service businesses — HVAC, plumbing, electrical, roofing, landscaping
+and similar trades — in the Greater Seattle area.
 
-One job: get a service-business owner to make contact.
+Two jobs: get a service-business owner to make contact, and then take them from a free
+assessment through payment, the build, their approval and launch without either side
+losing track of whose move it is.
 
-- **`client/`** — React + TypeScript marketing site (Vite)
-- **`server/`** — Express + TypeScript API that validates, stores and notifies on leads
+- **`client/`** — React + TypeScript (Vite). The public marketing site and the private
+  customer workspace at `/app`, sharing one design system and nothing else
+- **`server/`** — Express + TypeScript API: leads, accounts, assessments, projects,
+  tasks, feedback, billing and deployments
 - **`api/`** — a nine-line Vercel adapter around the Express app
+
+The lifecycle and the architecture behind it are documented in
+[docs/CUSTOMER-PLATFORM.md](docs/CUSTOMER-PLATFORM.md); Google sign-in in
+[docs/GOOGLE-SIGN-IN.md](docs/GOOGLE-SIGN-IN.md).
 
 ---
 
@@ -50,8 +59,8 @@ than pretending a submission succeeded.
 ## Local installation
 
 ```bash
-git clone <your-repo-url> serviceside
-cd serviceside
+git clone <your-repo-url> jobforge
+cd jobforge
 npm install                    # installs both workspaces
 
 cp .env.example .env           # macOS / Linux
@@ -75,23 +84,69 @@ is sold, for how much, and on what terms. Read it before changing anything that 
 price, scope, guarantees or terms — those are commercial commitments, not implementation
 details.
 
-The short version:
+The short version — **two priced products, one owner-gated, one optional plan**:
 
-|                             |                                                                 |
-| --------------------------- | --------------------------------------------------------------- |
-| Website launch              | **$2,500** one-time — $1,250 to start, $1,250 at launch         |
-| Website management + growth | **$299/month**, or $2,990/year                                  |
-| Minimum term                | 3 months from launch, then month-to-month with 30 days' notice  |
-| Launch timeline             | 2–4 weeks after the client's materials arrive                   |
-| Revisions                   | 2 rounds; up to 6 service pages                                 |
-| Response guarantee          | A reply within 24 business hours, or that month's fee is waived |
-| Ownership                   | Domain, hosting and content in the client's name throughout     |
+|                               |                                                                            |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| **Customer Conversion Build** | **$7,500** standard · **$4,900** founding-client, one-time                 |
+| Payment                       | Half ($2,450) to start, half on the day it goes live — via Stripe          |
+| **Conversion Fix**            | Scope and boundary published; **price not published** — see DECISION 014   |
+| **Growth Partner**            | **$299/month**, or $2,990/year — **optional**, a separate purchase         |
+| Growth Partner delivers       | The **Website Performance Report**, monthly — see DECISION 015             |
+| Year one, published           | $4,900 website only · **$8,488** with Growth Partner all twelve months     |
+| Minimum term (plan)           | 3 months from launch, then month-to-month with 30 days' notice             |
+| Launch timeline               | 2–4 weeks after the client's materials arrive                              |
+| Scope                         | Up to 6 service pages plus home/about/contact; 2 revision rounds           |
+| Measured from                 | Launch day — the enquiry baseline is written down, then reported at day 30 |
+| Scarcity                      | One build at a time — the real constraint, no counters, no timers          |
+| Response guarantee            | A reply within 24 business hours, or that month's fee is waived            |
+| Ownership                     | Domain, hosting and content in the client's name throughout                |
 
-Everything renders from `client/src/content/offer.ts` and `client/src/content/growth.ts`.
-**`offer.ts` is the only file in the content layer allowed to state a currency figure** —
-a test sweeps every string and fails the build on any figure that is not one of the
-sanctioned prices, because "$299 on the homepage, $149 in an FAQ" is invisible in review
-and obvious to a customer.
+**One name per product, end to end.** The recurring service is **Growth Partner** in the
+marketing copy, the pricing card, the dashboard, the billing page, the subscription label and
+the Stripe product description. It used to be a "care plan" in six of those, which is the
+commodity framing the whole offer argues against — `content.test.ts` now sweeps both
+workspaces' source and fails the build if the phrase returns to anything a customer can read.
+
+**Every figure lives in `client/src/config/pricing.ts` as a number**, formatted on the way
+out. `content/offer.ts` derives its strings from it and remains the only file in the
+_content_ layer allowed to name a figure — a test sweeps every string and fails the build
+on any figure the config did not produce, because "$299 on the homepage, $149 in an FAQ" is
+invisible in review and obvious to a customer. Both pricing surfaces render from one
+shared component (`PricingBlock`), so they cannot disagree.
+
+The founding-client price is a real discount with a real condition (permission to publish
+the work as a case study), presented as a labelled concurrent price and **never** as a
+strike-through, because this business has never charged the standard rate card. **Three
+things in `docs/business-offer.md` §17 need confirming before any of it goes live.**
+
+### Stripe setup (payments)
+
+Payments are consultative, never a public checkout: scope is agreed in writing, then the
+owner sends a Stripe Checkout link for the deposit, another at launch, and — if chosen —
+starts the Growth Partner subscription. Payment state is advanced only by verified Stripe
+webhooks. To turn it on:
+
+1. Set `STRIPE_SECRET_KEY` (test mode) in `.env`, then run
+   `npm run stripe:setup --workspace server` — it idempotently creates or verifies the
+   whole catalog (two Products: Website Build and Growth Partner; four Prices: $2,450
+   deposit, $2,450 launch payment, $299/month, $2,990/year) and prints the
+   `STRIPE_PRICE_*` lines to paste into `.env`. It refuses live-mode keys. When
+   founding pricing ends, follow `docs/stripe-pricing-transition.md`.
+2. Add a webhook endpoint for `https://<your-domain>/api/billing/webhook`, subscribed to
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `checkout.session.async_payment_failed`, `invoice.paid`, `invoice.payment_failed`,
+   `customer.subscription.created/updated/deleted`, `payment_intent.payment_failed` and
+   `charge.refunded`; copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+3. Set `STRIPE_SECRET_KEY` and a long random `BILLING_ADMIN_TOKEN`.
+4. Create a project and a payment link (owner-only, Bearer `BILLING_ADMIN_TOKEN`):
+   `POST /api/billing/projects` `{businessName, contactName, email, phone?}` →
+   `POST /api/billing/checkout-sessions` `{projectId, product: "build-deposit"}` → send
+   the returned URL to the client. Checkout's success page is `/welcome`, which explains
+   what happens next and collects the client's onboarding materials.
+
+Until these are set, the site runs exactly as before and the billing endpoints answer 503
+with an instruction.
 
 ### Replacing the placeholders
 
@@ -106,9 +161,6 @@ and `content.test.ts` fails the build if one reappears anywhere in the content l
 
 ### Still worth doing before launch
 
-- **The social preview image.** `client/public/og-image.svg` is on-brand but most social
-  platforms will not render SVG. Export a 1200×630 PNG to `client/public/og-image.png`
-  and update `seo.ogImage` / `seo.ogImageType` in `content/site.ts`.
 - **The legal pages.** `content/legal.ts` is written in plain English by the business and
   describes what the application actually does and what has actually been agreed. It has
   not been reviewed by a lawyer, and the pages say so on screen.
@@ -158,6 +210,24 @@ browser** — never give the Resend key or the Mongo URI that prefix.
 | `LEAD_RATE_LIMIT_WINDOW_MINUTES` | no                              | `15`              | Rate-limit window                                                    |
 | `LEAD_RATE_LIMIT_MAX`            | no                              | `5`               | Submissions per IP per window                                        |
 | `TRUST_PROXY_HOPS`               | no                              | `1` in production | Proxies in front of the app                                          |
+
+### Accounts, Google sign-in and deployment tracking
+
+All optional. Without them, accounts still work with email and password, the "Continue
+with Google" button still renders and explains that it is not set up here, and preview
+URLs are set by hand. See [docs/CUSTOMER-PLATFORM.md](docs/CUSTOMER-PLATFORM.md) and
+[docs/GOOGLE-SIGN-IN.md](docs/GOOGLE-SIGN-IN.md).
+
+| Variable                         | Required | Default | Purpose                                                                              |
+| -------------------------------- | -------- | ------- | ------------------------------------------------------------------------------------ |
+| `GOOGLE_CLIENT_ID`               | no       | –       | OAuth 2.0 **Web** client id. Public. Separate clients for development and production |
+| `AUTH_RATE_LIMIT_WINDOW_MINUTES` | no       | `15`    | Throttle window for sign in, sign up, reset and the Google exchange                  |
+| `AUTH_RATE_LIMIT_MAX`            | no       | `20`    | Attempts per IP per window. Successful sign-ins do not count                         |
+| `VERCEL_WEBHOOK_SECRET`          | no       | –       | Verifies deployment webhooks. Never give this a `VITE_` prefix                       |
+
+There is deliberately **no Google client secret**. The flow returns a signed ID token
+that the server verifies against Google's published public keys; no token exchange
+happens, so no secret exists to leak.
 
 ### Client
 
@@ -254,7 +324,7 @@ script prints a warning if you forget.
 5. Put it in `MONGODB_URI`, replacing `<password>`, and add a database name:
 
    ```
-   MONGODB_URI=mongodb+srv://user:pass@cluster0.abc.mongodb.net/serviceside?retryWrites=true&w=majority
+   MONGODB_URI=mongodb+srv://user:pass@cluster0.abc.mongodb.net/jobforge?retryWrites=true&w=majority
    ```
 
 6. Verify: `npm run dev`, then submit the contact form. The lead appears in the
@@ -361,21 +431,21 @@ start `node server/dist/server.js`, serve `client/dist` as static files, and set
 
 ## Troubleshooting
 
-| Symptom                                                           | Cause and fix                                                                                                                                                                |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vercel build fails within seconds, during `npm install`           | `NODE_ENV=production` is set in Vercel's environment variables. Delete it and redeploy — npm omits devDependencies when it sees it, so `tsc` and `vite` are never installed. |
-| Build succeeds, then `No Output Directory named "dist" found`     | Vercel's Root Directory is set to `client/` instead of the repository root, so `vercel.json` is never read. Fix it in **Settings → General → Root Directory**.               |
-| Only the client builds — no `@serviceside/server` line in the log | Same cause as above: Vercel auto-detected the Vite app and ignored `vercel.json`.                                                                                            |
-| Server exits with "Invalid environment configuration"             | A required production variable is missing. The message lists all of them.                                                                                                    |
-| Form returns 503 "we could not save your request"                 | `MONGODB_URI` is unset or unreachable. This is deliberate — the form never claims success it cannot back up.                                                                 |
-| Lead is in MongoDB but no email arrived                           | Resend failed. Look for `lead.notification_failed` in the logs, and for `notificationStatus: "failed"` on the lead. Persisting first is intentional; see below.              |
-| Resend returns "domain not verified"                              | The domain in `RESEND_FROM_EMAIL` is not verified, or the DNS records have not propagated.                                                                                   |
-| MongoDB times out on Vercel but works locally                     | Atlas Network Access does not include `0.0.0.0/0`.                                                                                                                           |
-| Form returns 429                                                  | The rate limit is doing its job. Defaults are 5 per IP per 15 minutes; tune with `LEAD_RATE_LIMIT_*`.                                                                        |
-| `/about` 404s on Vercel                                           | `cleanUrls` is not applied, or the build did not run `build-seo`. Check the build log for `[build-seo] wrote 17 pages`.                                                      |
-| Link previews show the wrong title                                | `VITE_SITE_URL` was not set at build time, or the build ran without step 3. Redeploy.                                                                                        |
-| Browser console: blocked by CSP                                   | The CSP in `vercel.json` allows same-origin only. Adding a third-party script means adding it there deliberately.                                                            |
-| Dev banner listing placeholders                                   | Working as intended. It never ships to production.                                                                                                                           |
+| Symptom                                                        | Cause and fix                                                                                                                                                                |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vercel build fails within seconds, during `npm install`        | `NODE_ENV=production` is set in Vercel's environment variables. Delete it and redeploy — npm omits devDependencies when it sees it, so `tsc` and `vite` are never installed. |
+| Build succeeds, then `No Output Directory named "dist" found`  | Vercel's Root Directory is set to `client/` instead of the repository root, so `vercel.json` is never read. Fix it in **Settings → General → Root Directory**.               |
+| Only the client builds — no `@jobforge/server` line in the log | Same cause as above: Vercel auto-detected the Vite app and ignored `vercel.json`.                                                                                            |
+| Server exits with "Invalid environment configuration"          | A required production variable is missing. The message lists all of them.                                                                                                    |
+| Form returns 503 "we could not save your request"              | `MONGODB_URI` is unset or unreachable. This is deliberate — the form never claims success it cannot back up.                                                                 |
+| Lead is in MongoDB but no email arrived                        | Resend failed. Look for `lead.notification_failed` in the logs, and for `notificationStatus: "failed"` on the lead. Persisting first is intentional; see below.              |
+| Resend returns "domain not verified"                           | The domain in `RESEND_FROM_EMAIL` is not verified, or the DNS records have not propagated.                                                                                   |
+| MongoDB times out on Vercel but works locally                  | Atlas Network Access does not include `0.0.0.0/0`.                                                                                                                           |
+| Form returns 429                                               | The rate limit is doing its job. Defaults are 5 per IP per 15 minutes; tune with `LEAD_RATE_LIMIT_*`.                                                                        |
+| `/about` 404s on Vercel                                        | `cleanUrls` is not applied, or the build did not run `build-seo`. Check the build log for `[build-seo] wrote 17 pages`.                                                      |
+| Link previews show the wrong title                             | `VITE_SITE_URL` was not set at build time, or the build ran without step 3. Redeploy.                                                                                        |
+| Browser console: blocked by CSP                                | The CSP in `vercel.json` allows same-origin only. Adding a third-party script means adding it there deliberately.                                                            |
+| Dev banner listing placeholders                                | Working as intended. It never ships to production.                                                                                                                           |
 
 To find leads whose notification failed:
 
@@ -462,11 +532,122 @@ test on both sides, so what gets stored always matches what the person was shown
 The conversion layer. **[`docs/CONVERSION-UPGRADE-PLAN.md`](docs/CONVERSION-UPGRADE-PLAN.md)
 records why each of these exists and what it is not allowed to claim.**
 
-| Route                | What it is                                                                      |
-| -------------------- | ------------------------------------------------------------------------------- |
-| `/audit`             | The Website Revenue Audit. The useful half is free and needs no email address.  |
-| `/hvac-websites` etc | Five industry pages, one per trade with `hasPage` in `config/trades.ts`.        |
-| `/website-teardown`  | Six findings on a composite first screen, plus a sample of the free assessment. |
+| Route                       | What it is                                                                      |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `/audit`                    | The **Website Score**. The useful half is free and needs no email address.      |
+| `/what-your-website-can-do` | The capability library — see below.                                             |
+| `/hvac-websites` etc        | Five industry pages, one per trade with `hasPage` in `config/trades.ts`.        |
+| `/website-teardown`         | Six findings on a composite first screen, plus a sample of the free assessment. |
+| `/demo/<trade>`             | Five demonstration websites, three routes each. See below.                      |
+
+### The capability library
+
+`/what-your-website-can-do` publishes forty capabilities, twelve third-party systems and an
+eight-stage customer lifecycle. **[`docs/business-offer.md` §18](docs/business-offer.md)
+records the rules it is held to; DECISION 017 is the owner sign-off on what it now promises.**
+
+The thing to know before editing it: **every capability carries two independent honesty
+fields.** `availability` says how a business would actually get it — three of its five values
+mean "not today" — and `maturity` says how settled the implementation is. Anything claiming to
+be part of the build or the plan must name the offer artefact that already says so
+(`offerAnchor`), and `capabilities.test.ts` resolves every pointer. If the offer changes, the
+pointer breaks and the build fails, which is the mechanism that stops this becoming a second
+description of what is sold.
+
+| File                                      | What it holds                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------ |
+| `client/src/content/capabilities.ts`      | The library, categories, lifecycle, integrations and the page copy |
+| `client/src/lib/capabilityMatch.ts`       | Every matching rule, pure, taking the library as an argument       |
+| `client/src/config/trades.ts`             | The twelve trades and how each trade's work is bought              |
+| `client/src/content/capabilities.test.ts` | Thirty guards, including the ones that keep the labels honest      |
+
+`lib/capabilityMatch.ts` deliberately does **not** import the library. That is what lets its
+tests use fixtures — the cases worth testing are a trade with nothing written for it, a
+dependency that does not resolve, a filter that matches nothing, and none of those exist in the
+real content — and it makes it structurally impossible for the library to be dragged into the
+eager bundle.
+
+### The internal admin surface
+
+`/admin`, for staff. **[`docs/owner-decisions-required.md` DECISION 019 and 020](docs/owner-decisions-required.md)
+record the two open questions about it.**
+
+| Route                        | What it is                                                         |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `/admin`                     | Every project: milestone, whether an account is attached, payments |
+| `/admin/projects/:projectId` | One project — milestone, URLs, tasks, feedback, activity           |
+| `/admin/accounts`            | Every account: role, verification, sign-in methods                 |
+
+**Getting in.** There is no sign-up path to an admin role and no button that grants one. Run:
+
+```bash
+npm run admin:create --workspace server -- --check   # report, change nothing
+npm run admin:create --workspace server              # create, or promote an existing account
+```
+
+It reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from the server-side environment — see
+`.env.example`. **The running application never loads either**: they are deliberately absent from
+`server/src/config/env.ts`, so no service or error response can reach them. Never give either a
+`VITE_` prefix; Vite inlines `VITE_*` into the public bundle.
+
+**Where authorization actually happens**, because a route guard looks like it:
+
+| Layer           | Where                                    | What it does                                  |
+| --------------- | ---------------------------------------- | --------------------------------------------- |
+| Authentication  | `createAttachUser` (session cookie)      | Resolves who is asking                        |
+| Role            | `requireAdmin` on the `/api/admin` mount | **404 to everyone else, including anonymous** |
+| Resource        | `createProjectAccess` per project route  | The id has to resolve                         |
+| Navigation only | `client/src/app/router/RequireAdmin.tsx` | Decides which page renders. **Not security**  |
+
+`RequireAdmin` reads a role out of a JavaScript variable and anybody can edit that. Defeating it
+renders an admin layout whose every request comes back 404. That is the design; the route being
+unguessable is not part of it either.
+
+**What is deliberately absent:** no impersonation ("view as customer"), no role control in the
+UI, no password reset for other accounts, no account deletion, and no Stripe controls — the
+billing endpoints are behind a bearer token and would mean shipping it to a browser. Each
+omission is argued at its call site.
+
+`server/src/features/admin/admin.api.test.ts` is where unauthorized access is tested explicitly:
+anonymous, customer, and a customer trying the admin verb on their own project.
+
+### The demonstration sites
+
+Five example websites — one per trade — running inside this application rather than at five
+deployments. `/demo/hvac`, `/demo/hvac/services`, `/demo/hvac/contact`, and the same for
+plumbing, roofing, landscaping and electrical.
+
+They render **outside `SiteLayout`**, under `features/demo/DemoLayout.tsx`, so no
+JobForge header or footer appears on them — a demonstration of somebody else's website
+cannot be wrapped in this one's navigation. Each trade's content is its own lazy chunk;
+`content/demos/` is deliberately absent from the content barrel, and a test fails the build
+if it is ever added.
+
+**The rule they follow is "invent the business, never the evidence".** A name, a phone
+number, hours, a service list and a set of neighbourhoods are set dressing. A review, a
+rating, a licence number, an award, a years-in-business figure or a guarantee is proof, and
+none of it appears — `content/demos/demos.test.ts` sweeps every string and fails the build
+on any of it. Phone numbers are in the 555-01xx block reserved for fiction, emails are on
+`.example` domains nobody can register, and the quote form cannot reach the lead API
+because it does not import it.
+
+**The photography and video are licensed stock, and every asset has a provenance row.**
+`client/scripts/media.manifest.json` records each photograph's source page, author and
+licence; `client/scripts/fetch-media.ts` downloads and encodes the committed variants
+(AVIF+WebP, per-role byte budgets); [`docs/MEDIA-CREDITS.md`](docs/MEDIA-CREDITS.md) is the
+human-readable record. A test asserts the assets on disk, the manifest and the credits file
+agree exactly. Imagery illustrates kinds of work — no caption or alt text claims a job, a
+customer or a crew, which would be evidence. Every product image on the marketing pages —
+the hero's framed shot, the portfolio cards and showcase, the industry and teardown
+previews — is a real screenshot of the demos, captured from this repository's own build by
+`client/scripts/capture-previews.ts` (`npm run capture`) at desktop and true phone width,
+disclosure bar included; the same run renders `og-image.png`. The full inventory and the
+rules for adding a visual are in [`docs/VISUAL-ASSETS.md`](docs/VISUAL-ASSETS.md).
+
+**[`docs/DEMO-SITES-PLAN.md`](docs/DEMO-SITES-PLAN.md)** records the sixteen decisions
+behind them and the three things that still need the owner;
+**[`docs/DEMO-QUALITY-UPGRADE.md`](docs/DEMO-QUALITY-UPGRADE.md)** records the research and
+decisions behind the photography, video and UI upgrade.
 
 Three rules hold this together, and each is enforced by a test rather than by memory:
 
@@ -583,8 +764,19 @@ gets crawlable, previewable pages without adopting Next.js for a marketing site.
 by content rather than by code: the five industry pages added seventeen lines to
 `content/pages.ts` and nothing at all to the build.
 
-**System font stack.** Nothing to download, nothing blocking first paint, no layout
-shift when a web font swaps in. Swap `--font-sans` in `styles/tokens.css` to change it.
+**One web font, loaded so it cannot hurt the first paint.** Archivo is the brand typeface
+and the only downloaded font — a single variable `woff2` per subset covering weight
+400–900 and width 100–125%, which is what lets the wordmark use its expanded extra-bold
+cut without a second file. It is served with `display=swap` behind a `preconnect`, so the
+first paint uses the system stack still declared in `--font-sans` and never blocks on the
+network.
+
+This is a real change from the previous position of _no_ web fonts, and it was bought
+rather than assumed: the identity is built on a grotesk with squared terminals that the
+system stack cannot supply. What it costs is one connection and one file; what it must
+never cost is layout shift, which is why the fallback stack is kept metric-adjacent and
+nothing on the first screen is sized in a way that depends on Archivo having arrived.
+Swap `--font-sans` in `styles/tokens.css` and the `<link>` in `index.html` to change it.
 
 ---
 
@@ -599,8 +791,6 @@ Stated plainly rather than discovered later:
   covered by interface-level tests with injected fakes, and the wiring has been type
   checked and built — but the first real submission after deploying is still the
   first real submission. Do it before pointing traffic at the site.
-- **`og-image.svg` will not render on most social platforms.** Replace it with a PNG; see
-  [Replacing the placeholders](#replacing-the-placeholders).
 - **The inquiry-type slugs are duplicated** between `client/src/types/api.ts` and
   `server/src/features/leads/lead.types.ts`. Both files have a test pinning the list, so
   drift fails the build rather than reaching production. A shared package would cost a

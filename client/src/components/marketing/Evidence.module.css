@@ -96,9 +96,9 @@
   color: var(--color-ink-muted);
 }
 
-.closing {
-  max-width: 52rem;
-  margin-top: var(--space-6);
-  font-size: var(--text-lg);
-  line-height: var(--leading-relaxed);
-}
+/*
+ * A `.closing` rule sat here, styling a paragraph `Evidence.tsx` does not render. It survived
+ * the dead-class guard because three other components — two demo pages and the workbook — reach
+ * a `styles['closing']` in their *own* modules, and the guard used to search every source file
+ * at once. Scoped per module, it is correctly reported as dead.
+ */

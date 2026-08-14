@@ -1,4 +1,4 @@
-import type { TradeSlug } from '../config/trades';
+import type { ServiceModel, TradeSlug } from '../config/trades';
 
 /**
  * Shapes for everything in `src/content`.
@@ -161,9 +161,14 @@ export type IconName =
   | 'mail'
   | 'map-pin'
   | 'arrow-right'
+  /* The back control on the auth pages, which have no other navigation. */
+  | 'arrow-left'
   | 'menu'
   | 'close'
-  | 'alert';
+  | 'alert'
+  /* The password show/hide toggle. See `PasswordField`. */
+  | 'eye'
+  | 'eye-off';
 
 /**
  * Which half of the lifecycle a component belongs to.
@@ -230,12 +235,27 @@ export interface JourneyStep {
   readonly owner: JourneyOwner;
 }
 
-/** A column of the offer stack: what is delivered at launch, monthly, and over time. */
+/**
+ * One group of the offer stack: what is delivered, under the promise it keeps.
+ *
+ * The field order below is the reading order, and it is the whole point of the shape:
+ * **promise → mechanism → deliverables → why it matters.** A visitor scanning headings
+ * reads only `name`, which is why `name` is the thing that changes for their customer
+ * ("Your customers find you") rather than the thing we install ("Local-search
+ * foundation"). The mechanism is named immediately underneath, because a buyer needs a
+ * word for what they bought — but it is the second line, not the first.
+ *
+ * Derived from `buildOutcomes` in `config/pricing.ts`. The deliverables live there because
+ * they are a commercial commitment; only the icon is chosen here.
+ */
 export interface OfferGroup {
   readonly id: string;
-  /** Two-digit label, so the stack can be scanned as three things rather than twenty. */
+  /** Two-digit label, so the stack can be scanned as a few things rather than twenty. */
   readonly step: string;
+  /** The promise, in the customer's customer's terms. The heading a reader actually scans. */
   readonly name: string;
+  /** What the work is called, so the buyer has a name for the thing they bought. */
+  readonly mechanism: string;
   readonly summary: string;
   readonly includes: readonly string[];
   /** The business reason this group exists. Paired with the list, never replacing it. */
@@ -244,21 +264,26 @@ export interface OfferGroup {
 }
 
 /**
- * A priced part of the offer.
+ * The one-time build, priced.
  *
- * `price` holds a `[PLACEHOLDER]` until the business has set a real number. The UI checks
- * for that and shows `pricing.unsetLabel` instead, so an unfinished price can never be
- * published as a figure — the same degrade-honestly rule the contact details follow.
- *
- * `terms` is the small print under the price — a minimum term or a payment schedule. It
- * belongs next to the number rather than in a separate section, because a price a reader
- * has to scroll to qualify is a price they will feel misled by later.
+ * There is exactly one of these — the flagship project — and its `includes` list may
+ * contain only one-time deliverables. The recurring service is a separate shape on
+ * purpose: mixing the two lists is how the previous pricing structure ended up selling
+ * monthly work inside a one-time fee.
  */
-export interface PricingTier {
-  readonly id: string;
-  /** How the fee recurs, e.g. `'One-time'` or `'Monthly'`. */
+export interface BuildPricing {
+  /** Always `'One-time project'` or similar — states the cadence beside the figure. */
   readonly cadence: string;
   readonly name: string;
+  /**
+   * One line saying what the money buys, in outcome terms, rendered between the product
+   * name and the figure.
+   *
+   * Required, and positioned deliberately: a reader who meets the number first has nothing
+   * to weigh it against except their own budget, and a card that opens with a name and a
+   * price is asking to be compared with every other name and price in the market.
+   */
+  readonly statement: string;
   readonly summary: string;
   /** What the buyer pays today. This is the figure that must dominate visually. */
   readonly price: string;
@@ -271,17 +296,80 @@ export interface PricingTier {
    * reader understands it as the other price that exists rather than as a price history.
    * See the note above `pricing` in `content/offer.ts`, and 16 CFR 233.1.
    */
-  readonly standardPrice?: string;
+  readonly standardPrice: string;
   /** True only when `price` is genuinely below `standardPrice` today. */
-  readonly hasDiscount?: boolean;
+  readonly hasDiscount: boolean;
   /** Derived as standard − current. Never typed by hand, so it cannot go stale. */
-  readonly saving?: string;
+  readonly saving: string;
+  /** The payment schedule, next to the number rather than in a footnote. */
   readonly priceNote: string;
   readonly includes: readonly string[];
-  /** Short qualifying line shown under the price, e.g. the minimum term. */
-  readonly terms?: string;
-  /** Marks the tier the eye should land on first. At most one. */
-  readonly emphasis?: boolean;
+  /** Scope limits that belong beside the price: revision rounds, page counts. */
+  readonly terms: string;
+  /** The published launch window, beside the price it qualifies. */
+  readonly timeline: string;
+}
+
+/**
+ * One cadence group of the recurring plan's scope.
+ *
+ * An ordered array rather than three named keys, because **the order is the commercial
+ * argument** — measurement first, upkeep as the floor — and an array makes that ordering
+ * something a test can assert rather than something a refactor can quietly reshuffle. The
+ * previous shape was `everyMonth` / `eachQuarter` / `whenNeeded`, which had no opinion
+ * about which mattered most and got rendered in declaration order by accident.
+ */
+export interface PlanScopeGroup {
+  readonly id: string;
+  /** The cadence, in plain words. Never "unlimited", because nothing here is. */
+  readonly label: string;
+  readonly items: readonly string[];
+}
+
+/** One row of the build-versus-plan comparison table. */
+export interface ComparisonRow {
+  readonly id: string;
+  readonly label: string;
+  /** What the one-time build provides for this row, e.g. `'Yes'` or `'Setup'`. */
+  readonly build: string;
+  /** What Growth Partner provides for this row, e.g. `'Managed'` or `'—'`. */
+  readonly partner: string;
+}
+
+/**
+ * One row of the market comparison.
+ *
+ * A separate shape from `ComparisonRow` rather than a reuse of it, and the reason is the
+ * kind of claim each column makes. `ComparisonRow` compares two things this business
+ * controls, so both cells are commitments. Here the left cell describes a market nobody has
+ * measured, which means it must always be a hedge — "Sometimes", "Varies", "Rarely" — and
+ * the right cell must always be something published elsewhere on the site. Two different
+ * evidentiary standards in one table is how an honest comparison becomes a claim about a
+ * competitor, so the types are kept apart to make the distinction visible at the call site.
+ */
+export interface MarketComparisonRow {
+  readonly id: string;
+  readonly label: string;
+  /** The general market. **Always a hedge.** Never a measurement of a named provider. */
+  readonly typical: string;
+  /** What this business commits to. Must be checkable against the published offer. */
+  readonly here: string;
+}
+
+/** A labelled group of commercial terms: the build's, or Growth Partner's. */
+export interface CommercialTermGroup {
+  readonly id: string;
+  readonly label: string;
+  readonly items: readonly CommercialTerm[];
+}
+
+/** One week of the published build timeline. */
+export interface ProcessWeek {
+  readonly id: string;
+  /** e.g. `'Week 1'`. */
+  readonly label: string;
+  readonly title: string;
+  readonly description: string;
 }
 
 /**
@@ -311,6 +399,15 @@ export interface EntryPath {
   readonly title: string;
   readonly situation: string;
   readonly response: string;
+  /**
+   * The name of the product this path leads to.
+   *
+   * Required, and that is the point. The middle path used to end at the phrase "quoted per
+   * site" with no product behind it — a diagnosis with nothing to act on — and making this
+   * field mandatory means a path without a named destination is a compile error rather than
+   * a dead end discovered by a reader.
+   */
+  readonly product: string;
   /** A published figure, or the phrase used when the work has to be quoted. */
   readonly price: string;
   /**
@@ -323,6 +420,17 @@ export interface EntryPath {
    */
   readonly priceNote?: string;
   readonly then: string;
+  /**
+   * The path's own action, and the intent it arrives at the contact form with.
+   *
+   * Required for the same reason `product` is. `intent` maps to a pre-selected enquiry type
+   * in `features/public/contact/ContactForm.tsx`, so a reader who has just told this page
+   * which situation they are in is never asked the same question on the next screen.
+   */
+  readonly cta: {
+    readonly label: string;
+    readonly intent: 'build' | 'fix' | 'partner';
+  };
   readonly icon: IconName;
 }
 
@@ -714,9 +822,16 @@ export interface PortfolioProject {
   readonly industry: string;
   readonly title: string;
   readonly description: string;
-  /** Path within `public/`. */
+  /** Hashed asset URL: the desktop capture from `scripts/capture-previews.ts`. */
   readonly image: string;
   readonly imageAlt: string;
+  /**
+   * The same page captured at phone width, from the same script. Optional because a
+   * future real-client entry may exist before its captures do — a project without one
+   * simply renders no phone frame, the same never-an-empty-slot rule as `demoUrl`.
+   */
+  readonly mobileImage?: string;
+  readonly mobileImageAlt?: string;
   readonly highlights: readonly string[];
   /** Omitted until a demo is actually published. Never link to a page that is not live. */
   readonly demoUrl?: string;
@@ -759,4 +874,228 @@ export interface PageMeta {
   /** Excluded from sitemap.xml and marked noindex. */
   readonly noIndex?: boolean;
   readonly sitemapPriority?: number;
+}
+
+/*
+ * ============================================================================
+ * THE CAPABILITY LAYER
+ * ============================================================================
+ *
+ * What a website can do for a business, as data rather than as prose.
+ *
+ * ## Why this exists at all
+ *
+ * `systemComponents` describes what JobForge does, in ten steps, in the order they happen.
+ * `flagship.outcomes` describes what the build delivers, in seven promises. Both are the
+ * *offer*, and both are written for somebody deciding whether to buy it.
+ *
+ * Neither answers the question an owner asks once they are past that: "what could my
+ * website actually do for my business, and which of it applies to me?" That needs a library
+ * rather than a pitch — many capabilities, each tagged with the industries and service
+ * models it suits, so the answer can differ for a roofer and a cleaner without maintaining
+ * two pitches.
+ *
+ * ## The rule that makes it safe
+ *
+ * A library like this is the easiest place in a repository to start accidentally selling
+ * things that do not exist. Every entry therefore carries **two independent honesty
+ * fields**, and neither is decoration:
+ *
+ *   - `availability` — how a business would actually get it. Three of the five values mean
+ *     "not today", and the presentation layer is required to say so.
+ *   - `maturity` — how settled the implementation is, which is a different question. A
+ *     capability can be `additional-scope` and `established` (built before, on request) or
+ *     `additional-scope` and `new` (specified, never built).
+ *
+ * `capabilities.test.ts` enforces the combinations that would otherwise let an aspiration
+ * ship as an inclusion — most importantly that anything claiming to be part of the build or
+ * the plan names the offer artefact it belongs to, and that the pointer resolves.
+ * ============================================================================
+ */
+
+/**
+ * What area of the business a capability works on.
+ *
+ * The reader never sees these ids — they see the label and the question in
+ * `capabilityCategories`. The grouping exists so an owner can find the thing they came
+ * looking for ("I need more reviews") without reading the whole library.
+ */
+export type CapabilityCategory =
+  | 'lead-generation'
+  | 'lead-conversion'
+  | 'communication'
+  | 'reputation'
+  | 'retention'
+  | 'revenue'
+  | 'operations'
+  | 'payments'
+  | 'marketing'
+  | 'automation';
+
+/**
+ * How prominently a capability is presented.
+ *
+ * **One field rather than the three booleans** (`isCore`, `isRecommended`, `isOptional`)
+ * the shape was first sketched with. Three booleans that must be mutually exclusive is
+ * three ways to disagree: an entry with two of them true is a capability in two groups, and
+ * an entry with none is one that silently renders nowhere.
+ *
+ * The three predicates still exist — `isCore()`, `isRecommended()` and `isOptional()` in
+ * `lib/capabilityMatch.ts` — as functions of this field. Same vocabulary, no way for it to
+ * contradict itself.
+ */
+export type CapabilityTier = 'foundation' | 'recommended' | 'advanced';
+
+/**
+ * How a business would actually get this capability. The honesty field.
+ *
+ *   - `included-build`   — every Customer Conversion Build has it. Requires `offerAnchor`.
+ *   - `included-partner` — every Growth Partner month has it. Requires `offerAnchor`.
+ *   - `additional-scope` — genuinely deliverable, quoted separately, in neither price.
+ *   - `roadmap`          — a committed direction with no date. Not sellable today.
+ *   - `not-offered`      — listed because owners ask, and a library that omits it reads as
+ *                          an oversight rather than a decision. Nobody may buy it.
+ *
+ * The presentation layer must label everything that is not `included-*`. A test asserts a
+ * label exists for all five values, so adding a sixth fails the build rather than rendering
+ * an unlabelled aspiration.
+ */
+export type CapabilityAvailability =
+  'included-build' | 'included-partner' | 'additional-scope' | 'roadmap' | 'not-offered';
+
+/**
+ * How settled the implementation approach is — deliberately *not* the same axis as
+ * `availability`.
+ *
+ * `standard` is reserved for work done on every project, which is why a test refuses it to
+ * anything that is not `included-build` or `included-partner`. `established` means the
+ * pattern is settled and has been built on request. `new` means specified and not yet
+ * built. `exploratory` means there is no committed approach, and saying so is the point.
+ *
+ * Note what none of these values claims: a track record with clients. This business has not
+ * had one yet, which is also why `content/testimonials.ts` is empty.
+ */
+export type CapabilityMaturity = 'standard' | 'established' | 'new' | 'exploratory';
+
+/*
+ * `ServiceModel` — how the work is bought — is defined in `config/trades.ts` rather than
+ * here, and re-exported so the capability types read as one set.
+ *
+ * It lives there because it is a fact about a trade (`Trade.serviceModels`) and because this
+ * module already imports `TradeSlug` from that file: defining it here would make the two
+ * import each other.
+ */
+export type { ServiceModel };
+
+/** Where in the customer's own journey a capability does its work. */
+export type LifecycleStageId =
+  'find' | 'decide' | 'contact' | 'book' | 'serve' | 'pay' | 'advocate' | 'return';
+
+/**
+ * One stage of the customer lifecycle, for the diagram.
+ *
+ * `owner` reuses `JourneyOwner` rather than introducing a second ownership vocabulary, and
+ * it is the honest half of the visualisation: of eight stages a website touches four, and
+ * the diagram says which. A lifecycle drawn as though a website carries a customer from
+ * stranger to advocate is the exact overclaim this content layer keeps a guard against.
+ */
+export interface LifecycleStage {
+  readonly id: LifecycleStageId;
+  readonly label: string;
+  /** What the customer is doing at this moment, in their terms rather than ours. */
+  readonly customerMoment: string;
+  /** The question the business has at this moment. */
+  readonly businessQuestion: string;
+  readonly owner: JourneyOwner;
+}
+
+/**
+ * A named third-party system, described in business terms.
+ *
+ * `owner` is load-bearing and easy to get wrong. JobForge runs Stripe and Resend for **its
+ * own** billing and email; that is not the same as connecting a client's Stripe account to
+ * take deposits on their site. `'client'` means the account belongs to the business and
+ * they keep it if they leave. `'jobforge'` means it is part of how this service runs.
+ *
+ * There is deliberately no `apiDocs`, `authMethod` or `webhookUrl` field. This is the
+ * customer-facing description of an integration; an owner reading it wants to know what it
+ * would do for them and whose login it needs.
+ */
+export interface CapabilityIntegration {
+  readonly id: string;
+  readonly name: string;
+  readonly owner: 'client' | 'jobforge';
+  /** What the system is for, in one sentence a non-technical reader finishes. */
+  readonly whatItDoes: string;
+  /** What connecting it changes for the business. Never a feature, always a consequence. */
+  readonly whyConnect: string;
+  readonly availability: CapabilityAvailability;
+  readonly maturity: CapabilityMaturity;
+}
+
+/**
+ * One thing a website can do for a business.
+ *
+ * The field order is the reading order the explorer renders in, and it is chosen so the
+ * first thing anybody reads is a consequence rather than a mechanism:
+ *
+ *   name → shortDescription → businessOutcome → problemSolved → howItWorks →
+ *   customerValue / businessValue → recommendedFor
+ *
+ * `howItWorks` sits fifth on purpose. It is the only technical field, an owner does want it
+ * eventually, and putting it above the outcome is how a capability library turns into a
+ * specification sheet.
+ */
+export interface Capability {
+  readonly id: string;
+  /** What it is called. Named for the job it does, not the technology behind it. */
+  readonly name: string;
+  readonly category: CapabilityCategory;
+  readonly tier: CapabilityTier;
+  /** One line, for the collapsed card. Must stand alone — most readers see only this. */
+  readonly shortDescription: string;
+  /** What changes for the owner, stated without a number. */
+  readonly businessOutcome: string;
+  /** The problem it exists to solve, described as the owner would recognise it. */
+  readonly problemSolved: string;
+  /** How it actually works. Plain English, and the only place mechanism belongs. */
+  readonly howItWorks: readonly string[];
+  /** What the customer gets out of it — they are the other party and they have a stake. */
+  readonly customerValue: string;
+  /**
+   * What the business gets out of it internally. Distinct from `businessOutcome`: that is
+   * the result a customer would cause, this is what it does to the owner's own day.
+   */
+  readonly businessValue: string;
+  /** Who this is worth it for, and — where it matters — who it is not. */
+  readonly recommendedFor: string;
+  /** `'every'` rather than an empty array, so "applies to all" is stated, not inferred. */
+  readonly industries: 'every' | readonly TradeSlug[];
+  readonly serviceModels: 'every' | readonly ServiceModel[];
+  /** Which lifecycle stages this touches. At least one; a test asserts it. */
+  readonly lifecycle: readonly LifecycleStageId[];
+  /**
+   * Which part of the chain this works on. A `business` entry may not be written as
+   * something the website achieves, and a test reads the copy to check.
+   */
+  readonly owner: JourneyOwner;
+  /** Ids from `capabilityIntegrations`. A test asserts every one resolves. */
+  readonly integrations: readonly string[];
+  /**
+   * Other capability ids this needs first. A test asserts they resolve, that none is
+   * circular, and that nothing available today depends on something that is not.
+   */
+  readonly dependencies: readonly string[];
+  readonly maturity: CapabilityMaturity;
+  readonly availability: CapabilityAvailability;
+  /**
+   * The offer artefact this is already part of — a `systemComponents` id, a
+   * `flagship.outcomes` id, or a `carePricing.plan.groups` id.
+   *
+   * Required when `availability` is `included-build` or `included-partner`, and forbidden
+   * otherwise. This is the field that stops the library becoming a second description of
+   * the offer: an entry claiming to be included has to point at the place the offer already
+   * says so, and a test resolves every pointer.
+   */
+  readonly offerAnchor?: string;
 }

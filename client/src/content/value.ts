@@ -28,7 +28,7 @@ import type { DemoExample, ValueStage } from '../types/content';
 export const valueEducation = {
   eyebrow: 'The business case',
   heading: 'What your website actually does for your business',
-  lede: 'A website has one job, and it happens in six steps. Every part of what I do is aimed at one of them — and every step that is missing is somewhere a potential customer quietly gives up.',
+  lede: 'A website has one job, and it happens in six steps. Every part of what we do is aimed at one of them — and every step that is missing is somewhere a potential customer quietly gives up.',
 
   stages: [
     {
@@ -95,7 +95,7 @@ export const valueEducation = {
     {
       id: 'learn',
       stage: 'Learn what works',
-      problem: 'Every decision about the website is somebody’s opinion, including yours and mine.',
+      problem: 'Every decision about the website is somebody’s opinion, including yours and ours.',
       improvement:
         'Analytics that count real actions, and — where there is enough traffic to learn from — two versions compared against each other.',
       value: 'Changes get made because of what visitors did, not because of who argued hardest.',
@@ -137,7 +137,7 @@ export const valueEducation = {
         body: 'One tap to call, or a quote request that takes a minute to fill in.',
       },
     ],
-    note: 'My job is to make every one of those steps as strong as it can be. Not to promise you what happens after somebody picks up the phone.',
+    note: 'Our job is to make every one of those steps as strong as it can be. Not to promise you what happens after somebody picks up the phone.',
   },
 } as const;
 
@@ -146,7 +146,7 @@ export const valueEducation = {
 export const demos = {
   eyebrow: 'See the difference',
   heading: 'Small website problems cost you customers.',
-  lede: 'Four things I find on almost every service-business website I look at. Switch between before and after to see what changes and why it matters.',
+  lede: 'Four things we find on almost every service-business website. Switch between before and after.',
 
   /** Rendered on every panel. These are not customers and must never look like them. */
   disclaimer: 'Illustrative example',
@@ -158,11 +158,9 @@ export const demos = {
       id: 'clarity',
       title: 'A headline that could belong to anyone',
       problem:
-        'The first screen says nothing specific. A visitor cannot tell what you do, where you do it, or what to do next.',
-      change:
-        'The headline names the service and the area. A line underneath answers the next question, and there is one obvious action.',
-      whyItMatters:
-        'Visitors understand whether you are the right business for them without having to work for it.',
+        'The first screen says nothing specific. A visitor cannot tell what you do, where, or what to do next.',
+      change: 'The headline names the service and the area, and there is one obvious action.',
+      whyItMatters: 'Visitors can tell you are the right business without working for it.',
       before: {
         kind: 'mock',
         mock: {
@@ -190,11 +188,10 @@ export const demos = {
       id: 'mobile',
       title: 'A phone number nobody can find on a phone',
       problem:
-        'Text too small to read in daylight, a menu that needs two taps to open, and the number sitting in the footer.',
+        'Text too small to read in daylight, a menu that needs two taps, and the number in the footer.',
       change:
-        'Readable type, the number as a button in the header, and the services a customer came for above everything else.',
-      whyItMatters:
-        'Somebody standing in a driveway can understand the business and act without fighting the website.',
+        'Readable type, the number as a button in the header, the services above everything else.',
+      whyItMatters: 'Somebody standing in a driveway can act without fighting the website.',
       before: {
         kind: 'mock',
         mock: {
@@ -223,12 +220,11 @@ export const demos = {
       id: 'speed',
       title: 'A page that makes people wait',
       problem:
-        'Oversized images and a slow host mean the useful part of the page arrives last, and the layout jumps while it does.',
+        'Oversized images and a slow host: the useful part arrives last, and the layout jumps while it does.',
       change:
-        'A light page where the headline, the number and the services are there immediately, and nothing moves under your thumb.',
-      whyItMatters:
-        'Less waiting is less friction. A visitor who never sees the page cannot decide to call you.',
-      note: 'Google publishes targets for this: largest contentful paint within 2.5 seconds, interaction latency under 200 milliseconds, and almost no layout shift. Good scores are worth having on their own merits — Google is also explicit that they do not buy you a ranking.',
+        'A light page — headline, number and services there immediately, nothing moving under your thumb.',
+      whyItMatters: 'A visitor who never sees the page cannot decide to call you.',
+      note: 'Google publishes targets for this: content visible within 2.5 seconds, response to a tap under 200 milliseconds, almost no layout shift. Google is also explicit that good scores do not buy a ranking.',
       before: {
         kind: 'mock',
         mock: {
@@ -252,12 +248,10 @@ export const demos = {
     {
       id: 'path',
       title: 'A route that leads nowhere in particular',
-      problem:
-        'Every page is a destination and none of them asks for anything. The visitor is left to work out their own next step.',
+      problem: 'Every page is a destination and none of them asks for anything.',
       change:
-        'A service page that follows the order a customer decides in, and ends where they were always going to end up.',
-      whyItMatters:
-        'The visitor is guided toward the next logical decision instead of being handed a menu.',
+        'A service page that follows the order a customer decides in, and ends where they were going anyway.',
+      whyItMatters: 'The visitor is guided to the next decision instead of handed a menu.',
       before: {
         kind: 'path',
         steps: ['Home', 'About us', 'Services', 'Contact form', '…maybe'],
@@ -274,6 +268,22 @@ export const demos = {
       },
     },
   ] satisfies readonly DemoExample[],
+
+  /*
+   * The bridge from the mocks above to the demonstration sites.
+   *
+   * Every "after" panel is a deliberately abstract wireframe, and the honest answer to
+   * "does the finished version exist" is yes, five times, one route away. The copy makes
+   * the same disclosure the portfolio cards do — these are demonstrations, not clients —
+   * and the phone screenshot beside it is captured from this repository's own build by
+   * `scripts/capture-previews.ts`.
+   */
+  finished: {
+    heading: 'The “after” is not hypothetical',
+    lede: 'Five demonstration sites, one for each trade — real pages you can open, scroll and tap around.',
+    note: 'Emerald Line Plumbing, a fictional business. On a phone, the call button stays on screen the whole way down.',
+    cta: 'See the five examples',
+  },
 } as const;
 
 /*
@@ -347,13 +357,13 @@ export const whatYoureBuying = {
     {
       id: 'looked-after',
       name: 'Somebody looking after it',
-      role: 'All of it kept working, current and secure without you asking.',
+      role: 'All of it kept working, current and secure without you asking — Growth Partner, if you choose it.',
       icon: 'shield',
     },
     {
       id: 'improvement',
       name: 'Continuous improvement',
-      role: 'Making it better at its job than it was at launch.',
+      role: 'Making it better at its job than it was at launch — the other half of Growth Partner.',
       icon: 'bolt',
     },
   ],
@@ -371,7 +381,7 @@ export const whatYoureBuying = {
  * left one without being able to defend it.
  */
 export const control = {
-  heading: 'What I control, and what I do not',
+  heading: 'What we control, and what we do not',
   lede: 'Every promise on this page is on the left. Nothing on the right is anybody’s to sell you.',
 
   canControl: [
@@ -397,7 +407,7 @@ export const control = {
   ],
 
   closing:
-    'That is why there is no promise of rankings or customer numbers anywhere on this page. I would rather be the one provider you spoke to who told you the truth about it.',
+    'Which is why there is no promise of rankings or customer numbers anywhere on this site.',
 } as const;
 
 /* ------------------------------------------------------------------ objection */
@@ -410,22 +420,22 @@ export const alreadyHaveAWebsite = {
     {
       id: 'working',
       condition: 'If it is already doing its job',
-      response: 'You will hear that, and I will tell you which parts I would leave alone.',
+      response: 'You will hear that, and we will tell you which parts we would leave alone.',
     },
     {
       id: 'not-converting',
       condition: 'If it gets visitors but not calls',
-      response: 'I will point at the places people are most likely giving up.',
+      response: 'We will point at the places people are most likely giving up.',
     },
     {
       id: 'outdated',
       condition: 'If it is out of date',
-      response: 'You get a specific list of what I would change first, in order.',
+      response: 'You get a specific list of what we would change first, in order.',
     },
     {
       id: 'unmanaged',
       condition: 'If you simply do not want to deal with it',
-      response: 'That is exactly what the ongoing management service exists for.',
+      response: 'That is exactly what Growth Partner exists for.',
     },
   ],
 } as const;

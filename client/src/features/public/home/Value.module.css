@@ -1,0 +1,990 @@
+/*
+ * The value-education layer: the business case, the before/after demonstrations, and the
+ * "what you are actually buying" stack.
+ *
+ * This part of the page is selling website quality, so it has to be an example of it.
+ * No new colours, no new spacing scale, no images to download, no animation that runs
+ * on its own. Everything below is tokens and markup.
+ */
+
+/* ------------------------------------------------------------------ the business case */
+
+.stages {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.stage {
+  position: relative;
+  padding: var(--space-5) 0 var(--space-6) 3rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.stage:first-child {
+  border-top: 0;
+}
+
+/* The rail that keeps six rows reading as one sequence rather than six opinions. */
+.stage:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 3.5rem;
+  bottom: 0;
+  left: 0.94rem;
+  width: 2px;
+  background-color: var(--color-border);
+}
+
+.stageHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.stageIcon {
+  position: absolute;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-ink);
+  background-color: var(--color-tint-brand);
+  border: 1px solid var(--color-surface);
+  border-radius: var(--radius-full);
+}
+
+.stageName {
+  font-size: var(--text-xl);
+}
+
+.componentChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+/* Ties the stage back to the six components without repeating what they are. */
+/* Ember Deep is 4.3:1 on this tint and fails; the text ember clears it. */
+.componentChip {
+  padding: 0.15rem var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+  background-color: var(--color-tint-accent);
+  border-radius: var(--radius-full);
+}
+
+.stageGrid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  margin: 0;
+}
+
+.stageCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.stageLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.stageProblem {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+}
+
+.stageValue {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ three things */
+
+.closing {
+  margin-top: var(--space-8);
+  padding: var(--space-6);
+  background-color: var(--color-tint-brand);
+  border-radius: var(--radius-lg);
+}
+
+.closingHeading {
+  font-size: var(--text-2xl);
+}
+
+.closingList {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: var(--space-5) 0 0;
+  list-style: none;
+}
+
+.closingItem {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.closingNumber {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-dark);
+  border-radius: var(--radius-full);
+}
+
+.closingTitle {
+  font-size: var(--text-lg);
+}
+
+.closingBody {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.closingNote {
+  margin-top: var(--space-5);
+  font-weight: var(--weight-medium);
+}
+
+/* ------------------------------------------------------------------ demonstrations */
+
+.demoList {
+  display: grid;
+  gap: var(--space-6);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+/*
+ * Two demonstrations per row at the widest step.
+ *
+ * Four full-width comparisons ran 2,180px — the longest uninterrupted scroll on the page,
+ * and one where every card says the same kind of thing. Paired, the section is a grid a
+ * reader can take in, and each panel still gets ~265px, which is wider than the phone the
+ * mock is imitating. Only from 80rem: below that a pair would put the two halves of a
+ * before/after under 200px each, and the comparison is the whole point.
+ */
+@media (min-width: 80rem) {
+  .demoList {
+    grid-template-columns: repeat(2, 1fr);
+    align-items: start;
+  }
+}
+
+.demo {
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.demoTitle {
+  margin-bottom: var(--space-4);
+}
+
+/* The toggle only earns its place on a phone; above 48rem both panels are on screen. */
+.toggle {
+  display: inline-flex;
+  padding: var(--space-hair);
+  margin-bottom: var(--space-4);
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-full);
+}
+
+.toggleButton {
+  min-height: 2.5rem;
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-muted);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-full);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.toggleOn {
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.panels {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.panelLabel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.panelSide {
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.panelLabelAfter .panelSide {
+  color: var(--color-success);
+}
+
+/* Never let one of these read as a real customer's website. */
+.panelTag {
+  padding: 0.1rem var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-full);
+}
+
+.demoNotes {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  margin: var(--space-5) 0 0;
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.demoNote {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.demoFootnote {
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ finished */
+
+/*
+ * The bridge from the wireframe mocks to the demonstration sites: a phone-framed
+ * capture of one, beside the invitation to open all five. Stacked on a phone with the
+ * capture first; a two-column media row from 48rem. This is the first product imagery a
+ * phone reader meets — the hero's framed shot is desktop-only.
+ */
+.finished {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-7);
+  padding: var(--space-5);
+  background-color: var(--color-tint-brand);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.finishedPhone {
+  width: min(13rem, 70%);
+  justify-self: center;
+}
+
+.finishedBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.finishedHeading {
+  font-size: var(--text-xl);
+}
+
+.finishedLede {
+  max-width: 36rem;
+  color: var(--color-ink-muted);
+}
+
+.finishedNote {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  max-width: 32rem;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ site mock */
+
+.mock {
+  display: flex;
+  flex-direction: column;
+  min-height: 15rem;
+  overflow: hidden;
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.mockBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mockBrand {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 0.5rem;
+  background-color: var(--color-surface-dark);
+  border-radius: var(--radius-sm);
+}
+
+.mockNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The two filled buttons in the mock. Ember itself is the graphic value and only carries
+ * text on charcoal, so a fill with a label on it takes Ember Deep and white — the same
+ * pairing the real primary button uses.
+ */
+.mockCall {
+  margin-left: auto;
+  padding: 0.15rem var(--space-2);
+  font-weight: var(--weight-semibold);
+  color: var(--color-on-accent);
+  background-color: var(--color-accent-strong);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.mockBody {
+  flex: 1;
+  padding: var(--space-4) var(--space-3);
+}
+
+.mockHeadline {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+}
+
+.mockSubline {
+  margin-top: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+.mockCta {
+  display: inline-block;
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  font-weight: var(--weight-semibold);
+  color: var(--color-on-accent);
+  background-color: var(--color-accent-strong);
+  border-radius: var(--radius-sm);
+}
+
+.mockCards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  list-style: none;
+}
+
+.mockCard {
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-ink);
+  background-color: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.mockTrust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-3) 0 0;
+  list-style: none;
+}
+
+.mockBadge {
+  padding: 0.1rem var(--space-2);
+  color: var(--color-ink);
+  background-color: var(--color-tint-brand);
+  border-radius: var(--radius-full);
+}
+
+.mockFooter {
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-ink-muted);
+  background-color: var(--color-surface-muted);
+  border-top: 1px solid var(--color-border);
+}
+
+/*
+ * Everything shrinks and crowds — the point of the "before" mobile example.
+ *
+ * **Deliberately off the type scale.** This class depicts a badly-built website, and 11px
+ * is the illustration: rounding it up to `--text-xs` would make the "before" legible and
+ * delete the argument the section exists to make. It is the one font-size in the
+ * application that is not a token, and `styles/tokens.test.ts` exempts it by name.
+ */
+.mockCramped {
+  font-size: 0.6875rem;
+}
+
+.mockCramped .mockHeadline {
+  font-size: var(--text-sm);
+}
+
+.mockCramped .mockBody {
+  padding: var(--space-2);
+}
+
+.mockSkeleton {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.mockBlock,
+.mockBlockShort,
+.mockBlockWide {
+  height: 0.75rem;
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-sm);
+}
+
+.mockBlock {
+  width: 85%;
+}
+
+.mockBlockShort {
+  width: 45%;
+}
+
+.mockBlockWide {
+  width: 100%;
+  height: 3.5rem;
+}
+
+/* ------------------------------------------------------------------ path panel */
+
+.pathList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  margin: 0;
+  min-height: 15rem;
+  list-style: none;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.pathStep {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  background-color: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.pathIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-dark);
+  border-radius: var(--radius-full);
+}
+
+.pathArrow {
+  display: inline-flex;
+  margin-left: var(--space-1);
+  color: var(--color-border-strong);
+}
+
+/* ------------------------------------------------------------------ design decisions */
+
+.design {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.designHeading {
+  font-size: var(--text-2xl);
+}
+
+.designLede {
+  max-width: 42rem;
+  margin-top: var(--space-3);
+  color: var(--color-ink-muted);
+}
+
+.designList {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  margin: var(--space-5) 0 0;
+}
+
+.designItem {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.designDecision {
+  font-weight: var(--weight-semibold);
+}
+
+.designJob {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ demo cta */
+
+.demoCta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent);
+  border-radius: var(--radius-md);
+}
+
+.demoCtaBody {
+  max-width: 40rem;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+}
+
+/* ------------------------------------------------------------------ the stack */
+
+.stack {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+/*
+ * Rendered on the brand surface, so the rows are translucent panels rather than cards.
+ * The wash is cream rather than white: a neutral white veil over charcoal greys the band
+ * out, where the warm one keeps the panel on the same temperature as the text above it.
+ */
+.stackItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--color-surface-on-dark);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-md);
+}
+
+.stackIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-on-dark-strong);
+  border-radius: var(--radius-md);
+}
+
+.stackName {
+  font-size: var(--text-lg);
+}
+
+.stackRole {
+  font-size: var(--text-sm);
+  color: var(--color-ink-inverse-muted);
+}
+
+/* Sits in the gap between rows, so the list reads as a sum rather than a list. */
+.stackPlus {
+  position: absolute;
+  bottom: calc(var(--space-3) * -0.5);
+  left: 2.25rem;
+  transform: translate(-50%, 50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-brand-strong);
+  border-radius: var(--radius-full);
+}
+
+/* The one thing on the section that is not translucent: the answer. */
+.stackResult {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+}
+
+/* Sits inside the white result card, not on the charcoal band, so this is ember on a
+   light ground and takes the text value. */
+.stackEquals {
+  font-size: var(--text-2xl);
+  color: var(--color-accent-text);
+}
+
+/* ------------------------------------------------------------------ control */
+
+.controlGrid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+  margin-top: var(--space-7);
+}
+
+.controlColumn {
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.controlColumnMuted {
+  background-color: var(--color-surface-muted);
+}
+
+.controlHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-lg);
+}
+
+.controlList {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.controlItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+.controlYes {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--color-success);
+}
+
+.controlNo {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--color-ink-muted);
+}
+
+.controlClosing {
+  max-width: 46rem;
+  margin-top: var(--space-6);
+  font-weight: var(--weight-medium);
+}
+
+/* ------------------------------------------------------------------ objection */
+
+.objection {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.objectionHeading {
+  font-size: var(--text-2xl);
+}
+
+.objectionLede {
+  margin-top: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+.objectionList {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: var(--space-5) 0 0;
+  list-style: none;
+}
+
+.objectionItem {
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.objectionCondition {
+  font-weight: var(--weight-semibold);
+}
+
+.objectionResponse {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ responsive */
+
+@media (min-width: 48rem) {
+  .stageGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-5);
+  }
+
+  .closingList {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Both sides on screen at once: no interaction needed to make the comparison. */
+  .toggle {
+    display: none;
+  }
+
+  .panels {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .panelHidden {
+    display: flex;
+  }
+
+  .demoNotes {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .demo {
+    padding: var(--space-6);
+  }
+
+  .designList {
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: var(--space-7);
+  }
+
+  .demoCta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .finished {
+    grid-template-columns: minmax(0, 13rem) 1fr;
+    align-items: center;
+    column-gap: var(--space-7);
+    padding: var(--space-6);
+  }
+
+  .finishedPhone {
+    width: 100%;
+    justify-self: start;
+  }
+
+  .controlGrid,
+  .objectionList {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stackResult {
+    font-size: var(--text-2xl);
+  }
+}
+
+@media (min-width: 64rem) {
+  .stage {
+    padding-left: 3.5rem;
+  }
+
+  .designList {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Below the split, only the selected side of a comparison is on screen. */
+@media (max-width: 47.999rem) {
+  .panelHidden {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------ economic anchor */
+
+/*
+ * The three steps of "what is one more customer worth".
+ *
+ * Numbered by document position rather than by a stored index, and laid out as equal
+ * columns because the three are one argument read left to right, not a ranking.
+ */
+.anchorList {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+@media (min-width: 60rem) {
+  .anchorList {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+}
+
+/* Charcoal rather than ember: three of these side by side would spend the accent, and
+   the brand rations it for the primary action. */
+.anchorItem {
+  padding-top: var(--space-4);
+  border-top: 3px solid var(--color-ink);
+}
+
+/*
+ * A phrase, not a figure. Set at display size because it is the thing the eye lands on,
+ * but it is deliberately never a currency amount — see the header of content/opportunity.ts.
+ */
+.anchorFigure {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+}
+
+.anchorTitle {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-lg);
+}
+
+.anchorBody {
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The limits. Given the sunken surface rather than a small-print treatment, because the
+ * whole point of the block is that it is not small print.
+ */
+.anchorCaveat {
+  margin-top: var(--space-7);
+  padding: var(--space-5);
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+}
+
+.anchorCaveatHeading {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-lg);
+}
+
+.anchorCaveatBody {
+  color: var(--color-ink-muted);
+}
+
+.anchorClosing {
+  max-width: 52rem;
+  margin-top: var(--space-5);
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+}
+
+/* ------------------------------------------------------------------ evidence */
+
+.evidenceClosing {
+  max-width: 52rem;
+  margin-top: var(--space-6);
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+}

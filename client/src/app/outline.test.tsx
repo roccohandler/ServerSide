@@ -4,15 +4,16 @@ import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { routes, sections } from '../config/routes';
-import { AboutPage } from '../features/about/AboutPage';
-import { ContactPage } from '../features/contact/ContactPage';
-import { HomePage } from '../features/home/HomePage';
-import { PortfolioPage } from '../features/portfolio/PortfolioPage';
-import { PlayBookPage } from '../features/playbook/PlayBookPage';
-import { PrivacyPage } from '../features/legal/PrivacyPage';
-import { ServicesPage } from '../features/services/ServicesPage';
-import { TermsPage } from '../features/legal/TermsPage';
-import { WorkbookPage } from '../features/playbook/WorkbookPage';
+import { AboutPage } from '../features/public/about/AboutPage';
+import { ContactPage } from '../features/public/contact/ContactPage';
+import { HomePage } from '../features/public/home/HomePage';
+import { PortfolioPage } from '../features/public/portfolio/PortfolioPage';
+import { PlayBookPage } from '../features/public/playbook/PlayBookPage';
+import { PrivacyPage } from '../features/public/legal/PrivacyPage';
+import { ServicesPage } from '../features/public/services/ServicesPage';
+import { TermsPage } from '../features/public/legal/TermsPage';
+import { WelcomePage } from '../features/public/welcome/WelcomePage';
+import { WorkbookPage } from '../features/public/playbook/WorkbookPage';
 
 /*
  * ============================================================================
@@ -60,6 +61,8 @@ const PAGES = [
   ['the terms page', TermsPage],
   ['the playbook', PlayBookPage],
   ['the workbook', WorkbookPage],
+  // Lazy in the app, eager here: it is a page with an outline like any other.
+  ['the welcome page', WelcomePage],
 ] as const;
 
 function headingsOf(container: Element) {

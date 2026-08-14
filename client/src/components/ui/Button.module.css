@@ -26,52 +26,66 @@
 
 /* ------------------------------------------------------------------ variants */
 
+/*
+ * The primary button is Ember *Deep*, not Ember.
+ *
+ * Ember Orange with a white label is 3.5:1, which fails AA for a control this size, and
+ * a call-to-action nobody can read is not a call to action. `--color-accent-strong` is
+ * the value the brand board carries for exactly this — one step down, still unmistakably
+ * the brand, and 4.9:1 with white. Pure Ember stays where it can be seen: rules, marks,
+ * icons and text on charcoal.
+ */
 .primary {
-  color: var(--color-ink-inverse);
-  background-color: var(--color-accent);
-  border-color: var(--color-accent);
-}
-
-.primary:hover:not(:disabled) {
-  color: var(--color-ink-inverse);
+  color: var(--color-on-accent);
   background-color: var(--color-accent-strong);
   border-color: var(--color-accent-strong);
 }
 
+.primary:hover:not(:disabled) {
+  color: var(--color-on-accent);
+  background-color: var(--color-accent-deep);
+  border-color: var(--color-accent-deep);
+}
+
 .secondary {
-  color: var(--color-brand);
+  color: var(--color-ink);
   background-color: var(--color-surface);
   border-color: var(--color-border-strong);
 }
 
 .secondary:hover:not(:disabled) {
-  color: var(--color-brand-strong);
-  background-color: var(--color-tint-brand);
-  border-color: var(--color-brand);
+  color: var(--color-accent-text);
+  background-color: var(--color-tint-accent);
+  border-color: var(--color-accent);
 }
 
+/*
+ * The button for a charcoal band. Cream rather than white: it is the same warm value the
+ * text on those bands uses, so the button reads as cut out of the band rather than
+ * pasted onto it.
+ */
 .inverse {
-  color: var(--color-brand);
+  color: var(--color-ink);
+  background-color: var(--color-page);
+  border-color: var(--color-page);
+}
+
+.inverse:hover:not(:disabled) {
+  color: var(--color-accent-text);
   background-color: var(--color-surface);
   border-color: var(--color-surface);
 }
 
-.inverse:hover:not(:disabled) {
-  color: var(--color-brand-strong);
-  background-color: var(--color-tint-brand);
-  border-color: var(--color-tint-brand);
-}
-
 .ghost {
-  color: var(--color-brand);
+  color: var(--color-accent-text);
   background-color: transparent;
   border-color: transparent;
   padding-inline: var(--space-2);
 }
 
 .ghost:hover:not(:disabled) {
-  color: var(--color-brand-strong);
-  background-color: var(--color-tint-brand);
+  color: var(--color-accent-deep);
+  background-color: var(--color-tint-accent);
 }
 
 /* ------------------------------------------------------------------ sizes */
@@ -89,8 +103,14 @@
   width: 100%;
 }
 
-/* Below the smallest breakpoint, stacked full-width buttons are easier to hit. */
-@media (max-width: 29.99rem) {
+/*
+ * Below the `sm` step, stacked full-width buttons are easier to hit.
+ *
+ * `29.999rem` rather than `29.99rem`: the paired `min-width` rule starts at 30rem, and the
+ * 0.01rem version left a 0.16px band matching neither. The convention across the codebase
+ * is step-minus-0.001rem — see the breakpoint note in `styles/tokens.css`.
+ */
+@media (max-width: 29.999rem) {
   .base {
     width: 100%;
   }

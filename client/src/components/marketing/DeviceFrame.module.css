@@ -1,0 +1,83 @@
+/*
+ * Device chrome for product screenshots. See DeviceFrame.tsx for what may go inside.
+ *
+ * Sized by the parent: both frames fill their container's width, so the composition
+ * (hero shot, showcase row, industry hero) decides how big each device is. The image
+ * inside must carry intrinsic width/height attributes — the aspect-ratio here only
+ * reserves the screenshot's space before it loads.
+ */
+
+.browser {
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.browserBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-sunken);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Three window dots from one element, so the bar stays a two-span affair. */
+.browserDots {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-right: 16px;
+  background: var(--color-border-strong);
+  border-radius: var(--radius-full);
+  box-shadow:
+    13px 0 0 var(--color-border),
+    26px 0 0 var(--color-border);
+}
+
+.browserUrl {
+  overflow: hidden;
+  min-width: 0;
+  padding: 2px var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+/*
+ * **Deliberately off the token scales**, along with the 16px screen radius and the 16px
+ * dot gutter above.
+ *
+ * These numbers depict hardware rather than express the brand: a phone bezel is 6px of
+ * casing around a screen whose corners are tighter than the shell's, and that relationship
+ * is what makes the frame read as a phone at all. Snapping them to `--radius-lg` and
+ * `--space-2` would make the bezel uniform and the illusion collapse. `styles/tokens.test.ts`
+ * exempts this file by name for exactly this reason.
+ */
+.phone {
+  padding: 6px;
+  background: var(--color-ink);
+  border-radius: 22px;
+  box-shadow: var(--shadow-lg);
+}
+
+.phone .screen {
+  border-radius: 16px;
+}
+
+.screen {
+  overflow: hidden;
+}
+
+.screen img {
+  display: block;
+  width: 100%;
+  height: auto;
+}

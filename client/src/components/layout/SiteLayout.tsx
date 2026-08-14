@@ -1,8 +1,10 @@
 import { Suspense, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { ErrorBoundary } from '../../app/ErrorBoundary';
 import { Footer } from './Footer';
 import { Header } from './Header';
 import { PlaceholderNotice } from './PlaceholderNotice';
+import { WorkspaceBar } from './WorkspaceBar';
 import styles from './SiteLayout.module.css';
 
 export const MAIN_CONTENT_ID = 'main-content';
@@ -56,6 +58,13 @@ export function SiteLayout() {
       </a>
 
       <PlaceholderNotice />
+      {/*
+       * Above the header, and only for somebody who is signed in: the marketing site is
+       * a place a customer can legitimately be, and the way back to their workspace has
+       * to be visible rather than inferred from a nav item. Renders nothing at all for
+       * an anonymous visitor — see `WorkspaceBar`.
+       */}
+      <WorkspaceBar />
       <Header />
 
       <main id={MAIN_CONTENT_ID} className={styles['main']} ref={mainRef} tabIndex={-1}>
@@ -69,9 +78,17 @@ export function SiteLayout() {
          * lands in a frame or two on any real connection, and a spinner that appears for
          * 30ms is more distracting than nothing at all.
          */}
-        <Suspense fallback={null}>
-          <Outlet />
-        </Suspense>
+        {/*
+         * Inside `<main>`, so a section that throws costs the visitor this page and not
+         * the header, the phone number and the footer with it. Keyed on the path: without
+         * that, a boundary that has caught once stays caught, and every subsequent
+         * navigation would render the error state for a page that is perfectly fine.
+         */}
+        <ErrorBoundary key={pathname} label={`page ${pathname}`}>
+          <Suspense fallback={null}>
+            <Outlet />
+          </Suspense>
+        </ErrorBoundary>
       </main>
 
       <Footer />

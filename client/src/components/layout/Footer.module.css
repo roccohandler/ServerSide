@@ -1,6 +1,13 @@
+/*
+ * The ember rule across the top closes the page the way the header opens it, and it is
+ * the reason the footer needs no other accent — a charcoal block bounded by a single
+ * warm line reads as finished, where the same block with ember headings reads as
+ * decorated.
+ */
 .footer {
   color: var(--color-ink-inverse);
-  background-color: var(--color-brand);
+  background-color: var(--color-surface-dark);
+  border-top: 3px solid var(--color-accent);
   padding-block: var(--space-8) var(--space-6);
   margin-top: auto;
 }
@@ -11,23 +18,30 @@
   grid-template-columns: 1fr;
 }
 
+/* Size only — the lockup inside carries the weight, width and tracking. */
 .name {
   font-size: var(--text-lg);
-  font-weight: var(--weight-bold);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
+/*
+ * Secondary text on charcoal is `--color-ink-inverse-muted`, never `--color-tint-brand`.
+ *
+ * The tint is a *background* value now that the brand is charcoal — putting it here
+ * would land within a shade of the primary cream and flatten the hierarchy the footer
+ * depends on to stay scannable.
+ */
 .description {
-  color: var(--color-tint-brand);
+  color: var(--color-ink-inverse-muted);
   max-width: 32rem;
 }
 
 .groupHeading {
   font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--color-tint-brand);
+  color: var(--color-ink-inverse-muted);
   margin-bottom: var(--space-3);
 }
 
@@ -49,12 +63,12 @@
 }
 
 .link:hover {
-  color: var(--color-ink-inverse);
+  color: var(--color-accent);
   text-decoration: underline;
 }
 
 .areaList {
-  color: var(--color-tint-brand);
+  color: var(--color-ink-inverse-muted);
   margin: var(--space-4) 0 0;
 }
 
@@ -66,9 +80,9 @@
   gap: var(--space-3);
   margin-top: var(--space-7);
   padding-top: var(--space-5);
-  border-top: 1px solid rgb(255 255 255 / 22%);
+  border-top: 1px solid var(--color-border-dark);
   font-size: var(--text-sm);
-  color: var(--color-tint-brand);
+  color: var(--color-ink-inverse-muted);
 }
 
 .legalLinks {

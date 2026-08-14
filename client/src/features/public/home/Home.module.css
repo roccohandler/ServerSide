@@ -1,0 +1,626 @@
+/* ------------------------------------------------------------------ hero */
+
+.hero {
+  /*
+   * Tighter at the top than the section rhythm elsewhere. Every rem of padding above the
+   * headline is a rem of the form pushed below the fold on a phone, and the fold is the
+   * whole argument for having a form here at all.
+   */
+  padding-block: var(--space-6) var(--space-8);
+  /*
+   * Flat cream, not a fade. The identity has no gradients — but the reason this is the
+   * page ground rather than the white the fade used to end on is that white is now the
+   * *raised* value. A white band here would swallow the white lead form sitting on it,
+   * which is the one thing on this screen that has to look like an object.
+   */
+  background-color: var(--color-page);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/*
+ * Three blocks, stacked on a phone in the order somebody reads them: what this is, the
+ * way in, then the reassurance that makes filling it in feel safe. On a wide screen the
+ * copy and the reassurance stack on the left and the form sits beside both.
+ */
+.heroInner {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    'copy'
+    'action'
+    'trust';
+}
+
+.heroCopy {
+  grid-area: copy;
+}
+
+.heroAction {
+  grid-area: action;
+}
+
+.heroTrust {
+  grid-area: trust;
+}
+
+/*
+ * The first kicker a visitor meets, so it is the brand kicker exactly as the shared
+ * eyebrow in `Layout.module.css` sets it: smaller than it was, with the tracking doing
+ * the work the size used to.
+ * The colour is the text ember rather than the fill ember — this is text on cream,
+ * where `--color-accent-strong` is 4.3:1 and fails.
+ */
+.heroEyebrow {
+  display: inline-block;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+}
+
+.heroSubheading {
+  margin-top: var(--space-5);
+  font-size: var(--text-lg);
+  color: var(--color-ink-muted);
+  max-width: 38rem;
+}
+
+/*
+ * The differentiator sits directly under the pitch, where the "why you?" question lands.
+ * Deliberately not a boxed card: the form is the only card on this screen, and a second
+ * one competes with it.
+ */
+.heroDifferentiator {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  max-width: 34rem;
+  margin-bottom: var(--space-4);
+  font-weight: var(--weight-medium);
+}
+
+.heroDifferentiatorIcon {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--color-success);
+}
+
+/*
+ * The price, on the first screen.
+ *
+ * Laid out as figure-label pairs so it reads as two facts rather than as a price tag —
+ * "$2,500 to build and launch it" is a sentence a business owner can finish; "$2,500" on
+ * its own is a number they have to interpret. Wraps to two lines on a narrow phone, which
+ * is fine: each pair stays together because the divider is the only thing between them.
+ */
+.heroPrice {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3) var(--space-5);
+  max-width: 34rem;
+  margin-top: var(--space-5);
+}
+
+@media (min-width: 30rem) {
+  .heroPrice {
+    grid-template-columns: auto auto;
+    justify-content: start;
+  }
+}
+
+/* One labelled figure: what it is, the number, and what the money does. */
+.heroPriceItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* "The build" / "Optional after launch" — the words that stop the two figures reading
+   as one compound bill. */
+.heroPriceItemLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.heroPriceFigure {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+}
+
+/* "one-time", beside the build figure. A fact about the figure, not a second figure. */
+.heroPriceCadence {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  letter-spacing: normal;
+  color: var(--color-ink-muted);
+}
+
+.heroPriceLabel {
+  max-width: 16rem;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The two qualifying facts, on one line.
+ *
+ * Ownership and the founding condition used to be two stacked paragraphs of four lines
+ * total, sitting between the price and the primary button. They are the small print of the
+ * offer rather than the offer, so they are set as small print — one flowing line, with the
+ * founding half a shade quieter than the half about what the reader owns.
+ */
+.heroTerms {
+  max-width: 38rem;
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+}
+
+.heroTermsFounding {
+  color: var(--color-ink-muted);
+}
+
+/* The launch window, as a first-screen fact rather than a buried paragraph. */
+.heroTimeline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+}
+
+/* The text ember, not Ember itself: this mark sits on cream, where Ember is 3.0:1 and
+   lands on the wrong side of the non-text floor once rounding is against you. */
+.heroTimelineIcon {
+  flex-shrink: 0;
+  color: var(--color-accent-text);
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+/* ------------------------------------------------------------------ hero trust */
+
+/*
+ * Process facts, not social proof. There are no customers yet, so there is nothing here
+ * that pretends there are — see the reasoning in `content/home.ts`.
+ */
+.trustPoints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.trustPoint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+}
+
+.trustPointIcon {
+  flex-shrink: 0;
+  margin-top: 0.1em;
+  color: var(--color-success);
+}
+
+.heroPhone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  color: var(--color-ink-muted);
+}
+
+/* Undecorated until hover, so the colour is the only thing saying "press this". The brand
+   colour is charcoal now and would say nothing at all; ember text is the affordance. */
+.heroPhoneLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-accent-text);
+  text-decoration: none;
+}
+
+.heroPhoneLink:hover {
+  text-decoration: underline;
+}
+
+/*
+ * The framed product shot beside the hero copy: a desktop capture in browser chrome with
+ * a phone capture overlapping its lower-right corner. Hidden below 64rem — on a phone,
+ * every rem above the call to action is a rem of the call to action pushed down, and the
+ * phone reader meets the product in `DemoSection` instead. The images inside are lazy,
+ * so the hidden layout never downloads them.
+ */
+.heroShot {
+  display: none;
+  justify-self: center;
+  width: 100%;
+  max-width: 30rem;
+  margin: 0;
+}
+
+.shot {
+  margin: 0;
+}
+
+.shotFrames {
+  position: relative;
+  /* Room for the phone's overhang below the browser frame. */
+  padding-bottom: var(--space-8);
+}
+
+.shotBrowser {
+  width: 88%;
+}
+
+.shotPhone {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 27%;
+}
+
+.shotCaption {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The hero entrance.
+ *
+ * The <h1> is deliberately absent from this list. It is the largest-contentful-paint
+ * candidate, and starting it at zero opacity would push the moment the page counts as
+ * painted back by the length of the animation — a real cost, for an effect nobody asked
+ * for. Everything around it is staggered instead, which reads the same and measures
+ * better. Wrapped in `no-preference` so a reduced-motion visitor never runs any of it.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .heroEyebrow,
+  .heroSubheading,
+  .heroPrice,
+  .heroTerms,
+  .heroTimeline,
+  .heroDifferentiator,
+  .heroActions,
+  .heroAction,
+  .heroTrust {
+    animation: heroEnter 480ms var(--ease-emphasised) both;
+  }
+
+  .heroEyebrow {
+    animation-delay: 30ms;
+  }
+
+  .heroSubheading {
+    animation-delay: 90ms;
+  }
+
+  .heroPrice,
+  .heroTerms,
+  .heroTimeline {
+    animation-delay: 130ms;
+  }
+
+  .heroDifferentiator {
+    animation-delay: 150ms;
+  }
+
+  /*
+   * The action and the reassurance beside it are deliberately *not* delayed.
+   *
+   * They used to arrive at 210ms and 280ms, on top of a 480ms fade — so the button was
+   * still arriving most of a second after the page painted. This section's own comment
+   * says a visitor sent by a referral is already sold and should not have to read a sales
+   * page to act; making that visitor watch the button fade in is the same mistake in
+   * motion. Everything above them can arrive politely. The thing they came to click
+   * cannot.
+   */
+  .heroActions,
+  .heroAction,
+  .heroTrust {
+    animation-delay: 0ms;
+  }
+}
+
+@keyframes heroEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ------------------------------------------------------------------ the reframe */
+
+.needList {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.needItem {
+  display: flex;
+  gap: var(--space-4);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.needMarker {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.needTitle {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-lg);
+}
+
+.needDetail {
+  color: var(--color-ink-muted);
+}
+
+.reframeClosing {
+  max-width: 44rem;
+  margin-top: var(--space-7);
+  padding: var(--space-5);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent);
+  border-radius: var(--radius-md);
+}
+
+/* ------------------------------------------------------------------ audience */
+
+.audience {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.audienceHeading {
+  font-size: var(--text-lg);
+}
+
+.audienceBody {
+  max-width: 42rem;
+  margin-top: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+.industries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-5) 0 0;
+  list-style: none;
+}
+
+.industryChip {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+  background-color: var(--color-tint-brand);
+  border-radius: var(--radius-full);
+}
+
+/*
+ * The five chips that lead somewhere. Underlined rather than recoloured at rest: every
+ * chip carries the same ink, so recolouring the linked ones would make them look like a
+ * different kind of thing rather than like the same thing you can press.
+ */
+.industryLink {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Hover is where the recolouring is allowed, and it has to be ember: the old
+   `--color-brand-strong` is now a shade off the ink these chips already sit at, so the
+   hover state was indistinguishable from the resting one. */
+.industryLink:hover,
+.industryLink:focus-visible {
+  color: var(--color-accent-text);
+}
+
+.industryNote {
+  margin-top: var(--space-5);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ trust */
+
+.disclosure {
+  max-width: 46rem;
+  margin-bottom: var(--space-7);
+  padding: var(--space-5);
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  /* Charcoal rather than ember. `reframeClosing` above already spends the page's one
+     ember bar, and a second one stops the first meaning anything. */
+  border-left: 4px solid var(--color-ink);
+  border-radius: var(--radius-md);
+}
+
+.commitmentList {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.commitment {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.commitmentMarker {
+  flex-shrink: 0;
+  color: var(--color-success);
+}
+
+.commitmentTitle {
+  margin-bottom: var(--space-1);
+}
+
+.commitmentBody {
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ review offer */
+
+.reviewGrid {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+.reviewIncludes {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.reviewItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+/* Ember on a light band again — the text ember, for the reason given at
+   `heroTimelineIcon`. */
+.reviewCheck {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--color-accent-text);
+}
+
+.reviewCaveat {
+  margin-top: var(--space-5);
+  font-weight: var(--weight-medium);
+}
+
+/*
+ * The link to the sample. Quieter than the caveat above it on purpose — it answers a
+ * question the reader may not have asked yet, and it must not compete with the button.
+ */
+.reviewSample {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ responsive */
+
+@media (min-width: 48rem) {
+  .needList {
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: var(--space-7);
+  }
+
+  .commitmentList {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .reviewGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+  }
+}
+
+@media (min-width: 64rem) {
+  /*
+   * The copy spans both rows on the left; the shot and the reassurance stack on the right.
+   *
+   * This is the reverse of how it was, and the change is worth the note. The reassurance
+   * used to sit *under the copy*, which put four more lines between the headline and the
+   * primary button — while the product shot, which is short, left roughly 500×450px of
+   * empty cream underneath itself on the right. One column was overflowing the fold and
+   * the other was half empty.
+   *
+   * Moving the trust points into that gap shortens the left column by everything they
+   * occupied and costs nothing, because the space was already being paid for. It also puts
+   * them beside the thing they are vouching for rather than below it.
+   */
+  /*
+   * 1.1/0.9 rather than 1.05/0.95, and the 5% is load-bearing.
+   *
+   * At the old split the copy column measured 613px and the two hero buttons measured 619px
+   * together — so they wrapped, by six pixels, and the second one dropped onto a row of its
+   * own. That cost 72px directly above the fold on every desktop size, to solve nothing.
+   *
+   * The right-hand column gives up 29px and loses nothing: the framed screenshot inside it
+   * is 480px wide and was never touching its edges.
+   */
+  .heroInner {
+    grid-template-columns: 1.1fr 0.9fr;
+    grid-template-areas:
+      'copy action'
+      'copy trust';
+    align-content: start;
+    column-gap: var(--space-8);
+    row-gap: var(--space-6);
+  }
+
+  /* Tucked under the shot rather than floated to the bottom of a tall row. */
+  .heroTrust {
+    align-self: start;
+  }
+
+  .heroShot {
+    display: block;
+  }
+}

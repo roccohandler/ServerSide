@@ -1,0 +1,159 @@
+/* The page a new client lands on after their deposit. One column, calm, procedural. */
+
+.notPaidNote {
+  max-width: 46rem;
+  margin-top: var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ the schedule */
+
+.scheduleList {
+  display: grid;
+  gap: 0;
+  grid-template-columns: 1fr;
+  max-width: 44rem;
+  padding: 0;
+  margin: var(--space-6) 0 0;
+  list-style: none;
+}
+
+.scheduleStep {
+  position: relative;
+  padding-left: 3.25rem;
+  padding-bottom: var(--space-5);
+}
+
+/* The rail that makes eight separate steps read as one run of work. */
+.scheduleStep:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 2.5rem;
+  bottom: 0;
+  left: 1.09rem;
+  width: 2px;
+  background-color: var(--color-border);
+}
+
+.scheduleStep:last-child {
+  padding-bottom: 0;
+}
+
+.scheduleNumber {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-dark);
+  border-radius: var(--radius-full);
+}
+
+/*
+ * The last step is the one the client is working towards, so it earns the ember — but a
+ * filled disc with a numeral on it is a fill carrying text, which is Ember Deep's job.
+ * Ember itself is 3.1:1 under the cream numeral above; white on Ember Deep is 4.9:1, so
+ * this pair overrides the inherited colour as well as the fill.
+ */
+.scheduleStep:last-child .scheduleNumber {
+  color: var(--color-on-accent);
+  background-color: var(--color-accent-strong);
+}
+
+.scheduleTitle {
+  padding-top: var(--space-1);
+  margin-bottom: var(--space-1);
+  font-size: var(--text-lg);
+}
+
+.scheduleDetail {
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ the form */
+
+.form {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 44rem;
+  margin-top: var(--space-6);
+}
+
+.formRow {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 48rem) {
+  .formRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.privacyNote {
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.errorSummary {
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--color-tint-danger);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+}
+
+.errorSummaryHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-base);
+}
+
+.errorSummaryList {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+  font-size: var(--text-sm);
+}
+
+.result {
+  max-width: 44rem;
+  padding: var(--space-6);
+  margin-top: var(--space-6);
+  border-radius: var(--radius-lg);
+}
+
+.resultSuccess {
+  background-color: var(--color-tint-success);
+  border: 1px solid var(--color-success);
+}
+
+.resultFailure {
+  background-color: var(--color-surface-muted);
+  border: 1px solid var(--color-border-strong);
+}
+
+.resultHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xl);
+}
+
+.resultBody {
+  margin-top: var(--space-3);
+  color: var(--color-ink);
+}

@@ -2,7 +2,9 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
+import { routes } from '../../config/routes';
 import { primaryCta, site } from '../../content';
+import { AuthProvider } from '../../features/auth/AuthContext';
 import { Header } from './Header';
 
 /*
@@ -11,10 +13,34 @@ import { Header } from './Header';
  * else to go, make the primary action obvious, and stay usable from a keyboard.
  */
 
-function renderHeader() {
+/**
+ * `initialUser` is passed on purpose.
+ *
+ * Without it the provider fetches `/api/auth/me` on mount, which in jsdom is an
+ * unhandled network call that resolves after the assertions have run. Supplying the
+ * answer up front keeps these tests about the header rather than about the session, and
+ * `signedIn` is what lets the one assertion that *is* about the session exercise both.
+ */
+function renderHeader({ signedIn = false }: { signedIn?: boolean } = {}) {
   return render(
     <MemoryRouter>
-      <Header />
+      <AuthProvider
+        initialUser={
+          signedIn
+            ? {
+                id: 'user-1',
+                email: 'dana@cascadeheating.example',
+                name: 'Dana Reyes',
+                role: 'customer',
+                emailVerified: true,
+                capabilities: [],
+                authProviders: ['password'],
+              }
+            : null
+        }
+      >
+        <Header />
+      </AuthProvider>
     </MemoryRouter>,
   );
 }
@@ -105,6 +131,43 @@ describe('Header', () => {
       const toggle = screen.getByRole('button', { name: /menu/i });
       expect(toggle).toHaveAttribute('aria-expanded', 'false');
       expect(toggle).toHaveFocus();
+    });
+  });
+  /*
+   * ==========================================================================
+   * THE WAY BACK IN
+   * ==========================================================================
+   *
+   * The header is the only place on the marketing site that offers a signed-in customer
+   * a way back to their project. It changes with the session rather than always saying
+   * "Sign in", because a customer mid-build who lands on the homepage should not have to
+   * remember a URL — and it stays a quiet text link either way, because ember is
+   * rationed to the one primary action and a second button competing for it would cost
+   * the site the conversion it is built around.
+   * ==========================================================================
+   */
+  describe('the account link', () => {
+    it('offers a way to sign in when nobody is', () => {
+      renderHeader();
+
+      const link = screen.getAllByRole('link', { name: /^sign in$/i })[0];
+      expect(link).toHaveAttribute('href', routes.login);
+    });
+
+    it('offers the dashboard when somebody is signed in', () => {
+      renderHeader({ signedIn: true });
+
+      const link = screen.getAllByRole('link', { name: /^dashboard$/i })[0];
+      expect(link).toHaveAttribute('href', routes.appDashboard);
+      expect(screen.queryByRole('link', { name: /^sign in$/i })).toBeNull();
+    });
+
+    it('never competes with the primary action for the accent', () => {
+      renderHeader();
+
+      // The primary call to action is the only button-styled link in the header.
+      const signIn = screen.getAllByRole('link', { name: /^sign in$/i })[0];
+      expect(signIn?.className).not.toContain('navCta');
     });
   });
 });

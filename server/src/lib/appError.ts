@@ -10,6 +10,22 @@ export const APP_ERROR_CODES = [
   'MALFORMED_REQUEST',
   'PAYLOAD_TOO_LARGE',
   'RATE_LIMITED',
+  /**
+   * No usable session. The client's cue to send somebody to the sign-in page — which is
+   * why it is distinct from FORBIDDEN: signing in again fixes this one and cannot fix
+   * the other.
+   */
+  'UNAUTHENTICATED',
+  /**
+   * Signed in, and still not allowed. Returned when a capability is missing.
+   *
+   * Deliberately NOT what a request for somebody else's record returns: that answers
+   * NOT_FOUND, because "you may not see this" and "this does not exist" have to be
+   * indistinguishable or the API confirms which ids are real.
+   */
+  'FORBIDDEN',
+  /** The request is well-formed but conflicts with what is already stored. */
+  'CONFLICT',
   'NOT_FOUND',
   'SERVICE_UNAVAILABLE',
   'INTERNAL_ERROR',
@@ -31,6 +47,9 @@ const DEFAULT_STATUS: Record<AppErrorCode, number> = {
   MALFORMED_REQUEST: 400,
   PAYLOAD_TOO_LARGE: 413,
   RATE_LIMITED: 429,
+  UNAUTHENTICATED: 401,
+  FORBIDDEN: 403,
+  CONFLICT: 409,
   NOT_FOUND: 404,
   SERVICE_UNAVAILABLE: 503,
   INTERNAL_ERROR: 500,

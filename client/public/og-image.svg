@@ -1,30 +1,109 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Managed websites for Greater Seattle service businesses">
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 1200 630"
+  width="1200"
+  height="630"
+  role="img"
+  aria-label="JobForge — digital growth systems for Greater Seattle service businesses"
+>
+  <!--
+    The social preview. Rasterised to og-image.png by `npm run capture`, which loads this
+    file in headless Chrome at 1200x630 — so web fonts, CSS classes and gradients all
+    resolve exactly as they would in a browser.
+
+    Archivo is imported rather than assumed. If the import ever fails the stack below it
+    still renders a heavy grotesk, so a network hiccup degrades the image instead of
+    breaking it. Check the committed PNG after regenerating.
+  -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&amp;display=swap');
+
+    .t {
+      font-family: 'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    .wordmark {
+      font-weight: 800;
+      font-stretch: 120%;
+      font-size: 54px;
+      letter-spacing: -1px;
+      fill: #f3eee4;
+    }
+    .kicker {
+      font-weight: 700;
+      font-size: 19px;
+      letter-spacing: 6px;
+      fill: #e85c24;
+    }
+    .head {
+      font-weight: 800;
+      font-size: 62px;
+      letter-spacing: -1.4px;
+      fill: #f3eee4;
+    }
+    .sub {
+      font-weight: 500;
+      font-size: 26px;
+      fill: #b9b4aa;
+    }
+    .place {
+      font-weight: 700;
+      font-size: 24px;
+      letter-spacing: 1px;
+      fill: #f3eee4;
+    }
+  </style>
+
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#0b4a6f" />
-      <stop offset="100%" stop-color="#073751" />
-    </linearGradient>
+    <!-- The one atmospheric device the brand board allows on a charcoal ground. -->
+    <radialGradient id="ember-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#E85C24" stop-opacity="0.22" />
+      <stop offset="62%" stop-color="#E85C24" stop-opacity="0" />
+    </radialGradient>
   </defs>
 
-  <rect width="1200" height="630" fill="url(#bg)" />
-  <rect x="0" y="600" width="1200" height="30" fill="#c2410c" />
+  <rect width="1200" height="630" fill="#17191E" />
+  <circle cx="1105" cy="95" r="340" fill="url(#ember-glow)" />
 
-  <text x="80" y="190" fill="#c8dcea" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="30" font-weight="600" letter-spacing="3">
-    MANAGED WEBSITES FOR LOCAL SERVICE BUSINESSES
-  </text>
+  <!-- The lockup: the Forge Stamp, inverted for the charcoal ground, then the wordmark. -->
+  <g transform="translate(80 64) scale(0.955)">
+    <rect width="88" height="88" rx="24" fill="#F3EEE4" />
+    <rect
+      x="39"
+      y="18.5"
+      width="32"
+      height="11.5"
+      rx="5.75"
+      transform="rotate(-14 39 24.25)"
+      fill="#17191E"
+    />
+    <rect
+      x="39"
+      y="37"
+      width="28"
+      height="11.5"
+      rx="5.75"
+      transform="rotate(-14 39 42.75)"
+      fill="#E85C24"
+    />
+    <path
+      d="M39 18.5 L39 56 Q39 67 28.5 67"
+      fill="none"
+      stroke="#17191E"
+      stroke-width="12"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+  <text x="192" y="126" class="t wordmark">JOBFORGE</text>
 
-  <text x="80" y="286" fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="62" font-weight="700">
-    Turn your website into
-  </text>
-  <text x="80" y="360" fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="62" font-weight="700">
-    your best salesperson
-  </text>
+  <text x="80" y="214" class="t kicker">DIGITAL GROWTH SYSTEMS FOR SERVICE BUSINESSES</text>
 
-  <text x="80" y="440" fill="#c8dcea" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="30">
-    Build · Launch · Capture · Track · Maintain · Improve
-  </text>
+  <text x="80" y="322" class="t head">Your website should produce</text>
+  <text x="80" y="396" class="t head">business, not just exist.</text>
 
-  <text x="80" y="520" fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="30" font-weight="600">
-    Greater Seattle
-  </text>
+  <text x="80" y="472" class="t sub">Build · Launch · Capture · Track · Maintain · Improve</text>
+
+  <text x="80" y="540" class="t place">Greater Seattle</text>
+
+  <rect x="0" y="616" width="1200" height="14" fill="#E85C24" />
 </svg>

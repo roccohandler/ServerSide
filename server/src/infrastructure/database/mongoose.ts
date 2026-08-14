@@ -19,7 +19,7 @@ export interface DatabaseConnection {
  * is cached on globalThis. Without this every invocation would open a new pool and Atlas
  * would start refusing connections under even light traffic.
  */
-const CACHE_KEY = Symbol.for('serviceside.mongoose.connection');
+const CACHE_KEY = Symbol.for('jobforge.mongoose.connection');
 
 interface ConnectionCache {
   promise?: Promise<typeof mongoose>;

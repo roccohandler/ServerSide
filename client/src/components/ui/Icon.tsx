@@ -67,6 +67,7 @@ const paths: Record<IconName, JSX.Element> = {
     </>
   ),
   'arrow-right': <path d="M5 12h14m-6-6 6 6-6 6" />,
+  'arrow-left': <path d="M19 12H5m6 6-6-6 6-6" />,
   menu: <path d="M3 6h18M3 12h18M3 18h18" />,
   close: <path d="M18 6 6 18M6 6l12 12" />,
   alert: (
@@ -74,6 +75,20 @@ const paths: Record<IconName, JSX.Element> = {
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v6" />
       <circle cx="12" cy="16.5" r="0.6" fill="currentColor" stroke="none" />
+    </>
+  ),
+  eye: (
+    <>
+      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  /* The struck-through eye. The slash is what carries "hidden" at 18px. */
+  'eye-off': (
+    <>
+      <path d="M10.6 5.1A9.9 9.9 0 0 1 12 5c6.4 0 10 7 10 7a18.5 18.5 0 0 1-3 4M6.2 6.2A18.4 18.4 0 0 0 2 12s3.6 7 10 7a9.8 9.8 0 0 0 4.2-.9" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+      <path d="m3 3 18 18" />
     </>
   ),
 };

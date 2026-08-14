@@ -28,10 +28,10 @@ import type { ReviewSampleSection, SiteMockSpec, TeardownFinding } from '../type
  * ## The second half of the page
  *
  * `reviewSample` is the other thing this page exists for: showing what the free website
- * review actually looks like when it lands, so that agreeing to one is not agreeing to an
- * unknown. It is described as a shape — the sections, in order, and what each says — not
- * as a redacted client document, because there are no clients and "redacted" would imply
- * there were.
+ * assessment actually looks like when it lands, so that agreeing to one is not agreeing to
+ * an unknown. It is described as a shape — the sections, in order, and what each says —
+ * not as an extract from a client document, because there are no clients and implying
+ * there were would be a lie.
  * ============================================================================
  */
 
@@ -73,6 +73,44 @@ export const teardown = {
   beforeSpec: before,
   afterSpec: after,
 
+  /*
+   * The third beat: the wireframe carried through to a finished site.
+   *
+   * The "after" mock above deliberately stops at a wireframe with a blank brand mark —
+   * see the header note — which leaves an honest gap: nothing on the page shows that a
+   * finished version of these principles exists anywhere. One does, one route away: the
+   * HVAC demonstration build, captured from this repository's own output with its
+   * disclosure bar in shot.
+   *
+   * What this block may NOT say is that the demo is "the composite, rebuilt". The
+   * composite is not any one business, so it has no rebuilt version; the demo is a
+   * separate fiction with its own invented name. Presenting one as the other would
+   * manufacture a before-and-after that never happened — the fabricated case study the
+   * header of this file rules out. So the copy names the fiction, says plainly that it
+   * is one, and claims only that the same principles are applied. No results are cited,
+   * because there are none: nobody hires a fictional heating company.
+   */
+  built: {
+    /*
+     * Not "the rebuilt version": the note above forbids exactly that phrase, because the
+     * composite has no rebuilt version. The subject of the heading is the principles.
+     */
+    heading: 'What these principles look like fully built',
+    body: 'The "after" above is still a wireframe, and a wireframe is a shape rather than a site. This is the same set of principles carried through to a finished build you can open and click around — the heating demonstration, one route away.',
+    disclosure:
+      'Cascade Comfort Heating & Air is a fictional heating company we invented for the demonstration. It is not the composite above rebuilt — the composite is not any one business — and it is not a client or a real company. The demonstration site says so in a bar across every page.',
+    cta: 'Open the demonstration site',
+
+    /*
+     * The alt text describes what is visible, and the disclosure bar is visible, so the
+     * alt text carries the disclosure too.
+     */
+    desktopAlt:
+      'Screenshot of the Cascade Comfort Heating & Air demonstration homepage: the trade and service area named above a same-day headline, a call button beside a quote request link, and the demonstration disclosure bar across the top of the page.',
+    mobileAlt:
+      'The same demonstration homepage at phone width: the disclosure bar across the top and the call button held on screen in a bar at the bottom of the viewport.',
+  },
+
   findingsHeading: 'Six findings, ordered by what they cost',
   findingsLede:
     'Ordered by cost rather than by position on the page. Each links to the improvement in the PlayBook that explains it in full, and to the check in the audit that scores it.',
@@ -80,7 +118,7 @@ export const teardown = {
   labels: {
     whatYouSee: 'What you see',
     whatItDoes: 'What it does to a customer',
-    whatIdChange: 'What I would change',
+    whatIdChange: 'What we would change',
     principle: 'The improvement this comes from',
   },
 
@@ -169,16 +207,16 @@ export const teardown = {
     body: 'That any of it is true of your site. A composite shows that a pattern is common, not that you have it — and the six findings above are the common ones rather than the worst ones. The only way to know which of them applies to you is for somebody to open your site and look, which is the entire content of the free assessment below.',
   },
 
-  /* ------------------------------------------------------------- the sample review */
+  /* --------------------------------------------------------- the sample assessment */
 
   reviewSample: {
     heading: 'What the free assessment actually looks like',
     lede: 'Agreeing to a free assessment should not mean agreeing to something unspecified. This is the shape of what comes back — the sections, in order, and what each one contains.',
 
     /*
-     * Labelled a sample rather than a redacted client document, because there are no
-     * clients and "redacted" would imply there were. `content.test.ts` asserts the word
-     * "illustrative" is present here.
+     * Labelled a sample rather than an extract from a client document, because there are
+     * no clients and implying there were would be a lie. `content.test.ts` asserts the
+     * word "illustrative" is present here.
      */
     disclaimer:
       'An illustrative outline of the document, not an extract from a real client review. It describes the sections you get and what goes in each one — the findings themselves are about your site, so nobody can write them in advance.',
@@ -187,7 +225,7 @@ export const teardown = {
       {
         id: 'summary',
         heading: 'The one-paragraph answer',
-        body: 'What I think is actually costing you work, in plain language, at the top — including the answer "not much, and here is what I would spend the money on instead" where that is what I found.',
+        body: 'What we think is actually costing you work, in plain language, at the top — including the answer "not much, and here is what we would spend the money on instead" where that is what we found.',
       },
       {
         id: 'phone',
@@ -206,12 +244,12 @@ export const teardown = {
       },
       {
         id: 'priorities',
-        heading: 'The two or three things I would do first',
+        heading: 'The two or three things we would do first',
         body: 'Ordered by what they are likely to be costing you, with the ones you can do yourself marked as such. Some of them are an afternoon and no money.',
       },
       {
         id: 'boundary',
-        heading: 'What I would not bother with',
+        heading: 'What we would not bother with',
         body: 'The part that makes the rest worth reading. If your website is not the constraint — if the problem is that nobody is finding you at all, or that the phone is not being answered — that is what the assessment says.',
       },
     ] satisfies readonly ReviewSampleSection[],

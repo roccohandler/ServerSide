@@ -4,7 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="theme-color" content="#0b4a6f" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#17191E" />
+    <!-- A committed light design. Declaring it stops the browser auto-inverting form
+         controls and scrollbars for a reader whose OS is in dark mode. -->
+    <meta name="color-scheme" content="light" />
+
+    <!--
+      Archivo — the brand typeface.
+
+      One variable woff2 per subset covering weight 400–900 and width 100–125%, which is
+      what lets the wordmark use the expanded 800 cut the brand board specifies without a
+      second file. `display=swap` means the first paint uses the system stack in
+      `--font-sans` and never blocks on the network; the metrics are close enough that
+      the swap does not reflow the page.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&display=swap"
+      rel="stylesheet"
+    />
 
     <!--
       Everything between the SEO markers is replaced per route at build time by
@@ -12,17 +32,25 @@
       the marker comments.
     -->
     <!--seo:start-->
-    <title>Managed websites for Greater Seattle service businesses</title>
+    <title>Websites built to win work for Seattle service businesses</title>
     <meta
       name="description"
-      content="Built, launched, maintained and improved: managed websites for HVAC, plumbing, electrical, roofing and landscaping businesses around Greater Seattle."
+      content="Conversion-focused websites and growth systems for HVAC, plumbing, electrical, roofing and landscaping businesses around Greater Seattle — built to turn visitors into calls and quote requests."
     />
     <!--seo:end-->
   </head>
   <body>
     <div id="root"></div>
     <noscript>
-      <p style="padding: 1rem; font-family: system-ui, sans-serif">
+      <p
+        style="
+          padding: 1.5rem;
+          font-family: Archivo, system-ui, sans-serif;
+          color: #17191e;
+          background: #f3eee4;
+          border-bottom: 3px solid #e85c24;
+        "
+      >
         This site needs JavaScript to display. The contact details in the page source are still
         valid — please call or email instead.
       </p>

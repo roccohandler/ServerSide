@@ -65,6 +65,25 @@ export default tseslint.config(
   {
     files: ['client/src/**/*.tsx'],
     ...jsxA11y.flatConfigs.recommended,
+    rules: {
+      ...jsxA11y.flatConfigs.recommended.rules,
+      /*
+       * `role="region"` is added to the roles that may carry `tabIndex`, and the reason is a
+       * genuine accessibility requirement rather than a lint annoyance.
+       *
+       * The two comparison tables scroll horizontally inside `overflow-x: auto` containers.
+       * That container is reachable with a pointer and, without `tabIndex`, completely
+       * unreachable with a keyboard: a sighted keyboard user on a narrow window can see the
+       * table is cut off and has no way to move it. The fix WCAG 2.1.1 asks for is exactly a
+       * focusable scroll container with an accessible name — `tabIndex={0}` plus
+       * `role="region"` plus `aria-label` — which is what both of them now are.
+       *
+       * The rule's default allowance is `['tabpanel']` only. Widening it to `region` keeps the
+       * rule doing its real job (catching `tabIndex` sprinkled on decorative divs) while
+       * permitting the one pattern that is required rather than optional.
+       */
+      'jsx-a11y/no-noninteractive-tabindex': ['error', { roles: ['tabpanel', 'region'] }],
+    },
   },
 
   /* ---------------------------------------------------------------- tests */

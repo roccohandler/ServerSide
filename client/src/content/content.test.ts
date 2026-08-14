@@ -3,31 +3,46 @@ import { join, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { INQUIRY_TYPES } from '../types/api';
 import { routes, sections } from '../config/routes';
+import { demoPaths } from '../config/demos';
 import { industryPath, tradesWithPages } from '../config/trades';
 import {
+  buildScope,
+  capacity,
+  conversionFix,
   currentPrice,
+  flagship,
   foundingOffer,
+  growthPartner,
   hasFoundingDiscount,
-  projectTiers,
-  recommendedTier,
+  money,
+  recommendedAction,
   sanctionedFigures,
+  type AuditRecommendation,
   saving,
+  yearOneTotal,
 } from '../config/pricing';
 import { containsPlaceholder, isPlaceholder } from '../lib/placeholders';
 import { faqItems } from './faq';
 import { inquiryOptions } from './contact';
 import {
+  afterLaunch,
   cancellation,
   carePricing,
+  commercialTermItems,
   commercialTerms,
+  comparison,
   conversion,
   guarantee,
+  launch,
+  marketComparison,
   offerStack,
   prices,
   pricing,
   systemComponents,
   systemPhases,
+  websiteReport,
 } from './offer';
+import { hero } from './home';
 import { entryPaths } from './entry';
 import { control, demos, valueEducation } from './value';
 import { abTesting, campaignAlignment, managementCategories, responseGuarantee } from './growth';
@@ -42,6 +57,8 @@ import { privacyContent } from './legal';
 import { playbook } from './playbook';
 import { ADVERTISING_BENCHMARK_LABEL, industries } from './industries';
 import { teardown } from './teardown';
+import { welcome } from './welcome';
+import { capabilities, capabilityIntegrations, capabilityPage } from './capabilities';
 import * as barrel from './index';
 
 /*
@@ -57,7 +74,17 @@ import * as barrel from './index';
  * `scripts/check-budget.ts` is the other half of that arrangement: this file makes sure
  * the four modules are still *checked*, and the budget makes sure they are still *split*.
  */
-const content = { ...barrel, industries, teardown, playbook, audit };
+const content = {
+  ...barrel,
+  industries,
+  teardown,
+  playbook,
+  audit,
+  welcome,
+  capabilities,
+  capabilityIntegrations,
+  capabilityPage,
+};
 
 /*
  * Guards on the content layer.
@@ -91,26 +118,83 @@ describe('the portfolio', () => {
 
   it('gives every example meaningful alternative text', () => {
     for (const project of portfolioProjects) {
-      expect(project.imageAlt.length).toBeGreaterThan(20);
+      // 25, matching the standard docs/VISUAL-ASSETS.md rule 4 publishes as enforced.
+      expect(project.imageAlt.length).toBeGreaterThan(25);
       expect(project.imageAlt.toLowerCase()).not.toMatch(/^image of/);
+
+      /*
+       * The phone capture is the same honesty surface as the desktop one — it renders
+       * on the showcase, the industry heroes and the audit aside — so it meets the
+       * same bar. The two fields travel together: the components guard on both, so an
+       * alt without its image (or the reverse) silently drops the phone frame.
+       */
+      expect(Boolean(project.mobileImage)).toBe(Boolean(project.mobileImageAlt));
+      if (project.mobileImageAlt) {
+        expect(project.mobileImageAlt.length).toBeGreaterThan(25);
+        expect(project.mobileImageAlt.toLowerCase()).not.toMatch(/^image of/);
+      }
     }
   });
 
   /*
-   * Today no demo has a URL, so the branch below is dormant — which is the point of
-   * writing it now rather than the afternoon somebody publishes one. Two things have to
-   * be true of a demo link: it goes somewhere real, and it does not go back into this
-   * site. A "demo" served from a path of the marketing site is a page of the marketing
-   * site, and calling it a demonstration website would be a small lie that reads as a
-   * large one once somebody clicks it.
+   * ==========================================================================
+   * EVERY DEMO LINK GOES TO A REAL DEMO
+   * ==========================================================================
+   *
+   * **This test used to require `https://` and forbid a leading slash**, on the reasoning
+   * that "a demo served from a path of the marketing site is a page of the marketing site,
+   * and calling it a demonstration website would be a small lie".
+   *
+   * That objection was right about the failure it feared and wrong about the architecture
+   * that arrived. What ships now is not a marketing page wearing a costume: the demo routes
+   * are registered *outside* `SiteLayout`, so no JobForge header, footer or navigation
+   * renders on them; each one paints its own palette, its own header, its own footer and
+   * its own three-page navigation. `DemoLayout.test.tsx` asserts exactly that, because it
+   * is the property the old rule was really protecting and a URL scheme was only ever a
+   * proxy for it.
+   *
+   * What the old rule got right and this keeps: a demo link must go somewhere that exists.
+   * It now checks that against the route table rather than against a URL shape, which is
+   * strictly stronger — `https://demo.example.com/hvac` would have passed the old test
+   * while pointing at nothing at all.
+   *
+   * The honest limitation, recorded rather than tested away: these demos are served from
+   * this origin, so they do not demonstrate that a site can be shipped on its own domain.
+   * `docs/DEMO-SITES-PLAN.md` §1 says so.
+   * ==========================================================================
    */
   it('never links to a demo that has not been published, or to itself', () => {
+    const demoRoutes = new Set<string>(demoPaths);
+
     for (const project of portfolioProjects) {
       if (project.demoUrl === undefined) continue;
 
-      expect(project.demoUrl).toMatch(/^https:\/\//);
-      expect(project.demoUrl.startsWith('/')).toBe(false);
       expect(containsPlaceholder(project.demoUrl)).toBe(false);
+
+      /*
+       * An external demo is still allowed — that is what a real client site would be.
+       * An internal one has to be an actual demo route, not just any path on this site,
+       * which is the part the original rule cared about.
+       */
+      if (project.demoUrl.startsWith('/')) {
+        expect(
+          demoRoutes.has(project.demoUrl),
+          `${project.id} links to "${project.demoUrl}", which is not a demo route`,
+        ).toBe(true);
+      } else {
+        expect(project.demoUrl).toMatch(/^https:\/\//);
+      }
+    }
+  });
+
+  /*
+   * Five examples, five demos. The portfolio is the page whose whole job is to show work,
+   * and it rendered "Live demo not published yet" five times for months — correct while
+   * nothing was live, and worth failing the build over now that everything is.
+   */
+  it('publishes a demo for every example', () => {
+    for (const project of portfolioProjects) {
+      expect(project.demoUrl, `${project.id} has no demo to link to`).toBeDefined();
     }
   });
 
@@ -158,9 +242,32 @@ describe('page metadata', () => {
     const linked = new Set<string>([
       ...site.nav.map((item) => item.to),
       ...site.footerNav.map((item) => item.to),
+      /*
+       * The portfolio's demo links are a real link source, and the only one outside the
+       * two navigations. Reading them here rather than listing the five demo homepages as
+       * "deliberately unlinked" keeps the guard honest in both directions: if a `demoUrl`
+       * is ever removed, its route becomes an orphan and this fails, which is exactly what
+       * should happen.
+       */
+      ...portfolioProjects.flatMap((project) => (project.demoUrl ? [project.demoUrl] : [])),
     ]);
 
     const deliberatelyUnlinked = new Map<string, string>([
+      /*
+       * The demos' inner pages are reachable from inside each demo's own header and
+       * footer — which is the thing being demonstrated, since a navigation that goes
+       * nowhere is most of what is wrong with the sites these replace.
+       *
+       * They are listed here rather than linked from the marketing site because linking
+       * from JobForge's footer straight to a fictional plumber's contact page would be
+       * absurd, and because `DemoLayout.test.tsx` asserts the internal navigation works.
+       */
+      ...demoPaths
+        .filter((path) => path.split('/').length > 3)
+        .map((path): [string, string] => [
+          path,
+          "inner page of a demonstration site, linked from that site's own navigation",
+        ]),
       /*
        * The five industry pages are search landing pages, not browse destinations. They
        * are reachable from the trade chips on the homepage — asserted by
@@ -176,6 +283,75 @@ describe('page metadata', () => {
         routes.workbook,
         'noindex production tool: opened by the owner to print the workbook to PDF',
       ],
+      /*
+       * ======================================================================
+       * THE INTERNAL ADMIN SURFACE
+       * ======================================================================
+       *
+       * Staff-only, and unlinked from every public navigation — a marketing footer with an
+       * "Internal" link in it is noise for every visitor and an invitation for the curious.
+       *
+       * **Being unlinked is not the protection, and listing them here does not weaken
+       * anything.** `requireAdmin` on the server's `/api/admin` mount answers NOT_FOUND to
+       * anybody who is not staff, including anybody with no session at all, so the pages are
+       * an empty shell to everyone else. `/admin` is the first path a curious person tries
+       * anyway; treating obscurity as a control would be the mistake.
+       *
+       * Reachable by typing the URL, which is how the one person who needs them gets there.
+       * ======================================================================
+       */
+      [
+        routes.admin,
+        'internal staff surface, reached by typing the URL — enforcement is requireAdmin on the server, not obscurity',
+      ],
+      [
+        routes.adminAccounts,
+        'internal staff surface, linked from the admin bar rather than from the public site',
+      ],
+      [
+        routes.welcome,
+        "post-deposit onboarding page, reached from Stripe's checkout redirect — nobody browses to the start of a project they have not bought",
+      ],
+      /*
+       * ======================================================================
+       * THE ACCOUNT PAGES AND THE PRIVATE APPLICATION
+       * ======================================================================
+       *
+       * Reachable, and not from the footer.
+       *
+       * `/login` and `/signup` are linked from the header — the header is where every
+       * site puts them and where every visitor looks — and from each other. They are
+       * listed here rather than added to `site.footerNav` because a footer full of
+       * account links on a marketing page is navigation nobody asked for, and because
+       * this list is the place the reason gets written down.
+       *
+       * The three email-link pages are reached only by clicking something in an inbox,
+       * which is the whole point of them: a password-reset page anybody can browse to
+       * is a page that has to explain why it will not help.
+       *
+       * The five `/app` pages are behind authentication. The private layout's own
+       * navigation links them — `AppLayout.test.tsx` asserts that — and linking a
+       * dashboard from the public footer would send every anonymous visitor to a
+       * sign-in page they did not ask for.
+       * ======================================================================
+       */
+      [routes.login, 'linked from the header and from the signup page'],
+      [routes.signup, 'linked from the header and from the sign-in page'],
+      [routes.forgotPassword, 'linked from the sign-in page; also reached from an email'],
+      [routes.resetPassword, 'reached only from the link in a password-reset email'],
+      [routes.verifyEmail, 'reached only from the link in a verification email'],
+      [
+        routes.appDashboard,
+        'the private application: reachable once signed in, linked from the workspace navigation',
+      ],
+      [routes.appAssessment, 'private: linked from the workspace navigation'],
+      [
+        routes.appAssessmentStart,
+        'private: the assessment itself, linked from the dashboard and from the assessment page — deliberately not from the public site, which has its own copy at /audit',
+      ],
+      [routes.appProjects, 'private: linked from the workspace navigation'],
+      [routes.appBilling, 'private: linked from the workspace navigation'],
+      [routes.appAccount, 'private: linked from the workspace navigation'],
     ]);
 
     for (const path of Object.values(routes)) {
@@ -452,33 +628,60 @@ describe('the offer', () => {
   });
 
   /*
-   * The offer is a one-time project and a separate recurring plan. It used to be a single
-   * launch tier and a single management tier in one list; the project now has three sizes
-   * and the recurring service moved to `carePricing`, so this asserts the *shape* rather
-   * than two strings in one array — that the project is priced per project, that the
-   * recurring plan is priced monthly, and that they are not the same object.
+   * The offer is a one-time build and a separate, optional recurring plan. This asserts
+   * the *shape*: the build is priced per project, the plan is priced monthly, and the
+   * way out of the plan is printed as plainly as the way in.
    */
-  it('prices the project once and the care plan monthly, as separate offers', () => {
-    for (const tier of pricing.tiers) {
-      expect(tier.cadence.toLowerCase()).toContain('one-time');
-    }
+  it('prices the build once and the plan monthly, as separate offers', () => {
+    expect(pricing.build.cadence.toLowerCase()).toContain('one-time');
+    expect(carePricing.plan.price).toMatch(/\/mo$/);
 
-    for (const plan of carePricing.plans) {
-      expect(plan.price).toMatch(/\/mo$/);
-    }
-
-    // Buying a project must not silently require the recurring plan.
+    // Buying the build must not silently require the recurring plan.
     expect(carePricing.optOut.length).toBeGreaterThan(40);
+    expect(carePricing.terms.toLowerCase()).toContain('optional');
   });
 
   /*
-   * Exactly one recommended tier.
+   * ==========================================================================
+   * THE PLAN IS OPTIONAL, AND THE SITE MAY ONLY SAY SO
+   * ==========================================================================
    *
-   * Two would make the recommendation meaningless and none would leave the reader to rank
-   * three prices unaided, which is the decision the middle tier exists to make for them.
+   * The previous offer said both "the ongoing plan is optional" and — as step five of
+   * the published process — "monthly management starts on launch day", unconditionally.
+   * A reader cannot hold both. The optional reading won, and this pins it: the process
+   * ends in a *choice*, the plan's own copy says the word, and no sentence anywhere may
+   * schedule the plan as if it were part of the build.
+   * ==========================================================================
    */
-  it('recommends exactly one project tier', () => {
-    expect(pricing.tiers.filter((tier) => tier.emphasis)).toHaveLength(1);
+  it('describes the plan as optional everywhere a reader decides', () => {
+    for (const copy of [
+      pricing.lede,
+      carePricing.lede,
+      carePricing.terms,
+      hero.priceBlock.partner.label,
+    ]) {
+      expect(copy.toLowerCase()).toMatch(/optional|separate|choose/);
+    }
+
+    /*
+     * The sequence ends with both options, at equal weight, and the conditional stage says so
+     * in its own words.
+     *
+     * This used to read `launch.after.*`, which is gone: it was a third rendering of "after
+     * launch you choose" on one page, and it shared a heading verbatim with
+     * `carePricing.choice.without`. The assertion has moved to the two copies that survived
+     * rather than being deleted with the block — what it protects is the *claim*, not the
+     * object that used to carry it.
+     */
+    expect(carePricing.choice.without.title.length).toBeGreaterThan(0);
+    expect(carePricing.choice.with.title).toContain(growthPartner.name);
+
+    const conditionalStage = afterLaunch.stages.find((stage) => stage.owner === 'partner');
+    expect(conditionalStage?.description.toLowerCase()).toContain('only if you choose it');
+
+    // And nothing schedules the plan unconditionally.
+    const processCopy = JSON.stringify(launch).toLowerCase();
+    expect(processCopy).not.toMatch(/monthly management (?:begins|starts) on launch day/);
   });
 
   /*
@@ -505,8 +708,9 @@ describe('the offer', () => {
       pricing.founding.label,
       pricing.founding.standardLabel,
       pricing.founding.body,
-      pricing.founding.remainingLabel,
-      ...pricing.tiers.flatMap((tier) => [tier.summary, tier.priceNote, tier.terms ?? '']),
+      pricing.build.summary,
+      pricing.build.priceNote,
+      pricing.build.terms,
     ].join(' ');
 
     for (const claim of [
@@ -554,23 +758,50 @@ describe('the offer', () => {
    * that has been made and has not.
    */
   it('never publishes a half-finished price', () => {
-    for (const tier of pricing.tiers) {
-      if (isPlaceholder(tier.price)) continue;
-
-      expect(containsPlaceholder(tier.price)).toBe(false);
-      expect(tier.price).toMatch(/\d/);
-    }
+    expect(containsPlaceholder(pricing.build.price)).toBe(false);
+    expect(pricing.build.price).toMatch(/\d/);
+    expect(containsPlaceholder(carePricing.plan.price)).toBe(false);
   });
 
   it('publishes the terms a buyer asks about before they get in touch', () => {
-    const ids = commercialTerms.items.map((term) => term.id);
+    const ids = commercialTermItems.map((term) => term.id);
 
     for (const expected of ['minimum', 'cancellation', 'payment', 'revisions', 'ownership']) {
       expect(ids).toContain(expected);
     }
 
-    for (const term of commercialTerms.items) {
+    for (const term of commercialTermItems) {
       expect(term.detail.length).toBeGreaterThan(30);
+    }
+  });
+
+  /*
+   * ==========================================================================
+   * A PLAN TERM MAY NEVER READ AS A BUILD TERM
+   * ==========================================================================
+   *
+   * The previous flat list put "Minimum term: three months" and "Cancellation: 30 days'
+   * notice" directly under the project price, where a reader reasonably concluded the
+   * *build* had a minimum term. The terms are grouped by purchase now, and this pins the
+   * grouping: the plan's obligations live in the plan's group, which is labelled
+   * optional, and the build's group carries no recurring obligation at all.
+   * ==========================================================================
+   */
+  it('scopes the plan terms to the plan, never to the build', () => {
+    const buildGroup = commercialTerms.groups.find((group) => group.id === 'build');
+    const partnerGroup = commercialTerms.groups.find((group) => group.id === 'partner');
+
+    expect(buildGroup).toBeDefined();
+    expect(partnerGroup).toBeDefined();
+    expect(partnerGroup?.label.toLowerCase()).toContain('optional');
+
+    const buildIds = buildGroup?.items.map((item) => item.id) ?? [];
+    expect(buildIds).not.toContain('minimum');
+    expect(buildIds).not.toContain('cancellation');
+
+    const partnerIds = partnerGroup?.items.map((item) => item.id) ?? [];
+    for (const expected of ['optional', 'minimum', 'after', 'cancellation']) {
+      expect(partnerIds).toContain(expected);
     }
   });
 
@@ -695,40 +926,45 @@ describe('the prices', () => {
    * fails here.
    * ==========================================================================
    */
-  it('derives every saving from two real prices', () => {
-    for (const tier of projectTiers) {
-      expect(
-        tier.founding,
-        `${tier.id} costs more than its own standard price`,
-      ).toBeLessThanOrEqual(tier.standard);
-      expect(saving(tier)).toBe(tier.standard - tier.founding);
-      expect(currentPrice(tier)).toBe(foundingOffer.enabled ? tier.founding : tier.standard);
-    }
+  it('derives the saving from two real prices', () => {
+    expect(
+      flagship.founding,
+      'the founding price is above the standard price, which would advertise a negative discount',
+    ).toBeLessThanOrEqual(flagship.standard);
+    expect(saving()).toBe(hasFoundingDiscount() ? flagship.standard - flagship.founding : 0);
+    expect(currentPrice()).toBe(hasFoundingDiscount() ? flagship.founding : flagship.standard);
   });
 
   /*
-   * Switching the founding offer off has to remove the *claim*, not just the number. If
-   * `hasFoundingDiscount` stayed true with the offer disabled, the page would keep
-   * advertising a saving nobody could get.
+   * Switching the founding offer off — or signing the tenth founding project — has to
+   * remove the *claim*, not just the number. If `hasFoundingDiscount` stayed true with
+   * the offer over, the page would keep advertising a saving nobody could get.
    */
-  it('stops claiming a discount the moment the founding offer is switched off', () => {
-    for (const tier of projectTiers) {
-      expect(hasFoundingDiscount(tier)).toBe(
-        foundingOffer.enabled && tier.founding < tier.standard,
-      );
-    }
+  it('stops claiming a discount the moment the founding offer is over', () => {
+    expect(hasFoundingDiscount()).toBe(
+      foundingOffer.enabled &&
+        foundingOffer.taken < foundingOffer.total &&
+        flagship.founding < flagship.standard,
+    );
+    expect(pricing.founding.enabled).toBe(hasFoundingDiscount());
   });
 
   /*
-   * The tiers have to be ordered by price for the middle one to read as the middle one.
-   * A recommended tier that is not between the other two is a merchandising accident.
+   * ==========================================================================
+   * YEAR-ONE ARITHMETIC IS ARITHMETIC
+   * ==========================================================================
+   *
+   * The page publishes what the first year costs on both paths, because recurring
+   * economics a reader has to work out themselves are recurring economics being hidden.
+   * A published total that is not actually build + 12 × monthly would be worse than no
+   * total at all, so the derivation is pinned.
+   * ==========================================================================
    */
-  it('orders the tiers by price, with the recommended one in the middle', () => {
-    const ordered = [...projectTiers].sort((a, b) => a.order - b.order);
-    const paid = ordered.map(currentPrice);
-
-    expect(paid).toEqual([...paid].sort((a, b) => a - b));
-    expect(ordered[1]?.recommended).toBe(true);
+  it('publishes year-one arithmetic that is actually the arithmetic', () => {
+    expect(yearOneTotal()).toBe(currentPrice() + growthPartner.monthly * 12);
+    expect(prices.yearOne).toBe(money(yearOneTotal()));
+    expect(pricing.yearOne.withPartner.figure).toBe(prices.yearOne);
+    expect(pricing.yearOne.websiteOnly.figure).toBe(prices.launch);
   });
 
   /*
@@ -746,9 +982,9 @@ describe('the prices', () => {
    * a managed website costs — published all three tiers with no condition anywhere on it.
    * Both were caught by reading the page, which is not a mechanism.
    *
-   * So: any component that maps over `pricing.tiers` must also render `standardPrice`,
-   * which exists only next to `founding.standardLabel`. A fourth pricing surface cannot be
-   * added without the qualification unless somebody deliberately deletes this test.
+   * So: any component that renders `pricing.build` must also render `standardPrice`,
+   * which exists only next to `founding.standardLabel`. A second pricing surface cannot
+   * be added without the qualification unless somebody deliberately deletes this test.
    * ==========================================================================
    */
   it('never renders a founding price in a component that omits the standard one', () => {
@@ -762,7 +998,7 @@ describe('the prices', () => {
 
     const undisclosed = componentFiles(join(import.meta.dirname, '..'))
       .map((file) => ({ file, source: readFileSync(file, 'utf8') }))
-      .filter(({ source }) => source.includes('pricing.tiers') && !source.includes('standardPrice'))
+      .filter(({ source }) => source.includes('pricing.build') && !source.includes('standardPrice'))
       .map(({ file }) => file.split(sep).pop());
 
     expect(
@@ -770,6 +1006,45 @@ describe('the prices', () => {
       'A component that publishes the founding price without the standard price beside it ' +
         'publishes a conditional number as if it were the price.',
     ).toEqual([]);
+  });
+
+  /*
+   * ==========================================================================
+   * AN UNAPPROVED PRICE IS NOT A PRICE
+   * ==========================================================================
+   *
+   * Conversion Fix exists so the audit's middle recommendation has somewhere to go, and its
+   * figure is the owner's decision (DECISION 014). `conversionFix.pricePublished` is the
+   * switch, and while it is `false` the number must not reach a page by any route.
+   *
+   * The guard is the *derivation* rather than the current value, so it keeps holding the day
+   * the owner flips the flag: publish it and the figure joins `sanctionedFigures()`
+   * automatically, which is what lets the copy quote it. Leave it unpublished and the figure
+   * is unsanctioned — so an FAQ answer or a card that types it fails the currency sweep
+   * instead of quietly publishing a price nobody agreed to.
+   *
+   * The scope, by contrast, *is* published and has to be: a fixed price is only defensible
+   * against a fixed boundary, and the absence of one is why the previous $2,500 tier was
+   * withdrawn.
+   * ==========================================================================
+   */
+  it('publishes the fix figure only when the owner has approved it', () => {
+    const figure = money(conversionFix.from);
+
+    expect(sanctionedFigures().has(figure)).toBe(conversionFix.pricePublished);
+
+    if (conversionFix.pricePublished) {
+      expect(pricing.fix.price).toContain(figure);
+    } else {
+      // No figure anywhere in the rendered fix copy, and an honest sentence in its place.
+      expect(pricing.fix.price).not.toMatch(/\$\d/);
+      expect(pricing.fix.price.toLowerCase()).toMatch(/quoted|assessment/);
+      expect(pricing.fix.priceNote).not.toMatch(/\$\d/);
+    }
+
+    // The boundary is published either way — it is what makes the scope a commitment.
+    expect(conversionFix.excludes.length).toBeGreaterThanOrEqual(3);
+    expect(conversionFix.includes.length).toBeGreaterThanOrEqual(5);
   });
 
   /*
@@ -782,7 +1057,7 @@ describe('the prices', () => {
     const launchPath = entryPaths.paths.find((path) => path.price === prices.launch);
     expect(launchPath, 'no entry path quotes the launch price any more').toBeDefined();
 
-    if (foundingOffer.enabled) {
+    if (hasFoundingDiscount()) {
       expect(launchPath?.priceNote).toContain(prices.launchStandard);
     } else {
       expect(launchPath?.priceNote).toBeUndefined();
@@ -1061,9 +1336,22 @@ describe('the FAQ', () => {
 
     for (const required of [
       'cost',
+      // The question underneath the whole two-purchase structure. See PART 34.
+      'why-not-monthly',
+      // "Can I just buy the website?" — answered with a straight yes. See PART 35.
+      'management-optional',
+      // What a build-only buyer pays for hosting, which used to be answered nowhere.
+      'self-hosting',
+      // What happens after the deposit, and what a delay does — the two payment
+      // anxieties the offer redesign brief calls out. See PART 36.
+      'after-deposit',
+      'delays',
+      // The four guarantees, and what is deliberately not guaranteed. See PART 28.
+      'what-guaranteed',
       'launch-includes',
       'management-includes',
       'contract',
+      'payment',
       'timeline',
       'existing-site',
       'domain',
@@ -1199,6 +1487,8 @@ describe('the copy', () => {
       ['teardown', teardown.disclosure],
       ['playbook', playbook.scorecard.storageNote],
       ['audit', audit.send.consent],
+      ['welcome', welcome.form.privacyNote],
+      ['capabilities', capabilityPage.honesty.body],
       ['offer (barrel)', guarantee.lede],
     ];
 
@@ -1292,6 +1582,277 @@ describe('the copy', () => {
   });
 
   /*
+   * ==========================================================================
+   * THE TWO PURCHASES STAY TWO PURCHASES
+   * ==========================================================================
+   *
+   * The old "What you get" section listed hosting, monitoring, seasonal refreshes and
+   * the response guarantee — all monthly work — as what the one-time price buys, and the
+   * highest one-time tier promised "ongoing" work with no time bound. These guards make
+   * that mixing a failed build instead of a discovered contradiction.
+   * ==========================================================================
+   */
+  it('keeps recurring work out of the one-time deliverable lists', () => {
+    const RECURRING =
+      /\bevery month\b|\bmonthly\b|\/mo\b|\bper month\b|\ba month\b|\beach quarter\b|\bseasonal\b|\buptime\b|\bbackups?\b|\bresponse guarantee\b|\bongoing\b/i;
+
+    for (const item of [
+      ...flagship.includes,
+      ...offerStack.groups.flatMap((group) => group.includes),
+    ]) {
+      expect(RECURRING.test(item), `a build deliverable reads as recurring work: ${item}`).toBe(
+        false,
+      );
+    }
+  });
+
+  /*
+   * The plan's scope is one ordered array now rather than three named keys
+   * (`everyMonth` / `eachQuarter` / `whenNeeded`), so this sweeps every group. That is
+   * strictly stronger: adding a fourth cadence group used to be a silent exemption from
+   * this guard, and now it cannot be.
+   */
+  it('keeps build work out of the plan’s deliverable lists', () => {
+    const BUILD_ONLY = /\brevision rounds?\b|\bredirects?\b|\bmobile-first design\b|\bgoes live\b/i;
+
+    expect(carePricing.plan.groups.length).toBeGreaterThan(2);
+
+    for (const item of carePricing.plan.groups.flatMap((group) => group.items)) {
+      expect(BUILD_ONLY.test(item), `a plan deliverable reads as build work: ${item}`).toBe(false);
+    }
+  });
+
+  /*
+   * ==========================================================================
+   * THE ORDER OF THE PLAN'S SCOPE IS A COMMERCIAL COMMITMENT
+   * ==========================================================================
+   *
+   * The recurring fee used to be defended by an activity list that opened with hosting,
+   * certificates and backups and closed with "Measurement, and what it means in plain
+   * English" — while a section two screens away was headed "This is not a maintenance
+   * plan". The prose was right and lost, because readers scan lists and skip prose.
+   *
+   * Measurement leads now, and this is what stops it drifting back. It is not a style
+   * assertion: which group is first decides what a buyer thinks the fee is for, and that is
+   * the single most expensive sentence on the page to get wrong.
+   * ==========================================================================
+   */
+  it('leads the recurring scope with measurement and ends it with upkeep', () => {
+    const ids = carePricing.plan.groups.map((group) => group.id);
+
+    expect(ids[0], 'the plan no longer leads with measurement').toBe('measure');
+    expect(ids.indexOf('improve')).toBe(1);
+
+    const floor = ids.indexOf('floor');
+    expect(floor).toBeGreaterThan(ids.indexOf('improve'));
+
+    // The floor is named as the floor rather than left to be inferred from its position.
+    expect(carePricing.plan.floorNote.toLowerCase()).toContain('floor');
+
+    // And the first group actually names the artefact, rather than gesturing at measurement.
+    const first = carePricing.plan.groups[0]?.items.join(' ') ?? '';
+    expect(first).toContain(websiteReport.name);
+  });
+
+  /*
+   * ==========================================================================
+   * THE MONTHLY REPORT PROMISES MEASUREMENT, NEVER A RESULT
+   * ==========================================================================
+   *
+   * This is the one deliverable on the site that is about the outcome rather than the work,
+   * which is exactly why it is the easiest one to oversell by a single word. "You will see
+   * more enquiries" is a sentence away from "you will see what your enquiries did", and only
+   * the second is a promise this business can keep.
+   *
+   * The illustrative month deliberately falls. An example whose line always rises is an
+   * implied result claim with a disclaimer attached, and the guard below pins the honesty
+   * paragraph that makes the whole panel defensible.
+   * ==========================================================================
+   */
+  it('promises to measure the number, never to move it', () => {
+    const copy = JSON.stringify(websiteReport).toLowerCase();
+
+    for (const forbidden of [
+      'more enquiries',
+      'more calls',
+      'will increase',
+      'will improve',
+      'guaranteed',
+      'we predict',
+    ]) {
+      expect(
+        copy,
+        `"${forbidden}" turns a measurement promise into a result promise`,
+      ).not.toContain(forbidden);
+    }
+
+    // No percentage and no currency figure: both read as a statistic in an example panel.
+    expect(copy).not.toMatch(/\d+\s?%/);
+    expect(copy).not.toMatch(/\$\d/);
+
+    // The four things every report contains, and the limit stated with the promise.
+    expect(websiteReport.contains.length).toBeGreaterThanOrEqual(4);
+    expect(websiteReport.honesty.body.length).toBeGreaterThan(120);
+    expect(websiteReport.example.label.toLowerCase()).toContain('illustrative');
+
+    /*
+     * The example month falls rather than rises. Asserted as arithmetic on the rendered
+     * strings, so "fixing" the numbers to look better fails the build and somebody has to
+     * read the reason before overriding it.
+     */
+    const previous = Number(websiteReport.example.previousValue);
+    const current = Number(websiteReport.example.metricValue);
+    expect(Number.isFinite(previous) && Number.isFinite(current)).toBe(true);
+    expect(
+      current,
+      'the illustrative report shows a rise, which is an implied result claim — see the note in content/offer.ts',
+    ).toBeLessThan(previous);
+  });
+
+  /*
+   * ==========================================================================
+   * THE AFTER-LAUNCH SEQUENCE MUST KEEP ITS BOUNDARY
+   * ==========================================================================
+   *
+   * The timeline runs launch → baseline → first 30 days → day-30 report → monthly. The first
+   * four are the build; the fifth is the optional plan. A timeline that slides silently from
+   * "included" into "subscription" is the exact defect the offer simplification removed, and
+   * this is the shape that prevents it returning as a diagram instead of as a sentence.
+   * ==========================================================================
+   */
+  it('marks every after-launch stage as build or plan, and only the last as the plan', () => {
+    const owners = afterLaunch.stages.map((stage) => stage.owner);
+
+    expect(owners.length).toBeGreaterThanOrEqual(4);
+    expect(new Set(owners)).toEqual(new Set(['build', 'partner']));
+
+    // The build stages come first and stay contiguous, or the diagram misleads.
+    expect(owners.indexOf('partner')).toBe(owners.lastIndexOf('build') + 1);
+    expect(owners.at(-1)).toBe('partner');
+
+    // And the conditional stage says so in its own words, not only in the boundary label.
+    const partnerStages = afterLaunch.stages.filter((stage) => stage.owner === 'partner');
+    for (const stage of partnerStages) {
+      expect(`${stage.title} ${stage.description}`.toLowerCase()).toMatch(
+        /optional|if you choose|choose it/,
+      );
+    }
+  });
+
+  /*
+   * ==========================================================================
+   * THE MARKET COMPARISON NAMES NOBODY AND CLAIMS NOTHING
+   * ==========================================================================
+   *
+   * A table comparing this offer with "a typical website project" is only publishable while
+   * both halves stay honest: the left column is a market nobody here has measured, so every
+   * cell in it must be a hedge, and no provider or platform may be named anywhere in it.
+   *
+   * The FAQ answers the "why not a website builder" question directly, in prose, where the
+   * comparison can be reasoned about. A table cell cannot carry that reasoning, which is
+   * why the table is generic and the answer is not.
+   * ==========================================================================
+   */
+  it('compares against the market without naming anybody or claiming anything', () => {
+    const HEDGES = /sometimes|varies|rarely|usually|often|seldom|if at all|yes/i;
+    const NAMED =
+      /\bwix\b|\bsquarespace\b|\bwordpress\b|\bfiverr\b|\bgodaddy\b|\bshopify\b|\bupwork\b/i;
+
+    expect(marketComparison.rows.length).toBeGreaterThan(4);
+
+    const wholeTable = JSON.stringify(marketComparison);
+    expect(
+      NAMED.test(wholeTable),
+      'the market comparison names a provider, which is a factual claim about somebody else’s product',
+    ).toBe(false);
+
+    for (const row of marketComparison.rows) {
+      expect(
+        HEDGES.test(row.typical),
+        `"${row.typical}" states something about the market as fact rather than as a hedge`,
+      ).toBe(true);
+      expect(row.here.length).toBeGreaterThan(2);
+    }
+
+    // The disclaimer that makes the left column a description rather than an accusation.
+    expect(marketComparison.note.toLowerCase()).toContain('no provider is named');
+  });
+
+  /*
+   * The previous structure published three different service-page counts, two of them on
+   * the same screen. Every count the copy states now has to agree with `buildScope` —
+   * spelled out or numeric, anywhere in the content layer.
+   */
+  it('states one service-page count, one revision count and one minimum term, everywhere', () => {
+    const WORDS: Record<string, number> = {
+      one: 1,
+      two: 2,
+      three: 3,
+      four: 4,
+      five: 5,
+      six: 6,
+      seven: 7,
+      eight: 8,
+      nine: 9,
+      ten: 10,
+    };
+    const toNumber = (raw: string) => WORDS[raw.toLowerCase()] ?? Number(raw);
+
+    for (const text of everyString) {
+      for (const match of text.matchAll(
+        /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+service pages?\b/gi,
+      )) {
+        expect(
+          toNumber(match[1] ?? ''),
+          `"${match[0]}" disagrees with buildScope.servicePages: ${text}`,
+        ).toBe(buildScope.servicePages);
+      }
+
+      for (const match of text.matchAll(/\b(\d+|one|two|three|four|five)\s+revision rounds?\b/gi)) {
+        expect(
+          toNumber(match[1] ?? ''),
+          `"${match[0]}" disagrees with buildScope.revisionRounds: ${text}`,
+        ).toBe(buildScope.revisionRounds);
+      }
+
+      for (const match of text.matchAll(
+        /\b(\d+|one|two|three|four|five|six)[- ]month minimum\b/gi,
+      )) {
+        expect(
+          toNumber(match[1] ?? ''),
+          `"${match[0]}" disagrees with growthPartner.minimumMonths: ${text}`,
+        ).toBe(growthPartner.minimumMonths);
+      }
+    }
+  });
+
+  /*
+   * ==========================================================================
+   * NO COUNTER-STYLE SCARCITY
+   * ==========================================================================
+   *
+   * "10 of 10 still open" was a hand-maintained availability claim — one missed edit
+   * away from being a false statement the moment a project sold. The only limitation the
+   * site publishes now is the real one: one build at a time, which is a fact about
+   * fulfilment rather than a number that has to be kept in step with reality by hand.
+   * ==========================================================================
+   */
+  it('publishes no counter-style scarcity claim', () => {
+    for (const text of everyString) {
+      expect(
+        /\b\d+\s+of\s+\d+\s+(?:still open|left|remaining)\b/i.test(text),
+        `a live availability counter is one missed edit from a false claim: ${text}`,
+      ).toBe(false);
+      expect(text).not.toMatch(/\bonly\s+\d+\s+(?:spots?|slots?|places?)\b/i);
+    }
+  });
+
+  it('publishes only the capacity constraint that is real', () => {
+    expect(capacity.concurrentBuilds).toBe(1);
+    expect(pricing.capacity.body.toLowerCase()).toContain('one website build at a time');
+  });
+
+  /*
    * The recurring service is sold as management and growth. Describing it as maintenance
    * is the specific way this offer quietly collapses back into a commodity care plan —
    * so the word is allowed only where the copy is explicitly drawing that contrast.
@@ -1359,6 +1920,156 @@ describe('the copy', () => {
   it('does not let the sanctioned label be softened into something vaguer', () => {
     expect(ADVERTISING_BENCHMARK_LABEL).toContain('Search advertising benchmark');
     expect(ADVERTISING_BENCHMARK_LABEL).toContain('not a website conversion benchmark');
+  });
+
+  /*
+   * ==========================================================================
+   * THE RECURRING PRODUCT HAS ONE NAME, END TO END
+   * ==========================================================================
+   *
+   * The marketing site called it **Growth Partner**. The authenticated application called it
+   * a **care plan** — in a billing `<dt>`, in a section heading, in a dashboard action, in a
+   * subscription label, and in the Stripe product description that reaches the customer's
+   * own invoice. So a client read one product name while deciding to buy and a different one
+   * every month while deciding whether to keep paying, and the second name was the exact
+   * commodity framing the whole offer argues it is not.
+   *
+   * Nothing caught it, because the existing guard swept the *content layer* and every one of
+   * those strings lived outside it: three in the private app, three on the server.
+   *
+   * This sweeps the source of both workspaces. Two things about its shape are deliberate:
+   *
+   *   1. **It reads files rather than objects.** The failure was never in the content layer,
+   *      so a corpus built from content exports could not have seen it and cannot see the
+   *      next one either.
+   *   2. **Comments are exempt, deliberately.** Several files record this rename as history
+   *      — `analytics.ts` explains why an event was renamed, `pricing.ts` why two plans
+   *      became one — and a guard that forbade the *discussion* of the old name would delete
+   *      the reasoning along with the string. The heuristic is coarse (a line is treated as a
+   *      comment when it opens with `*`, `/*` or `//`, or when the phrase falls after a
+   *      `//`), and coarse in the safe direction: it can only ever let a comment through, and
+   *      a customer never reads a comment.
+   * ==========================================================================
+   */
+  it('never calls the recurring product a care plan anywhere a customer can read', () => {
+    const BANNED: readonly RegExp[] = [
+      /care\s+plans?/i,
+      /website\s+care/i,
+      /maintenance\s+plan\b/i,
+    ];
+
+    /*
+     * `maintenance plans` — plural — is a service an HVAC business genuinely sells, and it
+     * appears in the PlayBook's examples and in the demo sites' service lists. That is the
+     * customer's own product list, not a description of this one.
+     */
+    const SOMEBODY_ELSES = /maintenance plans\b/i;
+
+    /*
+     * The one place the singular phrase is allowed: copy explicitly drawing the contrast.
+     *
+     * **The exemption is checked against the line with the product's own name removed**, and
+     * that is not paranoia — it happened. A line reading
+     *
+     *     heading: 'Your website care plan is not a maintenance plan',
+     *
+     * contains "not a maintenance plan", so a naive exemption waved it straight through — and
+     * what it actually does is call the product a care plan in a heading, which is the one
+     * thing this whole guard exists to prevent. The contrast copy is allowed to mention
+     * *maintenance*; it is not allowed to smuggle *care plan* in beside it.
+     */
+    const DRAWING_THE_CONTRAST = /not a maintenance plan|ordinary website maintenance/i;
+    const CARE_AS_PRODUCT = /care\s+plans?|website\s+care/i;
+
+    /*
+     * A test asserting the phrase is *absent* has to name it. `DashboardPage.test.tsx` does
+     * exactly that, and it is the second line of defence for the same rule.
+     *
+     * Exempted by the shape of the assertion rather than by the file, on purpose: exempting
+     * every `*.test.tsx` would let a fixture reintroduce the string, which is precisely how
+     * the old `'You are not on a care plan'` label survived — it lived in a dashboard test
+     * fixture as well as on the server.
+     */
+    const ASSERTING_ABSENCE = /not\.(toMatch|toContain|toBeInTheDocument|toBe)\b/;
+
+    function sourceFiles(dir: string): string[] {
+      return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) return entry.name === 'node_modules' ? [] : sourceFiles(path);
+        return /\.(ts|tsx|css)$/.test(entry.name) ? [path] : [];
+      });
+    }
+
+    const root = join(import.meta.dirname, '..', '..', '..');
+    /*
+     * `scripts/` is in the sweep, and leaving it out was the guard's own worst blind spot.
+     *
+     * `server/scripts/stripe-setup.ts` holds the Stripe Product **descriptions**, and Stripe
+     * renders those on Checkout line items and on the customer's invoice. So the single most
+     * durable customer-facing string in the whole codebase — the one that arrives by email
+     * every month and gets filed — lived in the one directory a `src`-only sweep could not
+     * see. It said "Ongoing website care, monitoring, maintenance…" until this pass.
+     *
+     * A guard that covers the marketing copy and not the invoice is a guard that protects the
+     * part nobody was going to get wrong.
+     */
+    const roots = [
+      join(root, 'client', 'src'),
+      join(root, 'client', 'scripts'),
+      join(root, 'server', 'src'),
+      join(root, 'server', 'scripts'),
+    ];
+
+    const offences: string[] = [];
+
+    for (const file of roots.flatMap(sourceFiles)) {
+      // This test file necessarily contains the banned phrases: they are its subject.
+      if (file.endsWith('content.test.ts')) continue;
+
+      const lines = readFileSync(file, 'utf8').split('\n');
+
+      lines.forEach((line, index) => {
+        const trimmed = line.trimStart();
+        const isComment =
+          trimmed.startsWith('*') || trimmed.startsWith('/*') || trimmed.startsWith('//');
+        if (isComment) return;
+
+        const beforeInlineComment = line.split('//')[0] ?? line;
+        if (SOMEBODY_ELSES.test(beforeInlineComment)) return;
+        if (ASSERTING_ABSENCE.test(beforeInlineComment)) return;
+        // The contrast exemption applies only when the line is not *also* naming the product.
+        if (
+          DRAWING_THE_CONTRAST.test(beforeInlineComment) &&
+          !CARE_AS_PRODUCT.test(beforeInlineComment)
+        )
+          return;
+
+        for (const pattern of BANNED) {
+          if (pattern.test(beforeInlineComment)) {
+            offences.push(`${file.split(sep).pop()}:${index + 1} — ${line.trim()}`);
+            return;
+          }
+        }
+      });
+    }
+
+    expect(
+      offences,
+      'The recurring product is "Growth Partner" on the marketing site. A customer who reads ' +
+        'a different name in their billing, their dashboard or their invoice is reading a ' +
+        'different product — and "care plan" is the specific name that turns this offer back ' +
+        'into the commodity it argues it is not.',
+    ).toEqual([]);
+  });
+
+  /*
+   * The other half: the product's real name has to actually be in use, or the guard above
+   * passes on a codebase that has stopped naming it at all.
+   */
+  it('names Growth Partner as the recurring product', () => {
+    expect(growthPartner.name).toBe('Growth Partner');
+    expect(carePricing.plan.name).toBe(growthPartner.name);
+    expect(comparison.columns.partner).toContain(growthPartner.name);
   });
 
   it('does not let the recurring service be described as merely maintenance', () => {
@@ -1479,7 +2190,7 @@ describe('the audit scenario', () => {
       .toLowerCase();
 
     expect(copy).toContain('your');
-    expect(copy).toContain('not my estimate');
+    expect(copy).toContain('not our estimate');
   });
 
   it('never promises that any piece of work produces the modelled outcome', () => {
@@ -1541,6 +2252,52 @@ describe('the privacy page', () => {
   });
 
   /*
+   * ==========================================================================
+   * THE PAGE HAS TO DESCRIBE THE ACCOUNT SYSTEM, BECAUSE THERE IS ONE
+   * ==========================================================================
+   *
+   * The block above asserts the *form* surfaces are named. It passed for the whole period in
+   * which this page told visitors "Nothing else is collected, and nothing is gathered about
+   * you in the background" — while the application stored password hashes, Google identities,
+   * Stripe customer references, sign-in timestamps and a per-user activity log.
+   *
+   * Asserting that words appear cannot catch an omission. So this asserts the specific things
+   * a reader would be misled about, and — the part that actually holds — bans the sentence
+   * that was false. A future subsystem will not be caught by name here either; what will be
+   * caught is any attempt to re-close this section with an absolute claim.
+   * ==========================================================================
+   */
+  it('describes the account system, and claims nothing absolute about collection', () => {
+    const everyBody = privacyContent.sections.map((section) => section.body).join(' ');
+
+    // The five things a reader could otherwise be told do not exist.
+    for (const subject of [/account/i, /password/i, /google/i, /stripe/i, /signed in/i]) {
+      expect(everyBody, `the privacy page does not mention ${String(subject)}`).toMatch(subject);
+    }
+
+    /*
+     * The sentence that was false. Banned outright rather than corrected, because the whole
+     * category of claim is the problem: "nothing is gathered about you in the background" is
+     * not a sentence this application can afford to make about itself while it records a login
+     * timestamp, and any rewording of it will be wrong for the same reason.
+     */
+    expect(
+      everyBody.toLowerCase(),
+      'an absolute "nothing else is collected" claim is what went stale last time',
+    ).not.toContain('nothing is gathered about you in the background');
+
+    // Retention has to cover the account, not just the enquiry forms.
+    const retention = privacyContent.sections.find((section) => section.id === 'how-long');
+    expect(retention?.body).toMatch(/account/i);
+    expect(retention?.body).toMatch(/session/i);
+
+    // And the processor list has to name the two that were added after it was written.
+    const where = privacyContent.sections.find((section) => section.id === 'where');
+    expect(where?.body).toMatch(/stripe/i);
+    expect(where?.body).toMatch(/google/i);
+  });
+
+  /*
    * The claim in this section is true only while `lib/analytics.ts` has no sink. If a
    * provider is ever wired into `index.html`, this page has to change in the same commit
    * — which is what the note at the top of `content/legal.ts` says, and what this pins.
@@ -1582,21 +2339,81 @@ describe('the teardown', () => {
  * learned to what is for sale. It was the strongest asset on the site and it pointed
  * nowhere.
  *
- * `recommendedTier` closes that. What is pinned here is the branch that makes it
+ * `recommendedAction` closes that. What is pinned here is the branch that makes it
  * trustworthy rather than the branches that make money.
  * ============================================================================
  */
 describe('the assessment recommendation', () => {
   const OUT_OF = 40;
 
-  it('sends a badly scoring site to the tier that rebuilds it', () => {
-    expect(recommendedTier(0, OUT_OF)?.id).toBe('growth');
-    expect(recommendedTier(20, OUT_OF)?.id).toBe('growth');
+  it('sends a badly scoring site to the rebuild', () => {
+    expect(recommendedAction(0, OUT_OF)).toBe('rebuild');
+    expect(recommendedAction(20, OUT_OF)).toBe('rebuild');
   });
 
-  it('sends a mostly-working site to the smaller tier', () => {
-    expect(recommendedTier(28, OUT_OF)?.id).toBe('foundation');
-    expect(recommendedTier(33, OUT_OF)?.id).toBe('foundation');
+  /*
+   * The honest middle branch: a mostly-working site needs targeted fixes, which are
+   * quoted per site — not the full build. Recommending the flagship to that reader is
+   * the middle-tier-for-everybody move every reader has seen and correctly ignores.
+   */
+  it('sends a mostly-working site to targeted fixes rather than a rebuild', () => {
+    expect(recommendedAction(28, OUT_OF)).toBe('fix');
+    expect(recommendedAction(33, OUT_OF)).toBe('fix');
+
+    const fix = audit.diagnosis.recommendation.fix;
+    /*
+     * It used to be enough that this branch said the word "quoted". It is not any more, and
+     * the change is the point of the whole redesign of this funnel: the branch used to end
+     * at "quoted per site" with no product, no boundary and nothing to press — a diagnosis
+     * handed to the best-qualified visitor on the site, followed by a full stop.
+     *
+     * What is asserted now is that it names the smaller product, states its edge, and offers
+     * a way to act. The "not the flagship" assertion stays: recommending the rebuild to a
+     * site that scored 65–85% is the middle-tier-for-everybody move this branch exists to
+     * avoid.
+     */
+    expect(fix.lead.length).toBeGreaterThan(40);
+    expect(fix.body).not.toContain(flagship.name);
+    expect(fix.cta.length).toBeGreaterThan(4);
+    expect(fix.seeScope.length).toBeGreaterThan(4);
+
+    // The edge, in the branch's own copy rather than only on the pricing card.
+    expect(fix.body.toLowerCase()).toMatch(/not a redesign|is not a redesign|new pages/);
+  });
+
+  /*
+   * ==========================================================================
+   * NO BRANCH OF THE RECOMMENDATION MAY END IN NOTHING
+   * ==========================================================================
+   *
+   * The structural version of the assertion above, and the one that generalises. Every
+   * branch of `recommendedAction` — including the one that recommends buying nothing — has
+   * to give the reader something to do next. `fix` shipped without one for a whole phase,
+   * and it was invisible because the two branches either side of it had links.
+   *
+   * `none` is included deliberately. "You probably do not need a rebuild" followed by
+   * silence reads as the page giving up rather than as a recommendation, and the honest
+   * branch is the one that most needs to look deliberate.
+   * ==========================================================================
+   */
+  it('gives every recommendation branch something to act on', () => {
+    const { recommendation } = audit.diagnosis;
+
+    const actions: readonly (readonly [string, string])[] = [
+      ['rebuild', recommendation.rebuild.seePricing],
+      ['fix', recommendation.fix.cta],
+      ['none', recommendation.none.cta],
+    ];
+
+    for (const [branch, label] of actions) {
+      expect(label, `the "${branch}" recommendation has no call to action`).toBeTruthy();
+      expect(label.length).toBeGreaterThan(4);
+      expect(containsPlaceholder(label)).toBe(false);
+    }
+
+    // Every branch of the type is covered, so adding a fourth fails here rather than shipping.
+    const branches: readonly AuditRecommendation[] = ['rebuild', 'fix', 'none'];
+    expect(actions.map(([branch]) => branch)).toEqual([...branches]);
   });
 
   /*
@@ -1605,18 +2422,17 @@ describe('the assessment recommendation', () => {
    * A recommender that always recommends buying is not a recommender, and every reader
    * knows it. Telling somebody who scored well that they probably do not need a rebuild
    * costs an occasional sale and is the entire reason the other two recommendations are
-   * worth reading. If this ever starts returning a tier, the feature has become an advert.
+   * worth reading. If this ever starts recommending a purchase, the feature has become
+   * an advert.
    */
   it('tells a site that scored well that it probably does not need rebuilding', () => {
-    expect(recommendedTier(35, OUT_OF)).toBeNull();
-    expect(recommendedTier(40, OUT_OF)).toBeNull();
+    expect(recommendedAction(35, OUT_OF)).toBe('none');
+    expect(recommendedAction(40, OUT_OF)).toBe('none');
 
     // And the copy for that branch exists, and recommends nothing.
     const none = audit.diagnosis.recommendation.none;
     expect(none.body.length).toBeGreaterThan(120);
-    for (const tier of projectTiers) {
-      expect(none.body).not.toContain(tier.name);
-    }
+    expect(none.body).not.toContain(flagship.name);
   });
 
   /*
@@ -1624,12 +2440,12 @@ describe('the assessment recommendation', () => {
    * cannot silently re-band everybody who has already taken it.
    */
   it('scales with the number of categories rather than assuming forty points', () => {
-    expect(recommendedTier(10, 20)?.id).toBe(recommendedTier(20, 40)?.id);
-    expect(recommendedTier(18, 20)).toBe(recommendedTier(36, 40));
+    expect(recommendedAction(10, 20)).toBe(recommendedAction(20, 40));
+    expect(recommendedAction(18, 20)).toBe(recommendedAction(36, 40));
   });
 
   it('never recommends anything from an impossible denominator', () => {
-    expect(recommendedTier(10, 0)).toBeNull();
+    expect(recommendedAction(10, 0)).toBe('none');
   });
 });
 
@@ -1734,6 +2550,20 @@ describe('the stylesheets', () => {
    * `styles[variant]` — and is covered anyway, because the four variant names are written
    * as string literals in its own union type. If a component ever composes a class name at
    * runtime, that name has to be added to a literal somewhere or exempted here explicitly.
+   *
+   * ## The search is scoped per module, and it used not to be
+   *
+   * The first version joined **every** source file into one string and asked whether the class
+   * name appeared anywhere in it. That is not the question. A dead `.empty` rule in
+   * `Capabilities.module.css` passed for months' worth of runs because
+   * `features/private/components/AppState.tsx` contains `styles['empty']` — a different
+   * component, reaching a different module, for a class that happens to share a common English
+   * word. The guard was answering "does any component anywhere use this name" when it needed to
+   * answer "does anything that imports *this* module use it".
+   *
+   * So each module is now checked only against the files that import it, found by basename.
+   * That is stricter in the direction that matters and no looser anywhere: a component cannot
+   * reach a CSS module it has not imported.
    * ==========================================================================
    */
   it('defines no class that nothing renders', () => {
@@ -1746,9 +2576,7 @@ describe('the stylesheets', () => {
     }
 
     const root = join(import.meta.dirname, '..');
-    const source = sourceFiles(root)
-      .map((file) => readFileSync(file, 'utf8'))
-      .join('\n');
+    const sources = sourceFiles(root).map((file) => readFileSync(file, 'utf8'));
 
     const dead: string[] = [];
 
@@ -1761,9 +2589,17 @@ describe('the stylesheets', () => {
         if (name) names.add(name);
       }
 
+      /*
+       * Only the files that import this module. A module nothing imports has no consumers, so
+       * every class in it is dead and every one is reported — which is the correct answer and
+       * strictly better than the old behaviour of checking it against the whole repository.
+       */
+      const moduleName = file.split(sep).pop() ?? '';
+      const consumers = sources.filter((source) => source.includes(moduleName)).join('\n');
+
       for (const name of names) {
-        if (source.includes(`'${name}'`) || source.includes(`"${name}"`)) continue;
-        dead.push(`${file.split(sep).pop()}: .${name}`);
+        if (consumers.includes(`'${name}'`) || consumers.includes(`"${name}"`)) continue;
+        dead.push(`${moduleName}: .${name}`);
       }
     }
 

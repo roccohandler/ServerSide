@@ -27,13 +27,13 @@ import type { CareCategory, ProcessStep } from '../types/content';
 
 export const whyMonthly = {
   eyebrow: 'The recurring part',
-  heading: 'Why website management is monthly',
+  heading: 'Why Growth Partner is monthly',
   body: [
-    'Because the things a website has to keep up with are all moving. Your services change. Your prices change. What customers want in February is not what they want in July. If you start advertising, the website has to say what the advert said.',
-    'A website launched today can be six months out of date without anybody touching it.',
+    'Because you cannot find out whether a website is working by looking at it once. The number it produces moves with the season, with what you are advertising, with what your competitors put up last week — so a single reading tells you almost nothing, and a reading every month tells you what to do next.',
+    'And because the things a website has to keep up with are all moving anyway. Your services change. Your prices change. What customers want in February is not what they want in July. A website launched today can be six months out of date without anybody touching it.',
   ],
   closing:
-    'The monthly fee is not paying to keep the same website alive. It is paying to keep it current, supported, and getting better.',
+    'The monthly fee is not paying to keep the same website alive — plenty of companies will do that for a fraction of it. It is paying for somebody to measure what the site produces, tell you, and act on it.',
 } as const;
 
 /* ------------------------------------------------------------------ what changes */
@@ -44,8 +44,21 @@ export const whyMonthly = {
  * other people sell would undermine the honest column on the right.
  */
 export const notJustMaintenance = {
-  heading: 'This is not a maintenance plan',
-  lede: 'Maintenance keeps a website alive. That is worth having, and it is the floor rather than the offer.',
+  /*
+   * The heading used to be "This is not a maintenance plan".
+   *
+   * It was true and it lost the argument in its own first four words: a headline that names
+   * the thing it is denying hands the reader that frame to think in, and denial is the
+   * weakest position from which to describe a product. The comparison underneath draws the
+   * distinction far better than a sentence about it can — so the heading now states what is
+   * actually different, and the left-hand column carries the contrast.
+   *
+   * The word "maintenance" is still in the lede and the left column label, both of which
+   * satisfy the guard in `content.test.ts` that requires it to appear only where the copy is
+   * explicitly drawing this contrast.
+   */
+  heading: 'The difference is that somebody is watching the number',
+  lede: 'Maintenance keeps a website alive. That is worth having, and it is the floor rather than the offer — the fee is for the two rows nobody else is doing.',
 
   maintenance: {
     label: 'Ordinary website maintenance',
@@ -53,15 +66,23 @@ export const notJustMaintenance = {
   },
 
   managed: {
-    label: 'A managed website',
+    /*
+     * "With Growth Partner", not just the product's name.
+     *
+     * These two column labels render as headings, and `CarePlans` already heads its own card
+     * with exactly `growthPartner.name` — so on `/services`, where both now render, the page
+     * had two headings called "Growth Partner" and no way for anybody navigating by heading to
+     * tell them apart. Prefixing it reads better as a column header anyway.
+     */
+    label: 'With Growth Partner',
     items: [
-      'All of that, without you asking',
-      'Business information kept current',
+      'The enquiry number measured, and reported to you every month',
+      'What changed, and why it was changed',
+      'Improvements chosen from what the measurement showed',
+      'Conversion opportunities tested where the traffic supports it',
       'Seasonal services brought forward when they matter',
       'Messaging aligned with the marketing you are running',
-      'Conversion opportunities tested where the data supports it',
-      'Important pages improved as you learn what works',
-      'Speed and mobile experience monitored',
+      'All of the left-hand column too, without you asking',
       'One person to ask when you need something',
     ],
   },
@@ -149,7 +170,7 @@ export const abTesting = {
    */
   belowThreshold: {
     heading: 'When there is not enough traffic',
-    body: 'Most local service businesses will not have the visitor numbers for a statistically useful test in a given month, and I would rather say so than run one and present noise as a finding. In those months the work is evidence-based improvement instead: what the analytics show people doing, where they stop, known usability principles, page speed, and what the phone is telling you.',
+    body: 'Most local service businesses will not have the visitor numbers for a statistically useful test in a given month, and we would rather say so than run one and present noise as a finding. In those months the work is evidence-based improvement instead: what the analytics show people doing, where they stop, known usability principles, page speed, and what the phone is telling you.',
     note: 'It gets called what it is. An improvement made on judgement is an improvement made on judgement, not a test result.',
   },
 
@@ -211,7 +232,7 @@ export const seasonal = {
   enabled: true,
   eyebrow: 'Seasonal',
   heading: 'Your website should not look frozen in January',
-  lede: 'What your customers need in February is not what they need in July, and the website should be leading with whichever one is true today. Which services move to the front is your call — putting them there is mine.',
+  lede: 'What your customers need in February is not what they need in July, and the website should be leading with whichever one is true today. Which services move to the front is your call — putting them there is ours.',
 
   /** The published quantity. Roughly one a quarter, timed to your trade rather than the calendar. */
   included: {
@@ -311,7 +332,7 @@ export const campaignAlignment = {
   },
 
   boundary:
-    'This is website work, not advertising management. I do not run your ads, set your budgets or manage your bidding — I make the page they land on live up to what they promised.',
+    'This is website work, not advertising management. We do not run your ads, set your budgets or manage your bidding — we make the page they land on live up to what they promised.',
 
   steps: [
     {
@@ -377,23 +398,56 @@ export const campaignAlignment = {
 /* ------------------------------------------------------------------ management groups */
 
 /*
- * The six things the monthly service covers. Three of these existed before this became a
- * growth service rather than a maintenance one; the last three are the difference.
+ * ============================================================================
+ * THE SIX THINGS THE MONTHLY SERVICE COVERS — AND WHY THIS ORDER
+ * ============================================================================
+ *
+ * The ids are unchanged and a test pins all six, because they are what the rest of the
+ * content layer refers to. The **order** has been inverted, and that is the substantive
+ * change: this grid used to run working → current → aligned → improving → learning →
+ * supported, which is to say it opened on hosting and buried measurement at position five.
+ *
+ * A reader scanning six card headings and stopping at the second one came away believing
+ * they were being sold upkeep. They were reading it correctly — the page was ordered that
+ * way — while a section further down was headed "This is not a maintenance plan".
+ *
+ * It now runs **know → improve → current → aligned → running → supported**. Nothing was
+ * added or removed: the same work, in the order that says what it is for. `working` is
+ * fifth and its summary now says out loud that it is the floor, which is a stronger claim
+ * than pretending it is the headline.
+ * ============================================================================
  */
 export const managementCategories = [
   {
-    id: 'working',
-    title: 'Keep it working',
+    id: 'learning',
+    /*
+     * Retitled from "Keep learning". The old title described our activity; this one names
+     * what the client gets, which is the only version that justifies a fee. The id stays
+     * `learning` because five other places reference it and a rename buys nothing.
+     */
+    title: 'Know what it is doing',
     summary:
-      'The work you should never have to think about, because it only gets noticed when it fails.',
+      'The one number the website is responsible for, measured and explained every month — not an impression, and not a dashboard nobody opens.',
     items: [
-      'Hosting and certificates managed on accounts in your name',
-      'Backups taken and checked',
-      'Security and software updates applied',
-      'Uptime and form delivery monitored',
-      'Bugs fixed when they appear',
+      'Calls and quote requests counted as real events',
+      'The Website Performance Report, every month, in plain English',
+      'Measured against the baseline recorded at launch',
+      'Conversion tests where the traffic supports them, and considered improvements — called that — where it does not',
     ],
-    icon: 'shield',
+    icon: 'target',
+  },
+  {
+    id: 'improving',
+    title: 'Make it work harder',
+    summary:
+      'The work that comes out of the measurement, on the parts that decide whether somebody gets in touch.',
+    items: [
+      'Improvements to the pages that bring in the most work',
+      'Calls to action refined where the numbers point',
+      'User-experience fixes',
+      'Speed and mobile experience monitored',
+    ],
+    icon: 'bolt',
   },
   {
     id: 'current',
@@ -421,29 +475,29 @@ export const managementCategories = [
     icon: 'target',
   },
   {
-    id: 'improving',
-    title: 'Keep it improving',
-    summary: 'Small, continuous changes to the parts that decide whether somebody gets in touch.',
-    items: [
-      'Improvements to the pages that bring in the most work',
-      'Calls to action refined',
-      'User-experience fixes',
-      'Speed and mobile experience monitored',
-    ],
-    icon: 'bolt',
-  },
-  {
-    id: 'learning',
-    title: 'Keep learning',
+    id: 'working',
+    /*
+     * Not "Keep it running" — `systemComponents` already has a step titled exactly that, and
+     * two headings with the same accessible name on one page is a page a screen-reader user
+     * cannot navigate by heading. The services test caught it, which is what that test is for.
+     */
+    title: 'Kept running in the background',
+    /*
+     * The summary says "the floor" on purpose. Plenty of companies will keep a website
+     * online for a fraction of this fee, and a page that presented upkeep as the headline
+     * value would be inviting exactly that comparison. Naming it as the floor is both true
+     * and the thing that makes the two categories above it the answer.
+     */
     summary:
-      'Decisions made on what visitors actually do, when there is enough of it to learn from.',
+      'The floor. Worth having, never the reason to pay for this, and something you should never have to think about.',
     items: [
-      'Analytics watched for what is and is not working',
-      'Conversion tests where the traffic supports them',
-      'Considered improvements where it does not',
-      'What was learned, explained in plain English',
+      'Hosting and certificates managed on accounts in your name',
+      'Backups taken and checked',
+      'Security and software updates applied',
+      'Uptime and form delivery monitored',
+      'Bugs fixed when they appear',
     ],
-    icon: 'target',
+    icon: 'shield',
   },
   {
     id: 'supported',
@@ -493,28 +547,28 @@ export const responseGuarantee = {
   businessHoursOnly: true,
 
   eyebrow: 'Risk reversal',
-  heading: 'A reply within 24 hours, or that month is on me.',
-  lede: 'The usual complaint about the person who built your website is not that they did bad work. It is that they stopped answering. So this is the part I put money behind.',
+  heading: 'A reply within 24 business hours, or that month is on us.',
+  lede: 'The usual complaint about the person who built your website is not bad work. It is that they stopped answering.',
 
   /** What is promised. Deliberately about the reply, not about the fix. */
   promise:
-    'Raise something covered by your active management service and you get a real reply within 24 business hours — what it is, what happens next, and when.',
+    'A real reply to anything covered by your active management service: what it is, what happens next, and when.',
 
   /** The distinction the whole term depends on. Never remove this line. */
   distinction:
-    'That is a response, not a resolution. Some things are fixed in ten minutes and some depend on a hosting company answering their own phone. What you are promised is that you are never left wondering whether anybody saw it.',
+    'That is a response, not a resolution — some things are fixed in ten minutes and some wait on a hosting company. What is promised is that you are never left wondering whether anybody saw it.',
 
   /** The remedy, in the customer's words. Automatic — they never have to ask. */
   remedy:
-    'If I miss it, that month’s management fee is waived. The whole fee, not a portion of it, and I apply it myself — you do not have to notice, chase it or ask.',
+    'If we miss it, that month’s fee is waived in full. We apply it ourselves — you do not have to notice, chase it or ask.',
 
   /** What actually counts as a reply, so nobody has to litigate the word. */
   qualifyingResponse: {
     heading: 'What counts as a response',
     items: [
-      'I have seen it and said so',
-      'An answer, a next step, or what I need from you to get one',
-      'From me, not an automated acknowledgement',
+      'We have seen it and said so',
+      'An answer, a next step, or what we need from you to get one',
+      'From a person, not an automated acknowledgement',
     ],
     note: 'Completing the work is not the promise. Telling you where it stands is.',
   },
@@ -533,12 +587,12 @@ export const responseGuarantee = {
    */
   emailChannelLabel: 'Email to',
   channelsNote:
-    'Two channels, because those are the two I watch. Call any time as well — it is usually faster — but the guarantee is measured on the ones that leave a timestamp.',
+    'Call any time as well — usually faster — but the guarantee is measured on the channels that leave a timestamp.',
 
   /** The covered week, in customer-facing words. Generated from `site.contact.hours`. */
   windowHeading: 'When the clock runs',
   windowNote:
-    'Monday to Friday, 8am–6pm Pacific. Weekends and US federal holidays pause it rather than count against it — a request that arrives at 5pm on Friday is answered by 5pm on Monday at the latest.',
+    'Monday to Friday, 8am–6pm Pacific. Weekends and US federal holidays pause the clock rather than count against it.',
 
   /*
    * §17: the disclosure that makes the guarantee credible instead of weakening it. A
@@ -547,7 +601,7 @@ export const responseGuarantee = {
    */
   notGuaranteed: {
     heading: 'What this does not guarantee',
-    body: 'This is a promise about responsiveness. It is not a promise of leads, rankings, sales, traffic, revenue, or that any particular problem is solved within 24 hours. Nobody can guarantee those, and a provider who does is telling you something about themselves.',
+    body: 'A promise about responsiveness — not about leads, rankings, sales, traffic, revenue, or any particular problem being solved within 24 hours. Nobody can guarantee those.',
   },
 
   /*
@@ -560,7 +614,7 @@ export const responseGuarantee = {
     'Requests sent somewhere other than the two channels above',
     'Weekends and US federal holidays, which pause the clock',
     'Outages at a hosting provider, registrar or other third party',
-    'Systems you control that I do not have access to',
+    'Systems you control that we do not have access to',
     'Time spent waiting on information or approval from you',
     'Work outside the agreed scope of the management service',
     'Security incidents where a third party has to act first',
@@ -569,5 +623,5 @@ export const responseGuarantee = {
   ],
 
   publicNote:
-    'The full terms, including these exclusions in their contractual wording, are in the written agreement. Ask to read it before you sign rather than after — that is what it is for.',
+    'The contractual wording of all of it is in the written agreement. Ask to read it before you sign.',
 } as const;

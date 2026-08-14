@@ -19,15 +19,29 @@ html {
   scroll-padding-top: 5rem;
 }
 
+/*
+ * The page ground is Cast Cream, not white.
+ *
+ * This is the single line that does most of the work in the identity: it turns white
+ * into a *raised* value, so every card, form and panel that sets
+ * `background-color: var(--color-surface)` now lifts off the page instead of dissolving
+ * into it. Sections that want to recede use `--color-surface-muted`; sections that want
+ * to anchor use `--color-surface-dark`.
+ */
 body {
   min-height: 100vh;
   font-family: var(--font-sans);
   font-size: var(--text-base);
   line-height: var(--leading-normal);
   color: var(--color-ink);
-  background-color: var(--color-surface);
+  background-color: var(--color-page);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+::selection {
+  color: var(--color-on-accent);
+  background-color: var(--color-accent-strong);
 }
 
 img,
@@ -74,6 +88,17 @@ h4 {
   text-wrap: balance;
 }
 
+/*
+ * The two display sizes carry the extra weight. Archivo at 800 is where the typeface
+ * stops being a neutral grotesk and starts reading as forged — squared terminals, tight
+ * counters — and that is the whole reason it was chosen over the system stack. Below
+ * h2 the weight comes back down: 800 at 20px is a headline shouting at a paragraph.
+ */
+h1,
+h2 {
+  font-weight: var(--weight-extrabold);
+}
+
 h1 {
   font-size: var(--text-4xl);
 }
@@ -97,14 +122,36 @@ p {
   text-wrap: pretty;
 }
 
+/*
+ * Links take their colour from the accent, not from the brand.
+ *
+ * When the brand was blue, `--color-brand` was both the identity and the "this is
+ * interactive" signal, and one value did both jobs. The brand is charcoal now, which is
+ * within a hair of body ink — a link coloured with it is not a link, it is a paragraph.
+ * So the affordance moves to the AA-safe ember, and the underline stays on by default
+ * rather than being decoration a component can casually drop.
+ */
 a {
-  color: var(--color-brand);
+  color: var(--color-accent-text);
   text-decoration-thickness: 1px;
   text-underline-offset: 0.18em;
 }
 
+/*
+ * Hover goes *darker*, not to the fill ember.
+ *
+ * It was `--color-accent-strong`, which `tokens.css` documents as a value for solid fills
+ * carrying white text. As text on the cream page it measures about 4.26:1 — under the 4.5:1
+ * floor — so every link on the site failed AA at the moment the pointer was on it, which is
+ * also the moment a reader is most likely to be looking straight at it.
+ *
+ * `--color-accent-deep` is the next step down and clears it comfortably on cream, on white and
+ * on the muted band. Hover getting darker rather than brighter is also the direction the
+ * thicker underline already implies.
+ */
 a:hover {
-  color: var(--color-brand-strong);
+  color: var(--color-accent-deep);
+  text-decoration-thickness: 2px;
 }
 
 ul,

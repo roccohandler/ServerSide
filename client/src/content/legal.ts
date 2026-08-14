@@ -20,7 +20,7 @@ import { prices } from './offer';
  *      true today — `lib/analytics.ts` fires events into nothing. The moment a provider is
  *      wired into `index.html`, this file has to change in the same commit.
  *   2. **It has to enumerate everything, including the things that never leave the
- *      browser.** The PlayBook assessment and the Website Revenue Audit both persist to
+ *      browser.** The PlayBook assessment and the Website Score both persist to
  *      `localStorage`, and the audit transmits a generated summary of somebody's scores
  *      and their own business figures rather than a message they wrote. A page that lists
  *      "any message you write" and stops there is describing a smaller site than this one.
@@ -39,10 +39,35 @@ export const privacyContent = {
   intro:
     'What happens to the information you send through this website. Written in plain English, and describing how the site actually works today rather than how a template says it should.',
   sections: [
+    /*
+     * ========================================================================
+     * THIS SECTION HAD STOPPED BEING TRUE, AND THAT IS THE FAILURE THIS PAGE
+     * EXISTS TO NOT COMMIT
+     * ========================================================================
+     *
+     * It listed four things "all of which you enter yourself" and closed: "Nothing else is
+     * collected, and nothing is gathered about you in the background."
+     *
+     * By then the application had grown accounts, sessions, Stripe customers, Google sign-in
+     * and a per-user activity log. Three of those record things the visitor does *not* type:
+     * `lastLoginAt` on the user, `lastUsedAt` on the session, and every entry in the activity
+     * collection. So the closing sentence was a checkably false statement of fact, on the one
+     * page whose entire job is being accurate about data — and the page the signup form links
+     * to as the notice being agreed to.
+     *
+     * The test block for this page passed throughout, because it asserts that certain words
+     * *appear* and cannot notice a whole subsystem missing. Its own preamble names this exact
+     * failure mode: "a surface is added that stores or transmits something, and the privacy
+     * page — written before it existed — carries on describing a smaller site." It did.
+     *
+     * The rule that follows: **a surface that stores or transmits anything changes this
+     * section in the same commit.** Not the next one.
+     * ========================================================================
+     */
     {
       id: 'what',
       heading: 'What is collected',
-      body: 'Three things, all of which you enter yourself. From the contact form: your name, your business name, your email address, your phone number, your website address if you give one, what you need help with, and any message you write. From the Website Revenue Audit, if you choose to send it: the same contact details, plus a written summary of the answers you gave — your score, the five categories that came out weakest, and whichever of the traffic, enquiry, close-rate and job-value figures you filled in. From the PlayBook form: your email address, and the fact that you asked for the workbook. Nothing else is collected, and nothing is gathered about you in the background.',
+      body: 'Five things. The first four you enter yourself. From the contact form: your name, your business name, your email address, your phone number, your website address if you give one, what you need help with, and any message you write. From the Website Score, if you choose to send it: the same contact details, plus a written summary of the answers you gave — your score, the five categories that came out weakest, and whichever of the traffic, enquiry, close-rate and job-value figures you filled in. From the PlayBook form: your email address, and the fact that you asked for the workbook. From the project onboarding form, if you become a client: the business details, services, service areas and account information you supply so your website can be built. And if you create an account: your email address, your name, your business name, and either a password — stored only as a hash, never the password itself — or the fact that you signed in with Google, together with the Google account id and address that identifies you there. Two things about an account are recorded by the site rather than typed by you: when you last signed in, and a log of what has happened on your project — payments taken, tasks completed, an assessment saved, a preview delivered — so that you and we are reading the same history. If you pay, Stripe holds the card details and we keep only the customer reference it gives us. Beyond that nothing else is collected, and nothing watches which pages you look at.',
     },
     {
       id: 'tracking',
@@ -59,17 +84,17 @@ export const privacyContent = {
     {
       id: 'browser',
       heading: 'What stays in your browser',
-      body: 'The PlayBook self-assessment and the Website Revenue Audit both keep your answers in your own browser’s local storage while you work, so a refresh or a phone call does not cost you twenty questions. That is storage on your device, not a copy held anywhere else: the PlayBook assessment is never transmitted at all, and the audit is transmitted only if you fill in your details and press send. Both pages have a button that clears everything, and clearing your browser data removes it just as effectively.',
+      body: 'The PlayBook self-assessment and the Website Score both keep your answers in your own browser’s local storage while you work, so a refresh or a phone call does not cost you twenty questions. That is storage on your device, not a copy held anywhere else: the PlayBook assessment is never transmitted at all, and the audit is transmitted only if you fill in your details and press send. Both pages have a button that clears everything, and clearing your browser data removes it just as effectively.',
     },
     {
       id: 'why',
       heading: 'Why it is collected',
-      body: 'Contact form: to reply to your enquiry, and if we end up working together, to carry out that work. Audit: to reply about the specific things it flagged, which is not possible without seeing what it flagged. PlayBook form: to send you the workbook. That is the whole list.',
+      body: 'Contact form: to reply to your enquiry, and if we end up working together, to carry out that work. Website Score: to reply about the specific things it flagged, which is not possible without seeing what it flagged. PlayBook form: to send you the workbook. Onboarding form: to build the website you have commissioned. Account: to let you sign in, see your own project and pay for it — and the activity log so you can see what has happened without having to ask. That is the whole list.',
     },
     {
       id: 'where',
       heading: 'Where it goes',
-      body: 'Your submission is stored in a database and emailed to the business owner so it cannot be lost to a bounced email. Two services are involved: MongoDB stores it, and Resend delivers the notification. Neither is given permission to use it for anything. It is not sold, rented, shared or added to anybody else’s list.',
+      body: 'Your submission is stored in a database and emailed to the business owner so it cannot be lost to a bounced email. Four services are involved: MongoDB stores it, Resend delivers the notifications, Stripe takes the payments and holds the card details we never see, and Google verifies who you are if you choose to sign in that way. None of them is given permission to use any of it for anything else. It is not sold, rented, shared or added to anybody else’s list.',
     },
     {
       id: 'playbook',
@@ -79,7 +104,7 @@ export const privacyContent = {
     {
       id: 'how-long',
       heading: 'How long it is kept',
-      body: 'Enquiries and sent audits are kept for 24 months after the last meaningful contact, then deleted — unless a longer period is genuinely needed for accounting, a live project, or a dispute. PlayBook subscriptions are kept until you ask for them to be removed, or until they are no longer needed for the reason you gave the address. Anything still sitting in your own browser is yours and is not on any schedule. These are operational choices made by the business, not periods imposed by anybody.',
+      body: 'Enquiries and sent scores are kept for 24 months after the last meaningful contact, then deleted — unless a longer period is genuinely needed for accounting, a live project, or a dispute. PlayBook subscriptions are kept until you ask for them to be removed, or until they are no longer needed for the reason you gave the address. Account records, and the project history attached to them, are kept while the account exists and for 24 months after it is closed; sign-in sessions expire on their own within thirty days, and password-reset and confirmation links within the hour. Anything still sitting in your own browser is yours and is not on any schedule. These are operational choices made by the business, not periods imposed by anybody.',
     },
     {
       id: 'rights',
@@ -97,7 +122,7 @@ export const termsContent = {
     {
       id: 'site',
       heading: 'Using this website',
-      body: 'The information on this site describes the services offered. It is not a quote, an offer, or a contract. Prices shown are the standard prices for standard scope; what your project actually costs is confirmed in writing before any work starts.',
+      body: 'The information on this site describes the services offered. It is not a quote, an offer, or a contract. Prices shown are the current published prices for the standard scope — where a founding-client price is shown, its condition is stated beside it. What your project actually costs is confirmed in writing before any work starts.',
     },
     {
       id: 'examples',
@@ -107,7 +132,7 @@ export const termsContent = {
     {
       id: 'launch',
       heading: 'The project fee',
-      body: `Projects are priced in three tiers, starting at ${prices.from}. The tier, the scope and the fee are agreed in writing before any work begins. Payment is half to begin and half on the day the site goes live. Each tier includes two revision rounds; a revision round is a consolidated set of requested changes submitted together. New pages, new functionality, new services or a materially changed brief after sign-off are additional scope and are quoted separately before that work begins. Typical launch is two to four weeks from receiving the materials required from you; timing depends on how quickly content, approvals, access and feedback come back.`,
+      body: `The build is a one-time project at the published price of ${prices.launch} under founding-client pricing (standard project price ${prices.launchStandard}). The scope and the fee are agreed in writing before any work begins. Payment is half to begin and half on the day the site goes live, and nothing else is owed on the build. The project includes two revision rounds; a revision round is a consolidated set of requested changes submitted together. New pages, new functionality, new services or a materially changed brief after sign-off are additional scope and are quoted separately before that work begins. Typical launch is two to four weeks from receiving the materials required from you; timing depends on how quickly content, approvals, access and feedback come back.`,
     },
     {
       /*
@@ -122,8 +147,8 @@ export const termsContent = {
     },
     {
       id: 'management',
-      heading: 'The ongoing plan',
-      body: `The plan after launch is separate from the project and is not a condition of it. It is ${prices.managementDisplay}, beginning on the launch date, with a three-month minimum. After the minimum it continues month-to-month and either of us can end it with 30 days' written notice. An annual prepayment option is available at ${prices.annual}; if the plan ends part-way through a prepaid year, unused whole months are refunded at the ${prices.management} monthly rate. Hosting and domain renewal costs are included in the monthly fee while the plan is active.`,
+      heading: 'Growth Partner, the ongoing plan',
+      body: `Growth Partner is optional, separate from the project, and never a condition of it. If chosen, it is ${prices.managementDisplay}, beginning on the launch date, with a three-month minimum. After the minimum it continues month-to-month and either of us can end it with 30 days' written notice. An annual prepayment option is available at ${prices.annual}; if the plan ends part-way through a prepaid year, unused whole months are refunded at the ${prices.management} monthly rate. Hosting and domain renewal costs are included in the monthly fee while the plan is active; without the plan, those accounts are in your name and you pay the providers directly.`,
     },
     {
       id: 'scope',
@@ -138,12 +163,12 @@ export const termsContent = {
     {
       id: 'ownership',
       heading: 'Ownership',
-      body: 'The domain, the hosting account, the content and the website belong to you. Accounts are registered in your name wherever it is technically practical, and I administer them on your behalf while management is active. If management ends, those accounts stay with you and billing reverts to you. Campaign landing pages built as part of your website remain part of your website. Any active A/B test is ended and the designated version left live.',
+      body: 'The domain, the hosting account, the content and the website belong to you. Accounts are registered in your name wherever it is technically practical, and we administer them on your behalf while management is active. If management ends, those accounts stay with you and billing reverts to you. Campaign landing pages built as part of your website remain part of your website. Any active A/B test is ended and the designated version left live.',
     },
     {
       id: 'client',
       heading: 'What is needed from you',
-      body: 'The information and materials required to do the work: your service list, business details, service area, and photographs of your own completed jobs, plus access to any systems I need and reasonably prompt decisions. Timelines are measured from when those are received.',
+      body: 'The information and materials required to do the work: your service list, business details, service area, and photographs of your own completed jobs, plus access to any systems we need and reasonably prompt decisions. Timelines are measured from when those are received.',
     },
     {
       id: 'contact',

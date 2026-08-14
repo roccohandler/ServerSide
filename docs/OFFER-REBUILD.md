@@ -1,5 +1,12 @@
 # The offer rebuild
 
+> **Superseded, 2026-08-13.** This document records the three-tier / two-plan iteration
+> of the offer, which the offer _simplification_ replaced with one flagship build
+> ($4,900 founding / $7,500 standard) plus one optional Growth Partner plan ($299/mo),
+> a Stripe payment flow and a post-deposit onboarding page. `docs/business-offer.md` is
+> the authoritative record of the current model; this file is kept as the history of how
+> the previous one was arrived at.
+
 Positioning, pricing architecture, discount presentation and risk reversal — implemented,
 then audited against the brief's own eighteen questions.
 
@@ -328,8 +335,10 @@ Plus one broken link and two pieces of dead code:
 - **No social proof of any kind.** No testimonials, no case studies, no client count, no
   years in business. The site says so plainly, which is the best available answer and is not
   as good as having some. The founding-client offer is designed to produce the first one.
-- **No live demo.** Five demonstration sites are described and pictured; none can be
-  clicked.
+- ~~**No live demo.**~~ **Resolved after this pass** — five demonstration sites now run
+  inside the application at `/demo/<trade>`. They are fictional businesses with no
+  fabricated proof of any kind, which is the constraint that made them publishable at all.
+  See `docs/DEMO-SITES-PLAN.md`.
 - **No measurement.** Every claim in this document about what converts better is a
   hypothesis until a provider is connected.
 - **Mobile is asserted structurally, not measured.** Layouts are single-column by default

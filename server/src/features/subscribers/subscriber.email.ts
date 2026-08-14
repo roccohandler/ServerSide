@@ -1,4 +1,5 @@
 import { escapeHtml } from '../../lib/html.js';
+import { emailTheme as t } from '../../lib/emailTheme.js';
 import type { EmailMessage } from '../../infrastructure/email/email.service.js';
 import type { StoredSubscriber } from './subscriber.types.js';
 
@@ -49,15 +50,15 @@ export function buildSubscriberNotificationEmail(params: {
   const htmlRows = rows
     .map(
       ([label, value]) =>
-        `<tr><th align="left" style="padding:6px 16px 6px 0;color:#5b6a7a;font-weight:600;white-space:nowrap;vertical-align:top">${escapeHtml(label)}</th><td style="padding:6px 0;color:#101a26">${escapeHtml(value)}</td></tr>`,
+        `<tr><th align="left" style="padding:6px 16px 6px 0;color:${t.inkMuted};font-weight:600;white-space:nowrap;vertical-align:top">${escapeHtml(label)}</th><td style="padding:6px 0;color:${t.ink}">${escapeHtml(value)}</td></tr>`,
     )
     .join('');
 
   const htmlBody = [
-    '<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;line-height:1.5">',
-    '<h2 style="margin:0 0 16px;font-size:18px;color:#101a26">PlayBook workbook requested</h2>',
+    `<div style="font-family:${t.font};line-height:1.5;color:${t.ink}">`,
+    `<h2 style="margin:0 0 16px;font-size:18px;letter-spacing:-0.02em;color:${t.ink}">PlayBook workbook requested</h2>`,
     `<table cellpadding="0" cellspacing="0" style="font-size:14px">${htmlRows}</table>`,
-    '<p style="margin:20px 0 0;font-size:13px;color:#5b6a7a">Print <code>/playbook/workbook</code> to PDF and reply to this address.</p>',
+    `<p style="margin:20px 0 0;font-size:13px;color:${t.inkMuted}">Print <code>/playbook/workbook</code> to PDF and reply to this address.</p>`,
     '</div>',
   ].join('');
 
@@ -114,13 +115,13 @@ export function buildWorkbookDeliveryEmail(params: {
   ].join('\n');
 
   const htmlBody = [
-    '<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;line-height:1.6;color:#101a26">',
-    '<h2 style="margin:0 0 16px;font-size:20px">Here is the PlayBook</h2>',
-    `<p style="margin:0 0 20px"><a href="${escapeHtml(pdfUrl)}" style="display:inline-block;padding:12px 20px;background:#12546f;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600">Download the PlayBook</a></p>`,
+    `<div style="font-family:${t.font};line-height:1.6;color:${t.ink}">`,
+    `<h2 style="margin:0 0 16px;font-size:20px;letter-spacing:-0.02em">Here is the PlayBook</h2>`,
+    `<p style="margin:0 0 20px"><a href="${escapeHtml(pdfUrl)}" style="display:inline-block;padding:12px 20px;background:${t.accentFill};color:${t.onAccent};text-decoration:none;border-radius:8px;font-weight:600">Download the PlayBook</a></p>`,
     '<p style="margin:0 0 16px">Twenty improvements that turn more of the visitors you already have into calls and quote requests, plus a 40-point scorecard and the audit sheets to work through.</p>',
-    '<p style="margin:0 0 16px;color:#5b6a7a">Everything in it is also published in full on the website — nothing was held back for this email. It is just easier to print.</p>',
-    '<p style="margin:0 0 16px;color:#5b6a7a">If you would rather somebody went through your actual website with you, the free assessment does exactly that, and you get the list whether or not you ever hire anybody.</p>',
-    '<p style="margin:0;color:#5b6a7a">Just reply to this email if you have a question about any of it.</p>',
+    `<p style="margin:0 0 16px;color:${t.inkMuted}">Everything in it is also published in full on the website — nothing was held back for this email. It is just easier to print.</p>`,
+    `<p style="margin:0 0 16px;color:${t.inkMuted}">If you would rather somebody went through your actual website with you, the free assessment does exactly that, and you get the list whether or not you ever hire anybody.</p>`,
+    `<p style="margin:0;color:${t.inkMuted}">Just reply to this email if you have a question about any of it.</p>`,
     '</div>',
   ].join('');
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { playbook, playbookStages } from './playbook';
 import { qualification } from './qualification';
 import { idealCustomer, serviceArea } from '../config/market';
-import { bandFor } from '../features/playbook/useWebsiteScore';
+import { bandFor } from '../features/public/playbook/useWebsiteScore';
 
 /*
  * ============================================================================

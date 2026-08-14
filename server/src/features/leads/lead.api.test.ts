@@ -25,7 +25,7 @@ const developmentConfig = loadServerConfig({ NODE_ENV: 'development', LOG_LEVEL:
 const productionConfig = loadServerConfig({
   NODE_ENV: 'production',
   LOG_LEVEL: 'silent',
-  MONGODB_URI: 'mongodb://127.0.0.1:27017/serviceside-test',
+  MONGODB_URI: 'mongodb://127.0.0.1:27017/jobforge-test',
   RESEND_API_KEY: 're_test_key',
   RESEND_FROM_EMAIL: 'Leads <leads@example.com>',
   CONTACT_NOTIFICATION_EMAIL: 'owner@example.com',
@@ -145,7 +145,7 @@ describe('POST /api/leads', () => {
 
   it('never leaks internal failure detail in production', async () => {
     const exploding: LeadRepository = {
-      create: () => Promise.reject(new Error('mongodb://user:hunter2@cluster0/serviceside failed')),
+      create: () => Promise.reject(new Error('mongodb://user:hunter2@cluster0/jobforge failed')),
       findRecentDuplicate: () => Promise.resolve(null),
       updateNotificationStatus: () => Promise.resolve(),
     };

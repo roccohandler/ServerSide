@@ -1,0 +1,102 @@
+/*
+ * The Google option.
+ *
+ * Visually secondary to the email-and-password form — a white outlined button against
+ * the ember-filled primary — while staying obvious enough that somebody looking for it
+ * finds it immediately. Ember is rationed to the primary action; see `tokens.css`.
+ *
+ * The fallback button matches the height of Google's rendered one (40px content plus
+ * borders) so nothing on the page moves when the script arrives.
+ */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+/*
+ * Google renders its own iframe-backed button in here. `min-height` reserves the space
+ * before it arrives, which is the difference between a form that settles and one that
+ * jumps under somebody's cursor.
+ */
+.slot {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+}
+
+.slot[data-state='ready'] {
+  min-height: 44px;
+}
+
+.fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  width: 100%;
+  /* 44px: the minimum comfortable touch target, and Google's own button height. */
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.fallback:hover:not(:disabled) {
+  border-color: var(--color-ink);
+  background: var(--color-surface-muted);
+}
+
+.fallback:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.fallback:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.mark {
+  flex: none;
+}
+
+.status,
+.message {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+  text-align: center;
+}
+
+/*
+ * The unconfigured message is information, not a failure. It is deliberately not styled
+ * as an error: nothing has gone wrong for the visitor, and the other way in is right
+ * above it.
+ */
+.message {
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  text-align: left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fallback {
+    transition: none;
+  }
+}

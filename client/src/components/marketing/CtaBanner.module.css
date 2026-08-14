@@ -2,10 +2,11 @@
   max-width: 44rem;
 }
 
+/* Secondary text on the charcoal band — see the note in Footer.module.css. */
 .body {
   margin-top: var(--space-4);
   font-size: var(--text-lg);
-  color: var(--color-tint-brand);
+  color: var(--color-ink-inverse-muted);
 }
 
 .actions {
@@ -27,6 +28,6 @@
 }
 
 .phone:hover {
-  color: var(--color-ink-inverse);
+  color: var(--color-accent);
   text-decoration: underline;
 }

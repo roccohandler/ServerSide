@@ -291,8 +291,11 @@ above the price, which is the single biggest structural change on the homepage.
 - **No social proof of any kind.** No testimonials, no case studies, no client count, no
   years in business. The site says so plainly, which is the best available answer and not
   as good as having some.
-- **No demo is live.** Five demonstration sites are described and pictured; none can be
-  clicked. `demoUrl` is one line per project the day that changes.
+- ~~**No demo is live.**~~ **Resolved.** Five demonstration sites now run inside this
+  application at `/demo/<trade>`, three routes each, with their own shell outside
+  `SiteLayout`. `demoUrl` was indeed one line per project. See `docs/DEMO-SITES-PLAN.md`.
+  What is still true: they are served from this origin, so they demonstrate the work
+  without demonstrating a site shipped on its own domain.
 - **No measurement.** Twenty-five analytics events are declared and called; nothing
   receives them. Until a provider is connected, every claim in this document about what
   converts better is a hypothesis.

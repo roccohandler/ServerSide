@@ -3,7 +3,7 @@ import { EnvironmentConfigError, loadServerConfig } from './env.js';
 
 const productionEnv = {
   NODE_ENV: 'production',
-  MONGODB_URI: 'mongodb://127.0.0.1:27017/serviceside',
+  MONGODB_URI: 'mongodb://127.0.0.1:27017/jobforge',
   RESEND_API_KEY: 're_test_key',
   RESEND_FROM_EMAIL: 'Leads <leads@example.com>',
   CONTACT_NOTIFICATION_EMAIL: 'owner@example.com',

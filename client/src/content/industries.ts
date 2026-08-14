@@ -91,7 +91,7 @@ export const industries: readonly IndustryPageContent[] = [
   {
     slug: 'hvac',
     ...meta('hvac'),
-    heading: 'Websites for heating and cooling companies',
+    heading: 'When the heat goes out, they call whoever made calling easiest',
     lede: 'A failed furnace is not a research project. This is about what that does to a website: which parts get read, which parts are never reached, and what has to be on the first screen for the call to happen at all.',
     decisionWindow:
       'From the heat going out to somebody dialling is usually under an hour — and most of that hour is not spent on your website.',
@@ -228,7 +228,7 @@ export const industries: readonly IndustryPageContent[] = [
   {
     slug: 'plumbing',
     ...meta('plumbing'),
-    heading: 'Websites for plumbing companies',
+    heading: 'Two customers, two decisions, one website that has to serve both',
     lede: 'Plumbing is two businesses sharing a phone number. A burst pipe at seven in the morning and a bathroom being planned for the spring are different customers with different questions, and most plumbing websites are built for neither of them in particular.',
     decisionWindow:
       'The emergency decides in minutes. The remodel decides over weeks, and comes back to your site more than once before it does.',
@@ -371,7 +371,7 @@ export const industries: readonly IndustryPageContent[] = [
   {
     slug: 'roofing',
     ...meta('roofing'),
-    heading: 'Websites for roofing contractors',
+    heading: 'A roof is a considered purchase, and your website is the second opinion',
     lede: 'Nobody books a roof from a phone in a hurry. This is a large, infrequent purchase the customer cannot evaluate, compared across three or four contractors over weeks — which makes a roofing website a completely different instrument from an emergency plumber’s.',
     decisionWindow:
       'Days to weeks, across several contractors, with at least one return visit to your site before anybody signs anything.',
@@ -520,7 +520,7 @@ export const industries: readonly IndustryPageContent[] = [
   {
     slug: 'landscaping',
     ...meta('landscaping'),
-    heading: 'Websites for landscaping and yard care businesses',
+    heading: 'Your finished work is the strongest thing you own — if the website shows it',
     lede: 'This is the one trade on this site where the photographs are the argument and the writing is the caption. It is also split down the middle between one-off projects and work that repeats every week — two businesses with different economics, usually sold from the same page.',
     decisionWindow:
       'A design project takes weeks and starts with pictures. A regular round is decided in one visit, and is worth many times a single job over a year.',
@@ -662,7 +662,7 @@ export const industries: readonly IndustryPageContent[] = [
   {
     slug: 'electrical',
     ...meta('electrical'),
-    heading: 'Websites for electrical contractors',
+    heading: 'They are checking whether you are licensed before they call anybody',
     lede: 'Electrical work is the one trade where the customer’s first concern is not price or speed but whether you are allowed to do this. That changes what has to be on the page, and it changes what the page can safely leave out.',
     decisionWindow:
       'A fault that keeps tripping is decided the same day. A panel upgrade or a charger installation is planned, quoted and permitted, and takes weeks.',
@@ -822,7 +822,7 @@ export const industryShared = {
   frictionLabels: {
     whatHappens: 'What happens',
     whatItCosts: 'What it costs you',
-    whatIdChange: 'What I would change',
+    whatIdChange: 'What we would change',
   },
 
   benchmark: {
@@ -847,5 +847,15 @@ export const industryShared = {
     heading: 'The service itself is the same whoever you are',
     body: 'What changes by trade is what the site has to say and which pages it needs. What does not change is how the work is done, what it costs, or what happens if you want to stop — those are published once, in full, on one page.',
     label: 'What is included, and what it costs',
+    /*
+     * The third action, and the narrowest.
+     *
+     * The audit diagnoses your existing site and the offer says what the build costs. Neither
+     * answers "what could a site for my trade actually do", which is the question a reader on
+     * an industry page is closest to asking — they have just read six sections about how their
+     * trade gets hired. The trade travels in the link, so the recommendation is already theirs
+     * when the page opens.
+     */
+    capabilityLabel: 'What a website for this trade can do',
   },
 } as const;

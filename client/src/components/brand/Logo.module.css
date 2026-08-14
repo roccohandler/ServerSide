@@ -1,0 +1,97 @@
+/*
+ * The JobForge lockup: the Forge Stamp mark, and the wordmark beside it.
+ *
+ * Both are driven by three custom properties rather than by fixed fills, so the same
+ * markup renders on cream, on white and on charcoal without a second copy of the SVG.
+ * Set the tone with the `onDark` class; everything else follows.
+ */
+
+/* ------------------------------------------------------------------ mark */
+
+.mark {
+  /* The struck tile, the JF cut out of it, and the one ember bar. */
+  --mark-tile: var(--color-brand);
+  --mark-cut: var(--color-page);
+  --mark-bar: var(--color-accent);
+
+  display: block;
+  flex: none;
+  /* Sized by the caller in `em` so the mark scales with whatever text it sits beside. */
+  width: var(--mark-size, 1em);
+  height: var(--mark-size, 1em);
+}
+
+/*
+ * On a charcoal band the stamp inverts rather than disappearing: the tile takes the
+ * cream and the JF is cut back to charcoal. The ember bar is the one element that never
+ * changes — it is the fixed point the whole identity is built around.
+ */
+.onDark {
+  --mark-tile: var(--color-page);
+  --mark-cut: var(--color-brand);
+  --mark-bar: var(--color-accent);
+}
+
+.tile {
+  fill: var(--mark-tile);
+}
+
+.cut {
+  fill: var(--mark-cut);
+}
+
+.bar {
+  fill: var(--mark-bar);
+}
+
+/*
+ * The J. Drawn last and stroked rather than filled, so its round cap sits *over* the
+ * left end of both arms and the three shapes read as one cut letterform instead of as
+ * a stem with two bars floating next to it.
+ */
+.stem {
+  fill: none;
+  stroke: var(--mark-cut);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ------------------------------------------------------------------ wordmark */
+
+/*
+ * Archivo, extra-bold, at the expanded 120% width the brand board specifies, tracked
+ * in to −1.8% so JOBFORGE reads as a single solid unit rather than as eight letters.
+ *
+ * The uppercase is applied here rather than in the content, so the accessible name and
+ * the document title keep the cased "JobForge" a screen reader should announce.
+ */
+.wordmark {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-extrabold);
+  font-stretch: 120%;
+  letter-spacing: var(--tracking-wordmark);
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* ------------------------------------------------------------------ lockup */
+
+.lockup {
+  display: inline-flex;
+  align-items: center;
+  /* Proportional to the wordmark, so the lockup holds together at every size. */
+  gap: 0.5em;
+  color: inherit;
+  text-decoration: none;
+}
+
+/*
+ * The mark is set from the wordmark's own size rather than from a pixel value: the
+ * board draws the tile at roughly 1.35× the cap height, which is what keeps the stamp
+ * reading as an equal partner to the word instead of as an icon in front of it.
+ */
+.lockupMark {
+  --mark-size: 1.35em;
+}

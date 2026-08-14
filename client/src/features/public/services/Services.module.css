@@ -1,0 +1,178 @@
+.item {
+  display: flex;
+}
+
+.card {
+  width: 100%;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+/* Decorative, but still a numeral to read: 0.6 keeps it above 3:1 on white. */
+.step {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+  opacity: 0.6;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--color-ink);
+  background-color: var(--color-tint-brand);
+  border-radius: var(--radius-md);
+}
+
+.name {
+  margin-bottom: var(--space-2);
+}
+
+.summary {
+  color: var(--color-ink-muted);
+}
+
+.details {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.detail {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The AA-safe ember, not Ember. Every check glyph on this page takes it, including the
+ * fit list further down, which sits on the muted band where Ember is 3.0:1 — on the 3:1
+ * floor, and these are 16px stroked marks with no weight to spare. Setting the two lists
+ * from one value also stops the same mark reading differently on two bands.
+ */
+.detailMarker {
+  flex-shrink: 0;
+  margin-top: 0.2em;
+  color: var(--color-accent-text);
+}
+
+.footnote {
+  max-width: 44rem;
+  margin-top: var(--space-7);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ examples */
+
+/*
+ * The link out of the examples strip. The strip's grid and cards are styled where they
+ * live, in `Portfolio.module.css`, and its disclosure line reuses `.footnote` above —
+ * so this margin is the only style the whole section adds to the eager bundle.
+ */
+.examplesCta {
+  margin-top: var(--space-5);
+}
+
+/* ------------------------------------------------------------------ fit */
+
+.fitHeading {
+  margin-top: var(--space-6);
+  font-size: var(--text-lg);
+}
+
+.fitList {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.fitItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.fitMarker {
+  flex-shrink: 0;
+  margin-top: 0.2em;
+  color: var(--color-accent-text);
+}
+
+.fitNote {
+  max-width: 46rem;
+  margin-top: var(--space-5);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The two paths out of this section. Deliberately equal in weight: neither is the
+ * consolation prize, and a reader who finds themselves outside the profile should see a
+ * genuinely useful next step rather than a door closing.
+ */
+.fitPaths {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+  margin-top: var(--space-7);
+}
+
+.fitPath {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.fitPathHeading {
+  font-size: var(--text-lg);
+}
+
+.fitPathBody {
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ pricing */
+
+/*
+ * The pricing styles that used to live here are gone, deliberately.
+ *
+ * This page rendered its own copy of the pricing markup, and that duplication produced
+ * two real defects — founding prices published here without their condition, and an
+ * annual figure for a plan the page never described. The whole commercial block now
+ * renders from `features/home/sections/PricingBlock.tsx`, styled by `Offer.module.css`,
+ * on both surfaces. One component cannot disagree with itself across pages.
+ */
+
+@media (min-width: 48rem) {
+  .fitPaths {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .fitList {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

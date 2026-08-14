@@ -1,10 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Site icon">
-  <rect width="64" height="64" rx="14" fill="#0b4a6f" />
-  <rect x="12" y="14" width="40" height="36" rx="5" fill="#ffffff" />
-  <rect x="12" y="14" width="40" height="9" rx="5" fill="#c2410c" />
-  <rect x="12" y="19" width="40" height="4" fill="#c2410c" />
-  <circle cx="18" cy="18.5" r="1.8" fill="#ffffff" opacity="0.85" />
-  <circle cx="24" cy="18.5" r="1.8" fill="#ffffff" opacity="0.6" />
-  <rect x="18" y="29" width="28" height="4" rx="2" fill="#0b4a6f" />
-  <rect x="18" y="37" width="18" height="4" rx="2" fill="#0b4a6f" opacity="0.45" />
+<!--
+  The Forge Stamp, full-bleed for a browser tab.
+
+  This duplicates the geometry in `src/components/brand/Logo.tsx` on purpose: a tab icon
+  is requested before any application code exists, so it cannot be the React component.
+  It is the same path data shifted by -6 units and drawn in a 88-unit box, so the tile
+  reaches the edges instead of floating with the optical padding the lockup needs.
+
+  Change one and change the other.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" role="img" aria-label="JobForge">
+  <!-- The struck tile. -->
+  <rect width="88" height="88" rx="24" fill="#17191E" />
+  <!-- The F's upper arm, tilted forward. -->
+  <rect
+    x="39"
+    y="18.5"
+    width="32"
+    height="11.5"
+    rx="5.75"
+    transform="rotate(-14 39 24.25)"
+    fill="#F3EEE4"
+  />
+  <!-- The F's lower arm — always ember. -->
+  <rect
+    x="39"
+    y="37"
+    width="28"
+    height="11.5"
+    rx="5.75"
+    transform="rotate(-14 39 42.75)"
+    fill="#E85C24"
+  />
+  <!-- The J, drawn last so its cap closes over both arms. -->
+  <path
+    d="M39 18.5 L39 56 Q39 67 28.5 67"
+    fill="none"
+    stroke="#F3EEE4"
+    stroke-width="12"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
 </svg>

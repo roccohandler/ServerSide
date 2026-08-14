@@ -7,15 +7,28 @@
   "cleanUrls": true,
   "trailingSlash": false,
 
-  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/index" }],
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    {
+      "//": "The private application is the one part of the site with URLs that cannot be prerendered: /app/projects/:projectId is different for every customer. Everything under /app is served the /app document and React Router takes over. Deliberately scoped to /app rather than a site-wide fallback, so a typo on the marketing site is still a real 404 with the 404 page rather than a homepage that quietly pretends the URL exists.",
+      "source": "/app/(.*)",
+      "destination": "/app"
+    },
+    {
+      "//": "The admin surface, for the same reason: /admin/projects/:projectId cannot be prerendered. Without this rewrite a hard refresh on a project page would 404, because there is no site-wide SPA fallback. This is a routing rule and not a security one — the rewrite happily serves the document to anybody, and every request the page then makes is checked against the session by requireAdmin on the server.",
+      "source": "/admin/(.*)",
+      "destination": "/admin"
+    }
+  ],
 
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         {
+          "//": "Google Identity Services is the one external origin the site loads anything from, and each directive below is the minimum that flow needs: the script itself, the iframe its button renders in, and the endpoint that iframe talks to. accounts.google.com is not permitted to do anything else — no img-src, no font-src, no wildcard. The ID token it produces is verified server-side against Google's published keys, so nothing here is trusted on the strength of having come from that origin.",
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests"
+          "value": "default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data:; font-src 'self'; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests"
         },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
@@ -29,6 +42,16 @@
           "value": "max-age=31536000; includeSubDomains"
         }
       ]
+    },
+    {
+      "//": "The private application must never be cached by a shared proxy: a dashboard is one customer's data behind a cookie, and a CDN that stored it could hand it to the next person through. The documents themselves are cheap; the hashed assets below are what actually needs caching.",
+      "source": "/app/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-store" }]
+    },
+    {
+      "//": "The admin surface holds every customer's data rather than one customer's, so a shared cache storing it would be strictly worse than the /app case. Same directive, and the reason is the same: the documents are cheap, the hashed assets below are what needs caching.",
+      "source": "/admin/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-store" }]
     },
     {
       "source": "/assets/(.*)",

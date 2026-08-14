@@ -3,7 +3,7 @@ import type { TradeSlug } from '../config/trades';
 
 /*
  * ============================================================================
- * THE WEBSITE REVENUE AUDIT
+ * THE WEBSITE SCORE — THE SELF-SERVE DIAGNOSTIC
  * ============================================================================
  *
  * The PlayBook's 40-point assessment already scored twenty categories, produced a band
@@ -42,12 +42,31 @@ import type { TradeSlug } from '../config/trades';
  */
 
 export const audit = {
-  name: 'Website Revenue Audit',
+  /*
+   * "Website Revenue Audit" became "Website Score".
+   *
+   * The old name was good and it was the wrong *kind* of name. The site had a free website
+   * assessment, a Website Revenue Audit, and a PlayBook — three things all reading as free
+   * offers, which meant a visitor had to work out which one they wanted before they could
+   * want anything. The offer redesign's own brief flagged the collision, and the previous
+   * pass had already half-fixed it by relabelling the navigation "Score your site" while
+   * leaving the product called something else.
+   *
+   * There is one hierarchy now, and the names carry it:
+   *
+   *   - the **free website assessment** is the offer — we look at your site and write back;
+   *   - the **Website Score** is a tool — you score it yourself, in five minutes, no email;
+   *   - the **PlayBook** is a resource — the whole framework, published, free.
+   *
+   * An offer, a tool and a resource are three different things a reader can hold at once.
+   * Three free offers are one decision too many.
+   */
+  name: 'Website Score',
 
   hero: {
     eyebrow: 'Free, and you keep the answer',
     heading: 'Find out where your website is losing the work.',
-    lede: 'Twenty checks, about five minutes, and no email address needed to see the result. You score your own site, and it comes back with the five things costing you the most — what each one is doing to a customer, and what I would change first.',
+    lede: 'Twenty checks, about five minutes, and no email address needed to see the result. You score your own site, and it comes back with the five things costing you the most — what each one is doing to a customer, and what we would change first.',
     supporting:
       'At the end you can put your own numbers against it and see what a few more enquiries a month would actually be worth. Nothing is sent anywhere unless you decide to send it.',
     /*
@@ -65,7 +84,7 @@ export const audit = {
     heading: 'What kind of business is this?',
     lede: 'It changes the diagnosis. A furnace that has failed and a roof being replaced are not the same sale, and the website should not be the same shape for both.',
     fieldLabel: 'Your trade',
-    hint: 'Pick the closest. If none of them fit, the last option is not a lesser answer — most local service businesses are not in the five named trades.',
+    hint: 'Pick the closest. If none of them fit, the last option is not a lesser answer — plenty of local service businesses are not on any list of trades.',
 
     /*
      * Shown once a trade with a page of its own is chosen. It is a link out of a form,
@@ -134,14 +153,45 @@ export const audit = {
      * ======================================================================
      */
     recommendation: {
-      heading: 'Where I would start, based on what you just scored',
-      /** Interpolated with the tier name. */
-      lead: 'On these answers, the work I would suggest is',
+      heading: 'Where we would start, based on what you just scored',
       note: 'That is a starting point from a self-assessment, not a quote. What it actually needs comes from looking at the real site, which is the next step and costs nothing.',
-      seePricing: 'See what that includes',
+      /*
+       * ======================================================================
+       * THREE BRANCHES, THREE DESTINATIONS
+       * ======================================================================
+       *
+       * From `recommendedAction` in `config/pricing.ts`. The `fix` branch exists because
+       * the honest answer for a mostly-working site is targeted work rather than a rebuild
+       * — recommending the full build to that reader is the middle-tier-for-everybody move
+       * every reader has seen and correctly ignores.
+       *
+       * **Every branch now ends somewhere.** The `fix` branch used to end at the words
+       * "quoted per site" with no link, no product and nothing to press: the reader most
+       * likely to be sitting in it — an established business whose site basically works —
+       * got a diagnosis and a full stop. It names Conversion Fix now. The `none` branch,
+       * which recommends buying nothing, ends in a way to ask for a second opinion rather
+       * than in silence, because a recommendation with no action reads as the page shrugging.
+       *
+       * A test asserts all three branches carry a call to action, so this cannot regress
+       * into a dead end again by a copy edit.
+       * ======================================================================
+       */
+      rebuild: {
+        lead: 'On these answers, enough is working against you that patching it would cost more than rebuilding it. The work we would suggest is',
+        /** Interpolated with the flagship name where it is rendered. */
+        seePricing: 'See what the build includes',
+      },
+      fix: {
+        heading: 'Targeted fixes, not a rebuild',
+        lead: 'Your site is mostly working, and the honest recommendation is to fix the specific things above rather than start again. The work we would suggest is',
+        body: 'It is a bounded piece of work on the site you already own: the findings above put right, the conversion tracking configured and verified, and a baseline recorded so you can see what changed. What it is not is a redesign or new pages — and if it turns out you actually need those, we will say so rather than sell you the smaller thing twice. The figure comes out of the free website assessment, because pricing a fix before seeing the real site would be a guess.',
+        cta: 'Ask about a Conversion Fix',
+        seeScope: 'See exactly what it covers',
+      },
       none: {
         heading: 'You probably do not need a rebuild',
-        body: 'You scored well enough that a new website is unlikely to be the thing holding you back. The honest next move is measurement rather than construction: find out where the enquiries you already get are coming from, and fix the two or three specific things above. If you want a second opinion on that, ask — and if the answer is still "leave it alone", that is what I will tell you.',
+        body: 'You scored well enough that a new website is unlikely to be the thing holding you back. The honest next move is measurement rather than construction: find out where the enquiries you already get are coming from, and fix the two or three specific things above. If you want a second opinion on that, ask — and if the answer is still "leave it alone", that is what we will tell you.',
+        cta: 'Get a second opinion, free',
       },
     },
 
@@ -152,7 +202,7 @@ export const audit = {
     labels: {
       behaviour: 'What a customer does',
       consequence: 'What that costs you',
-      improvement: 'What I would change',
+      improvement: 'What we would change',
     },
 
     scoreLabel: (score: number) => `Scored ${score} out of 2`,
@@ -194,7 +244,7 @@ export const audit = {
      */
     lever: {
       label: 'Model a few more enquiries a month',
-      hint: 'Move this to whatever you think is realistic. It is your assumption, not my estimate.',
+      hint: 'Move this to whatever you think is realistic. It is your assumption, not our estimate.',
       unit: 'more enquiries a month',
     },
   },
@@ -237,16 +287,35 @@ export const audit = {
     disclaimer: `Illustrative scenario, not a forecast. These are your own figures multiplied together, using an improvement you chose. Nothing on this page claims that a website change produces that improvement — whether the website is what is holding your enquiries back is exactly what the ${site.offer.freeReview.name.toLowerCase()} is for.`,
 
     note: 'A scenario is not a promise, and no work has been quoted here.',
+
+    /*
+     * The sentence that turns arithmetic into a reason to keep reading.
+     *
+     * Between the scenario and the recommendation there was nothing: the reader was shown
+     * their own economics, and then — with no bridge — a suggestion to buy something. The
+     * two blocks were doing related work and the relationship was left for them to build.
+     *
+     * The framing matters more than the words. It does not say a better website produces
+     * the number above; it says the number above already exists, which is true and is the
+     * whole argument. The visitors are already arriving and already paid for. What is in
+     * question is what share of them get as far as the phone — and that is the one link in
+     * the chain this business can actually change, which is what the recommendation below
+     * is about.
+     */
+    transition: {
+      heading: 'What that means for what to do next',
+      body: 'Whatever those figures come to, the visitors in them are already arriving. You have already paid for them — in advertising, in a van with your name on it, or in the years it took to earn the referrals. The question is not how to get more of them. It is what share of the ones you already have get as far as calling you, and that is the part of this a website decides.',
+    },
   },
 
   /* ------------------------------------------------------------------ step 6: send */
 
   send: {
     stepLabel: 'Step 6',
-    heading: 'Want me to go through it properly?',
-    lede: 'Send the audit over and I will look at the actual site rather than the score — the five weakest categories are where I would start, and I will tell you which of them I think is genuinely costing you work and which is cosmetic.',
+    heading: 'Want us to go through it properly?',
+    lede: 'Send the audit over and we will look at the actual site rather than the score — the five weakest categories are where we would start, and we will tell you which of them we think is genuinely costing you work and which is cosmetic.',
     freeNote:
-      'Free, no obligation, and you keep everything above whether or not you send it. If I think the website is not what is holding the business back, that is what you will get back from me.',
+      'Free, no obligation, and you keep everything above whether or not you send it. If we think the website is not what is holding the business back, that is what you will get back from us.',
 
     fields: {
       name: { label: 'Your name' },
@@ -267,13 +336,13 @@ export const audit = {
      * own site harshly deserves to know that is what they are sending.
      */
     consent:
-      'Sending this shares your answers, your five weakest categories and any numbers you entered, along with your contact details, so I can reply about them. Nothing else, and there is no mailing list to be added to.',
+      'Sending this shares your answers, your five weakest categories and any numbers you entered, along with your contact details, so we can reply about them. Nothing else, and there is no mailing list to be added to.',
 
     submit: { idle: 'Send my audit', pending: 'Sending…' },
 
     success: {
       heading: 'Sent.',
-      body: 'I have got your audit and I will come back to you directly. If it is urgent, calling is faster than waiting for a reply.',
+      body: 'We have got your audit and we will come back to you directly. If it is urgent, calling is faster than waiting for a reply.',
     },
 
     failure: {
@@ -288,7 +357,7 @@ export const audit = {
 
   /** Labels used to render the audit into the message field of the lead submission. */
   summary: {
-    title: 'Website Revenue Audit',
+    title: 'Website Score',
     tradeLabel: 'Trade',
     scoreLabel: 'Score',
     bandLabel: 'Band',

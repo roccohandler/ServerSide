@@ -1,0 +1,110 @@
+/*
+ * The credential shell: identity, a way back, and the form. Nothing else competes with it.
+ * See `AuthLayout.tsx` for why the marketing header and footer are not here.
+ */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--color-page);
+}
+
+/*
+ * A bar rather than a floating control, so the back affordance and the wordmark sit in the
+ * same place on every auth page and never overlap the card on a short viewport. Its inner
+ * container is the site container, so both ends line up with the header on every other
+ * page — chrome that drifts to the viewport edge is the tell that a page was built apart
+ * from the rest of the site.
+ */
+.bar {
+  padding-block: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.barInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  margin-inline-start: calc(-1 * var(--space-3));
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-muted);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.back:hover {
+  color: var(--color-ink);
+  background-color: var(--color-surface-muted);
+}
+
+/*
+ * The identity, and the reason it is here at all.
+ *
+ * A credential form with no branding is the shape a phishing page takes, and the habit
+ * worth building in a customer is that the real one always says whose it is. It links
+ * home like the header's lockup does everywhere else, so the behaviour is the one the
+ * reader already learned on the marketing pages.
+ */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.brandMark {
+  --mark-size: 1.75rem;
+}
+
+.brand:hover {
+  color: var(--color-ink);
+}
+
+/*
+ * The card is centred in what is left after the bar, so it sits optically centred on a
+ * tall screen and simply scrolls on a short one.
+ */
+/*
+ * The card is centred in what is left after the bar, so it sits optically centred on a
+ * tall screen and simply scrolls on a short one.
+ *
+ * The padding is symmetric and small on purpose. It is the *only* vertical padding around
+ * the card now — the shells inside no longer wrap it in a marketing `Section` — and it has
+ * to be small enough that a 608px card still clears the fold on a laptop, where the
+ * content viewport is nearer 640px than 880px.
+ */
+.main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding-block: var(--space-5);
+}
+
+.main:focus {
+  outline: none;
+}
+
+/*
+ * Below the phone step the wordmark alone carries the identity — the lockup plus a
+ * "Back to JobForge" label is more text than a 390px bar can hold on one line.
+ */
+@media (max-width: 29.999rem) {
+  .backLabelLong {
+    display: none;
+  }
+}

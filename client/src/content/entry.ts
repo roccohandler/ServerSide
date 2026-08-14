@@ -1,4 +1,4 @@
-import { growthTier, hasFoundingDiscount } from '../config/pricing';
+import { conversionFix, fixPriceLabel, flagship, hasFoundingDiscount } from '../config/pricing';
 import { prices } from './offer';
 import type { EntryPath } from '../types/content';
 
@@ -7,19 +7,35 @@ import type { EntryPath } from '../types/content';
  * THE THREE WAYS IN
  * ============================================================================
  *
- * The published price covers one of them: a new website, built from nothing. The other
- * two are real businesses with real money to spend, and both were previously invisible
- * on this site — a reader who owned a working website and wanted somebody to run it had
- * to infer that the answer was yes.
+ * Most people arrive in one of three situations, and the site's job is to let them find
+ * theirs without reading everything. Before this section existed it answered one of them —
+ * "I need a website built" — and left the other two to inference.
  *
- * Two rules:
+ * ## What changed, and why it is the most valuable edit in the file
  *
- *   1. Only the launch has a published number. The other two depend on what is already
- *      there, and inventing a figure for "fixing somebody else's website" would be a
- *      guess dressed as a price. `Quoted per site` is the honest answer and it is stated
- *      as one rather than hidden behind a call.
- *   2. All three end in the same place — the monthly service — because that is what is
- *      actually being sold. The entry is how you arrive, not what you buy.
+ * All three paths now end in a **product with a name and a call to action of its own.**
+ *
+ * The middle one used to end at the phrase "Quoted per site". That is honest and it was a
+ * dead end: `recommendedAction()` sends every site scoring roughly 65–85% down this path,
+ * which is most established businesses with a working website, and the answer they got was
+ * a diagnosis and an invitation to start a conversation from nothing. It is **Conversion
+ * Fix** now — a named, scoped, bounded product. Its figure is still unpublished, because
+ * that is the owner's decision (DECISION 014), but a named product with a boundary and a
+ * button is not a dead end even without one.
+ *
+ * ## Three rules
+ *
+ *   1. **Only a published figure may be printed as a figure.** `fixPriceLabel()` returns the
+ *      honest sentence while `conversionFix.pricePublished` is false, and the price the day
+ *      it is true. Nothing here types a number.
+ *   2. **Growth Partner is described as optional on every path that mentions it.** The
+ *      version before last ended each path with "Then $299/mo", which read as the next
+ *      instalment of one bill. The takeover path is the exception in emphasis — the monthly
+ *      service is the thing that reader came for — and even there it is a choice being
+ *      described, not a charge being scheduled.
+ *   3. **Every path carries the intent it should arrive at the contact form with.** A reader
+ *      who has just told this page which of three situations they are in should never be
+ *      asked again on the next screen.
  * ============================================================================
  */
 
@@ -32,21 +48,12 @@ import type { EntryPath } from '../types/content';
  * `exactOptionalPropertyTypes` treats an explicit `undefined` as different from an absent
  * key — and because when the offer is switched off, the sentence should not exist at all.
  */
-const launchPriceNote = hasFoundingDiscount(growthTier)
+const launchPriceNote = hasFoundingDiscount()
   ? {
       priceNote: `Founding-client price. The standard project price is ${prices.launchStandard}.`,
     }
   : {};
 
-/*
- * Declared with a type rather than `satisfies`, which is the pattern everywhere else in
- * this file's neighbours.
- *
- * `satisfies` keeps the literal type of each element, and only one of these three has a
- * `priceNote` — so the array's element type became a union in which the field does not
- * exist on two members, and every consumer failed to compile the moment it read one.
- * Annotating the array is what makes an optional field actually optional at the call site.
- */
 const paths: readonly EntryPath[] = [
   {
     id: 'new',
@@ -54,47 +61,62 @@ const paths: readonly EntryPath[] = [
     situation:
       'You have nothing, or you have something so old that starting again is cheaper than fixing it.',
     response:
-      'The full launch: designed, built, set up to bring in enquiries, and live on your own domain in two to four weeks.',
+      'The full build: designed around how your customers decide, measured from launch day, live on your own domain in two to four weeks.',
+    product: flagship.name,
     price: prices.launch,
     ...launchPriceNote,
-    then: `Then ${prices.managementDisplay} to manage and keep improving it.`,
+    then: `Afterwards, run it yourself — or have Growth Partner measure and improve it for ${prices.managementDisplay} a month. Optional, your call.`,
+    cta: { label: 'Request this build', intent: 'build' },
     icon: 'rocket',
   },
   {
     id: 'rescue',
-    title: 'You have a website that is not working',
+    title: 'You have a website that is losing people',
     situation:
-      'It exists, it mostly works, and it is not bringing in the enquiries it should. A rebuild might be overkill.',
+      'It exists, it loads, people arrive — and not enough of them get in touch. A rebuild would be overkill.',
     response:
-      'A fix rather than a replacement: the speed, mobile, clarity, trust and contact problems that are actually costing you calls, put right on the site you already own.',
-    price: 'Quoted per site',
-    then: `Then ${prices.managementDisplay}, the same as any other managed site.`,
+      'Targeted corrective work on the site you own: the specific things costing you enquiries, found against the same twenty checks, fixed and measured.',
+    product: conversionFix.name,
+    /*
+     * `fixPriceLabel()` rather than a literal. While the figure is unpublished this reads
+     * "Quoted from your assessment", which satisfies the guard requiring every path to carry
+     * either a figure or an honest statement that it is quoted — and the day the owner
+     * publishes the price, this string becomes the price with no edit here.
+     */
+    price: fixPriceLabel(),
+    then: `Afterwards, the same choice as everybody else: yours to run, or ${prices.managementDisplay} a month for Growth Partner to keep measuring it.`,
+    cta: { label: 'Fix my website', intent: 'fix' },
     icon: 'wrench',
   },
   {
     id: 'takeover',
     title: 'You want somebody to run the one you have',
     situation:
-      'The website is fine. Nobody is looking after it, and you would rather that was not your job.',
+      'The website is fine. Nobody is measuring it, nobody is improving it, and you would rather that was not your job.',
     response:
-      'A one-time onboarding to audit it, fix what needs fixing and get it to a standard I can stand behind — then it joins the monthly service like anything I built myself.',
+      'A one-time onboarding to audit it, fix what needs fixing and get the measurement in place. Then it joins Growth Partner with a baseline of its own.',
+    product: 'Onboarding, then Growth Partner',
     price: 'Quoted per site',
-    then: `Then ${prices.managementDisplay}, with the response guarantee from day one.`,
+    then: `Then ${prices.managementDisplay} a month for Growth Partner, with the monthly report and the response guarantee from the first full month.`,
+    cta: { label: 'Ask about Growth Partner', intent: 'partner' },
     icon: 'shield',
   },
 ];
 
 export const entryPaths = {
   eyebrow: 'Where you are starting from',
-  heading: 'Three ways this usually starts',
-  lede: 'Most people arrive in one of these three situations. Only the first has a fixed price, because the other two depend on what is already there — and quoting a number before I have seen it would be a guess.',
+  heading: 'Which of these is you?',
+  lede: 'Three situations, three different pieces of work. Only the first has a published figure — the other two depend on what is already there.',
 
   paths,
 
   /*
    * The line that makes the free assessment the obvious next step regardless of which of the
-   * three the reader is. Nobody has to self-diagnose before making contact.
+   * three the reader is. Nobody has to self-diagnose before making contact — which matters
+   * more here than anywhere else on the page, because a reader who cannot place themselves
+   * in one of three cards and is offered no fourth option simply leaves.
    */
   closing:
-    'Not sure which one you are? That is what the free website assessment is for. You send me what you have, I tell you which of these it actually needs — including when the answer is "leave it alone and spend the money somewhere else".',
+    'Not sure which one you are? That is exactly what the free website assessment is for — including when the answer is "leave it alone and spend the money somewhere else".',
+  closingCta: 'Tell me which one I need',
 } as const;

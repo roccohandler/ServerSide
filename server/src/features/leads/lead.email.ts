@@ -1,4 +1,5 @@
 import { escapeHtml, escapeHtmlWithLineBreaks } from '../../lib/html.js';
+import { emailTheme as t } from '../../lib/emailTheme.js';
 import type { EmailMessage } from '../../infrastructure/email/email.service.js';
 import type { InquiryType, StoredLead } from './lead.types.js';
 
@@ -72,10 +73,10 @@ export function buildNewLeadEmail(params: {
     .map(
       (row) => `
         <tr>
-          <th align="left" style="padding:10px 16px 10px 0;vertical-align:top;color:#4a5a6a;font-weight:600;white-space:nowrap;">${escapeHtml(
+          <th align="left" style="padding:10px 16px 10px 0;vertical-align:top;color:${t.inkMuted};font-weight:600;white-space:nowrap;">${escapeHtml(
             row.label,
           )}</th>
-          <td style="padding:10px 0;vertical-align:top;color:#101a26;">${
+          <td style="padding:10px 0;vertical-align:top;color:${t.ink};">${
             row.multiline ? escapeHtmlWithLineBreaks(row.value) : escapeHtml(row.value)
           }</td>
         </tr>`,
@@ -89,12 +90,12 @@ export function buildNewLeadEmail(params: {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(subject)}</title>
   </head>
-  <body style="margin:0;padding:24px;background:#f5f7f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.5;color:#101a26;">
-    <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #dde3e9;border-radius:12px;">
+  <body style="margin:0;padding:24px;background:${t.page};font-family:${t.font};font-size:16px;line-height:1.5;color:${t.ink};">
+    <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:${t.surface};border:1px solid ${t.border};border-top:4px solid ${t.accent};border-radius:12px;">
       <tr>
         <td style="padding:24px 24px 8px 24px;">
-          <h1 style="margin:0 0 4px 0;font-size:20px;line-height:1.3;">New website inquiry</h1>
-          <p style="margin:0;color:#4a5a6a;font-size:14px;">Submitted through the contact form.</p>
+          <h1 style="margin:0 0 4px 0;font-size:20px;line-height:1.3;letter-spacing:-0.02em;">New website inquiry</h1>
+          <p style="margin:0;color:${t.inkMuted};font-size:14px;">Submitted through the contact form.</p>
         </td>
       </tr>
       <tr>
@@ -105,7 +106,7 @@ export function buildNewLeadEmail(params: {
         </td>
       </tr>
       <tr>
-        <td style="padding:0 24px 24px 24px;color:#4a5a6a;font-size:13px;">
+        <td style="padding:0 24px 24px 24px;color:${t.inkMuted};font-size:13px;">
           Reply directly to this email to reach ${escapeHtml(lead.name)}.
         </td>
       </tr>

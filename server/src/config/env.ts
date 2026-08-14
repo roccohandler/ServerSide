@@ -40,6 +40,68 @@ export interface ServerConfig {
     readonly pdfUrl: string | undefined;
     readonly autoSendEnabled: boolean;
   };
+  /**
+   * Stripe billing — the consultative payment flow. Everything here is optional:
+   * without it the site runs exactly as before, the billing endpoints answer 503 with
+   * an instruction, and nothing pretends a payment system exists.
+   *
+   * The secret key and webhook secret must NEVER be given a VITE_ prefix. They are
+   * server-side credentials; Vite inlines VITE_ variables into the public bundle.
+   */
+  readonly billing: {
+    readonly stripeSecretKey: string | undefined;
+    readonly webhookSecret: string | undefined;
+    /** Bearer token for the owner-only project/checkout endpoints. */
+    readonly adminToken: string | undefined;
+    /** Stripe Price IDs, created in the dashboard and mapped here. See README. */
+    readonly priceIds: {
+      readonly 'build-deposit': string | undefined;
+      readonly 'build-final': string | undefined;
+      readonly 'growth-partner-monthly': string | undefined;
+      readonly 'growth-partner-annual': string | undefined;
+    };
+    /** Public origin for Checkout redirect URLs. Falls back to VITE_SITE_URL. */
+    readonly siteUrl: string;
+    /** True when checkout sessions and webhooks can actually work. */
+    readonly enabled: boolean;
+  };
+  /**
+   * Authentication.
+   *
+   * `googleClientId` is the OAuth 2.0 **Web** client id from Google Cloud. It is a
+   * public value — it ships to the browser either way — but it is served from
+   * `/api/auth/config` rather than inlined at build time, so one build can be deployed
+   * against a development client and a production client without rebuilding.
+   *
+   * There is deliberately **no client secret**. The Google Identity Services flow used
+   * here returns a signed ID token to the browser, which the server verifies against
+   * Google's published keys. No token exchange happens, so no secret exists to leak.
+   */
+  readonly auth: {
+    readonly googleClientId: string | undefined;
+    readonly googleEnabled: boolean;
+    readonly rateLimit: {
+      readonly windowMs: number;
+      readonly max: number;
+    };
+    /** Keyed on the email address rather than the connection. */
+    readonly passwordResetRateLimit: {
+      readonly windowMs: number;
+      readonly max: number;
+    };
+  };
+  /**
+   * Deployment tracking.
+   *
+   * Optional. Without the secret the webhook answers 503 and preview URLs are set by
+   * hand from the admin surface — a working flow rather than a broken one. With it,
+   * every Vercel deployment that carries a `jobforgeProjectId` in its metadata updates
+   * the customer's dashboard by itself.
+   */
+  readonly deployments: {
+    readonly vercelWebhookSecret: string | undefined;
+    readonly enabled: boolean;
+  };
   readonly cors: {
     /** Empty means same-origin only: no cross-origin browser requests are permitted. */
     readonly allowedOrigins: readonly string[];
@@ -94,6 +156,55 @@ const envSchema = z.object({
   PLAYBOOK_PDF_URL: optionalString,
 
   CLIENT_ORIGIN: optionalString,
+
+  /*
+   * Stripe. All optional: billing is a feature the deployment grows into, not a
+   * requirement to run the site. None of these may ever gain a VITE_ prefix.
+   */
+  STRIPE_SECRET_KEY: optionalString,
+  STRIPE_WEBHOOK_SECRET: optionalString,
+  BILLING_ADMIN_TOKEN: optionalString,
+  STRIPE_PRICE_BUILD_DEPOSIT: optionalString,
+  STRIPE_PRICE_BUILD_FINAL: optionalString,
+  STRIPE_PRICE_GROWTH_PARTNER_MONTHLY: optionalString,
+  STRIPE_PRICE_GROWTH_PARTNER_ANNUAL: optionalString,
+  /** Public origin for Checkout redirects. Falls back to VITE_SITE_URL. */
+  PUBLIC_SITE_URL: optionalString,
+  VITE_SITE_URL: optionalString,
+
+  /*
+   * Google sign-in.
+   *
+   * Optional, and independently configurable per environment: a development deployment
+   * points at a Google client whose authorised origin is `http://localhost:5173`, and
+   * production points at one whose authorised origin is the live domain. Neither set of
+   * credentials works for the other, which is why there is no single "the" client id.
+   *
+   * The `VITE_` twin exists only so a developer who prefers a build-time value can set
+   * one; the server still serves it from `/api/auth/config` and that is what the client
+   * actually reads. There is no client *secret* here on purpose — see `auth` above.
+   */
+  GOOGLE_CLIENT_ID: optionalString,
+  VITE_GOOGLE_CLIENT_ID: optionalString,
+
+  AUTH_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(1000).default(20),
+  /*
+   * The per-address password-reset budget, separate from the per-IP one above.
+   *
+   * An hour and five requests. What it bounds is not guessing — it is how many reset
+   * emails one address can be made to receive, which is a harm even when nothing is
+   * breached. See `createPasswordResetRateLimiter`.
+   */
+  PASSWORD_RESET_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).max(1440).default(60),
+  PASSWORD_RESET_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(100).default(5),
+
+  /*
+   * The Vercel integration's client secret, used to verify deployment webhooks. Never
+   * VITE_-prefixed: it is what stops anybody on the internet setting the URL a client
+   * is told is their website.
+   */
+  VERCEL_WEBHOOK_SECRET: optionalString,
 
   LEAD_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
   LEAD_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(1000).default(5),
@@ -199,6 +310,38 @@ export function loadServerConfig(source: NodeJS.ProcessEnv = process.env): Serve
       pdfUrl: raw.PLAYBOOK_PDF_URL,
       /** True when the workbook can actually be delivered automatically. */
       autoSendEnabled: Boolean(raw.PLAYBOOK_PDF_URL),
+    },
+    billing: {
+      stripeSecretKey: raw.STRIPE_SECRET_KEY,
+      webhookSecret: raw.STRIPE_WEBHOOK_SECRET,
+      adminToken: raw.BILLING_ADMIN_TOKEN,
+      priceIds: {
+        'build-deposit': raw.STRIPE_PRICE_BUILD_DEPOSIT,
+        'build-final': raw.STRIPE_PRICE_BUILD_FINAL,
+        'growth-partner-monthly': raw.STRIPE_PRICE_GROWTH_PARTNER_MONTHLY,
+        'growth-partner-annual': raw.STRIPE_PRICE_GROWTH_PARTNER_ANNUAL,
+      },
+      siteUrl: (raw.PUBLIC_SITE_URL ?? raw.VITE_SITE_URL ?? 'http://localhost:5173').replace(
+        /\/$/,
+        '',
+      ),
+      enabled: Boolean(raw.STRIPE_SECRET_KEY && raw.STRIPE_WEBHOOK_SECRET),
+    },
+    auth: {
+      googleClientId: raw.GOOGLE_CLIENT_ID ?? raw.VITE_GOOGLE_CLIENT_ID,
+      googleEnabled: Boolean(raw.GOOGLE_CLIENT_ID ?? raw.VITE_GOOGLE_CLIENT_ID),
+      rateLimit: {
+        windowMs: raw.AUTH_RATE_LIMIT_WINDOW_MINUTES * 60 * 1000,
+        max: raw.AUTH_RATE_LIMIT_MAX,
+      },
+      passwordResetRateLimit: {
+        windowMs: raw.PASSWORD_RESET_RATE_LIMIT_WINDOW_MINUTES * 60 * 1000,
+        max: raw.PASSWORD_RESET_RATE_LIMIT_MAX,
+      },
+    },
+    deployments: {
+      vercelWebhookSecret: raw.VERCEL_WEBHOOK_SECRET,
+      enabled: Boolean(raw.VERCEL_WEBHOOK_SECRET),
     },
     cors: {
       allowedOrigins: parseOrigins(raw.CLIENT_ORIGIN),

@@ -12,19 +12,19 @@ import { INQUIRY_TYPES } from '../types/api';
  */
 
 export const contactContent = {
-  heading: 'Tell me about your business',
+  heading: 'Tell us about your business',
   intro:
-    'Send this and I will look at what you have now, then come back with what I would change first — free, and with no obligation. If you would rather talk it through, the phone number is at the top of the page.',
+    'Send this and we will look at what you have now, then come back with what we would change first — free, and with no obligation. If you would rather talk it through, the phone number is at the top of the page.',
 
   /** Shown under the submit button. Do not promise a response time that is not agreed. */
-  expectation: 'Send your request and I will get back to you directly.',
+  expectation: 'Send your request and we will get back to you directly.',
 
   privacyNote:
     'Your details are used to reply to this enquiry and nothing else. They are not sold, and there is no mailing list to be added to.',
 
   success: {
     heading: 'Message sent',
-    body: 'Thanks — I have got your details and will be in touch. If it is urgent, calling is faster than waiting for a reply.',
+    body: 'Thanks — we have got your details and will be in touch. If it is urgent, calling is faster than waiting for a reply.',
   },
 
   failure: {
@@ -100,7 +100,7 @@ export const heroForm = {
       autoComplete: 'organization',
       placeholder: 'e.g. Cascade Heating & Air',
     },
-    email: { label: 'Email', autoComplete: 'email', hint: 'Where I will send the assessment.' },
+    email: { label: 'Email', autoComplete: 'email', hint: 'Where we will send the assessment.' },
     phone: {
       label: 'Phone',
       autoComplete: 'tel',
@@ -121,13 +121,13 @@ export const heroForm = {
   submit: { idle: 'Get my free website assessment', pending: 'Sending…' },
 
   reassurance:
-    'No obligation. I will look at your website the way a customer would and show you the biggest opportunities I see.',
+    'No obligation. We will look at your website the way a customer would and show you the biggest opportunities we see.',
 
   errorSummary: { heading: 'Please check the following' },
 
   success: {
     heading: "You're in.",
-    body: 'I will review what you sent and follow up using the contact details you gave me. If it is urgent, calling is faster than waiting for a reply.',
+    body: 'We will review what you sent and follow up using the contact details you gave us. If it is urgent, calling is faster than waiting for a reply.',
     actionLabel: 'See how the service works',
   },
 

@@ -345,9 +345,23 @@ counts as painted.
 Checked rather than assumed, because §12 asks for LCP ≤ 2.5 s, INP ≤ 200 ms and CLS ≤ 0.1
 and three of the usual causes were already handled:
 
-- **No web fonts at all.** `--font-sans` is a system stack. Zero font requests, no
-  flash of invisible text, nothing render-blocking. This is worth stating because it is the
-  kind of thing a redesign quietly undoes.
+- **~~No web fonts at all.~~ One web font, added deliberately.** This bullet used to read
+  "no web fonts at all", and warned that it was the kind of thing a redesign quietly
+  undoes. The JobForge brand board then did exactly that, so it is recorded here rather
+  than quietly deleted.
+
+  Archivo is now loaded — one variable `woff2` per subset — because the identity is built
+  on a grotesk the system stack cannot supply. The mitigations are the whole reason it is
+  acceptable: `preconnect` to both font hosts, `display=swap` so text paints immediately in
+  the fallback, the system stack still declared in `--font-sans`, and no first-screen
+  layout that depends on Archivo having arrived. What that buys back is everything except
+  the two requests: no flash of _invisible_ text, and no render-blocking of the LCP
+  element.
+
+  It is still a regression against the old position, and the honest summary is that a
+  brand decision was allowed to cost two requests. The payload budget in §7 is what stops
+  the next one being free.
+
 - **Every `<img>` carries `width`, `height`, `loading="lazy"` and `decoding="async"`.**
   Intrinsic dimensions on every image is the single largest CLS lever and both image sites
   on the site already had it.

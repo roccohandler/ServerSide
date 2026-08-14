@@ -1,11 +1,13 @@
 {
-  "name": "@serviceside/client",
+  "name": "@jobforge/client",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --open",
     "build": "tsx scripts/build.ts",
+    "capture": "tsx scripts/capture-previews.ts",
+    "media": "tsx scripts/fetch-media.ts",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
@@ -22,6 +24,7 @@
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.0.5",
     "jsdom": "^30.0.1",
+    "sharp": "^0.35.3",
     "vite": "^8.2.1"
   }
 }

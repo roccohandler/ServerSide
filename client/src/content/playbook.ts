@@ -17,7 +17,7 @@ import type {
  * The PDF adds the paperwork — audit sheets, worksheets, a printable scorecard — that
  * makes it faster to *do*.
  *
- * Somebody who reads the page and never gives me their email address should still leave
+ * Somebody who reads the page and never gives us their email address should still leave
  * able to find real problems on their own website. That is the point. It is also the only
  * version that makes the paid service look like what it is: the same work, done for them,
  * by somebody who does it every day.
@@ -740,7 +740,7 @@ export const playbook = {
       ],
       relatedPrinciples: ['forms', 'navigation', 'cta'],
       serviceNote:
-        'A conversion review of the site you have now is the free first step, and finding this kind of thing is most of what it does.',
+        'A free assessment of the site you have now is the first step, and finding this kind of thing is most of what it does.',
     },
     {
       id: 'message-match',
@@ -784,7 +784,7 @@ export const playbook = {
       uxProblem:
         'Analytics is installed, nobody has looked at it, and the only number anybody quotes is visits.',
       consequence:
-        'Every decision about the website becomes an opinion, including yours and mine. You cannot tell a good month from a lucky one.',
+        'Every decision about the website becomes an opinion, including yours and ours. You cannot tell a good month from a lucky one.',
       principle:
         'Count the actions that mean somebody is trying to hire you, and use them to decide what to fix next.',
       practices: [
@@ -1151,10 +1151,10 @@ export const playbook = {
     ],
 
     boundary:
-      'Nothing essential is being held back. You can act on every improvement above without ever giving me your email address — the PDF just saves you building the checklists yourself.',
+      'Nothing essential is being held back. You can act on every improvement above without ever giving us your email address — the PDF just saves you building the checklists yourself.',
 
     form: {
-      heading: 'Where should I send it?',
+      heading: 'Where should we send it?',
       label: 'Email',
       placeholder: 'you@yourbusiness.com',
       hint: 'The workbook is sent to this address. Nothing else is.',
@@ -1186,22 +1186,22 @@ export const playbook = {
      * Two confirmations, because there are two real behaviours.
      *
      * When `PLAYBOOK_PDF_URL` is configured the server emails the workbook link directly
-     * and `sent` is accurate. When it is not, the request reaches me and I send it — and
+     * and `sent` is accurate. When it is not, the request reaches us and we send it — and
      * `queued` says so rather than describing a mailing system that is not running.
      * Neither version promises something that is not happening.
      */
     success: {
       heading: 'Got it.',
       sentBody:
-        'The workbook is on its way to that address. If it has not arrived in a few minutes, check the spam folder — and if it is not there either, reply to this site’s email address and I will send it directly.',
+        'The workbook is on its way to that address. If it has not arrived in a few minutes, check the spam folder — and if it is not there either, reply to this site’s email address and we will send it directly.',
       queuedBody:
-        'Your request has reached me and I will send the workbook over. It comes from me rather than from a mailing system, so it may not be instant — if it has not turned up by tomorrow, reply to this site’s email address and I will chase it.',
+        'Your request has reached us and we will send the workbook over. It is sent by hand rather than from a mailing system, so it may not be instant — if it has not turned up by tomorrow, reply to this site’s email address and we will chase it.',
       nextLabel: 'While you wait: get a free assessment of your actual website',
     },
 
     failure: {
       heading: 'That did not send',
-      body: 'Your address has not been saved and nothing has been sent. Try again in a moment, or email me directly and I will send the workbook over.',
+      body: 'Your address has not been saved and nothing has been sent. Try again in a moment, or email us directly and we will send the workbook over.',
     },
   },
 
@@ -1469,7 +1469,7 @@ export const playbook = {
     heading: 'Would you rather somebody did this with you?',
     body: [
       'The PlayBook exists to help you understand what makes a service-business website work. Everything in it is something you can do yourself.',
-      'The managed service is for owners who would rather not spend their evenings doing it — where the website gets built, launched, maintained, aligned with your marketing, measured, tested and improved by the person who built it.',
+      'The monthly service is for owners who would rather not spend their evenings doing it — where the system that turns visitors into calls gets built, launched, maintained, aligned with your marketing, measured, tested and improved by the person who built it.',
     ],
     closing:
       'Either way, the free website assessment tells you where you actually stand. It costs nothing and you get the list whether or not you ever hire anybody.',

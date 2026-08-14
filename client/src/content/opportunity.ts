@@ -35,7 +35,7 @@ export const opportunity = {
   eyebrow: 'What it is worth',
   heading: 'What is one more customer worth to you?',
 
-  lede: 'Most of the argument for a better website is not about the website. It is about the fact that in this trade, a single extra customer is usually worth more than a year of looking after the site they found you on — which is what makes the difference between a page that converts and one that does not worth caring about at all.',
+  lede: 'Most of the argument for a better website is not about the website. It is that in this trade, one extra customer is usually worth more than a year of looking after the site they found you on.',
 
   /*
    * The three steps of the argument, in the order somebody works it out on their own.
@@ -51,19 +51,19 @@ export const opportunity = {
       id: 'value',
       figure: 'One job',
       title: 'Start with what a customer is worth',
-      body: 'Not the enquiry — the finished job, and the ones that follow it if they call you again. For most of the trades this is built for, that number is large enough that the rest of this section is arithmetic rather than persuasion.',
+      body: 'Not the enquiry — the finished job, and the ones that follow if they call you again.',
     },
     {
       id: 'cost',
       figure: 'A year',
       title: 'Hold it against what this costs',
-      body: 'The published monthly fee is on this page. For a business where one job is worth what it usually is, a single extra customer covers considerably more than twelve months of it — which is the honest reason ongoing work on the website is worth paying for rather than a nice idea.',
+      body: 'The published monthly fee is on this page. Where one job is worth what it usually is, a single extra customer covers considerably more than twelve months of it.',
     },
     {
       id: 'leak',
       figure: 'Already paid for',
       title: 'Then look at the visitors you already have',
-      body: 'The people finding you this month are already found. You have already paid for them, in advertising, in a van with your name on it, or in the years it took to earn the referrals. Whatever share of them gives up before getting in touch is the part of that spend that produced nothing.',
+      body: 'You have already paid for them — in advertising, in a van with your name on it, or in the years it took to earn the referrals. Whatever share gives up before getting in touch is the part that produced nothing.',
     },
   ],
 
@@ -76,9 +76,9 @@ export const opportunity = {
    */
   caveat: {
     heading: 'What this is not',
-    body: 'This is not a projection, and nothing on this page claims a redesign produces an extra customer. Traffic, pricing, your market, your capacity and whether the phone gets answered all matter at least as much as the website does. What the website decides is how many of the people who already reached you give up before they get in touch — and that is the part I can look at, change, and measure.',
+    body: 'Not a projection, and nothing here claims a redesign produces an extra customer. Traffic, pricing, capacity and whether the phone gets answered all matter at least as much. What the website decides is how many of the people who already reached you give up before getting in touch.',
   },
 
   closing:
-    'If it turns out the website is not what is holding your business back, that is a useful answer too, and you will get it from me for free.',
+    'And if the website turns out not to be what is holding you back, that is a useful answer too — free.',
 } as const;

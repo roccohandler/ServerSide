@@ -54,7 +54,7 @@ export const industryMeta: readonly IndustryMeta[] = [
     path: industryPath('hvac'),
     metaTitle: 'Websites for HVAC companies',
     metaDescription:
-      'How heating and cooling customers actually decide, where HVAC websites lose the call, and the pages the trade needs — plus a free audit of your own site.',
+      'How heating and cooling customers actually decide, where HVAC websites lose the call, and the pages the trade needs — plus a way to score your own site in about five minutes.',
   },
   {
     slug: 'plumbing',
@@ -78,7 +78,7 @@ export const industryMeta: readonly IndustryMeta[] = [
     path: industryPath('landscaping'),
     metaTitle: 'Websites for landscaping and yard care businesses',
     metaDescription:
-      'Landscaping is decided with the eyes, and split between one-off projects and regular rounds. What that means for the website, plus a free audit of your own.',
+      'Landscaping is decided with the eyes, and split between one-off projects and regular rounds. What that means for the website, plus a way to score your own in about five minutes.',
   },
   {
     slug: 'electrical',
@@ -86,7 +86,7 @@ export const industryMeta: readonly IndustryMeta[] = [
     path: industryPath('electrical'),
     metaTitle: 'Websites for electrical contractors',
     metaDescription:
-      'Licensing is the whole question in electrical work, and the jobs range from a dead socket to a panel upgrade. What the website has to do, plus a free audit.',
+      'Licensing is the whole question in electrical work, and the jobs range from a dead socket to a panel upgrade. What the website has to do, plus a way to score your own site in about five minutes.',
   },
 ];
 

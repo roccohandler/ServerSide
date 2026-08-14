@@ -1,9 +1,9 @@
 {
-  "name": "serviceside",
+  "name": "jobforge",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Lead-generation website for a web development business serving local service businesses in the Greater Seattle area.",
+  "description": "Marketing site and lead capture for JobForge — digital growth systems for local service businesses in the Greater Seattle area.",
   "engines": {
     "node": ">=22.0.0"
   },

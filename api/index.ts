@@ -1,4 +1,4 @@
-import { createApp } from '@serviceside/server';
+import { createApp } from '@jobforge/server';
 
 /*
  * Vercel serverless entry point.

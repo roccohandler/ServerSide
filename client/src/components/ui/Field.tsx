@@ -1,8 +1,9 @@
-import type {
-  InputHTMLAttributes,
-  ReactNode,
-  SelectHTMLAttributes,
-  TextareaHTMLAttributes,
+import {
+  useState,
+  type ComponentPropsWithRef,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from 'react';
 import { Icon } from './Icon';
 import styles from './Field.module.css';
@@ -67,8 +68,15 @@ function controlClassName(error: string | undefined, extra?: string): string {
 
 /* ------------------------------------------------------------------ TextField */
 
+/*
+ * `ComponentPropsWithRef` rather than `InputHTMLAttributes`, so a caller can hold a ref to
+ * the input itself. The stepped credential form needs it: moving to a step has to put the
+ * caret in that step's first field, and validation on submit has to focus the first field
+ * it rejected. React 19 passes `ref` as an ordinary prop, so the existing spread carries
+ * it through to the element with no `forwardRef` involved.
+ */
 export type TextFieldProps = Omit<FieldShellProps, 'children'> &
-  Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'className'>;
+  Omit<ComponentPropsWithRef<'input'>, 'id' | 'className'>;
 
 export function TextField({ id, label, hint, error, optionalLabel, ...input }: TextFieldProps) {
   return (
@@ -81,6 +89,81 @@ export function TextField({ id, label, hint, error, optionalLabel, ...input }: T
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
         />
+      )}
+    </FieldShell>
+  );
+}
+
+/* ------------------------------------------------------------------ PasswordField */
+
+export type PasswordFieldProps = Omit<FieldShellProps, 'children'> &
+  Omit<ComponentPropsWithRef<'input'>, 'id' | 'className' | 'type'>;
+
+/**
+ * A password input with a show/hide toggle.
+ *
+ * ## Why a toggle at all
+ *
+ * The masking is protection against somebody reading over a shoulder, and that threat is
+ * real perhaps once in fifty sign-ups. The cost is paid every time: a password typed
+ * blind, mistyped, rejected, and retyped — which is the single most common reason people
+ * abandon a sign-up form, and the reason the minimum here is twelve characters rather
+ * than a short one. Letting somebody check what they typed is the trade almost every
+ * password guideline now recommends, and it is theirs to make rather than ours.
+ *
+ * ## The details that matter
+ *
+ * The control is a `button`, not a checkbox styled as one, so it is reachable by keyboard
+ * and announced as pressable. `aria-pressed` carries the state — a screen reader user has
+ * no way to see whether the characters are visible, and the label alone ("Show"/"Hide")
+ * only says what pressing it will do next.
+ *
+ * It starts hidden, always. A field that arrives with a password already legible is a
+ * field that has made the shoulder-surfing decision on the visitor's behalf.
+ *
+ * `autoComplete` is deliberately not defaulted. `new-password` and `current-password` mean
+ * different things to a password manager, getting it wrong is what makes a manager offer
+ * to sign somebody in with a password they are in the middle of choosing, and there is no
+ * safe guess — so every caller states it.
+ */
+export function PasswordField({
+  id,
+  label,
+  hint,
+  error,
+  optionalLabel,
+  ...input
+}: PasswordFieldProps) {
+  const [revealed, setRevealed] = useState(false);
+
+  return (
+    <FieldShell {...{ id, label, hint, error, optionalLabel }}>
+      {(describedBy) => (
+        <div className={styles['password']}>
+          <input
+            {...input}
+            id={id}
+            type={revealed ? 'text' : 'password'}
+            className={controlClassName(error, styles['passwordControl'])}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
+          />
+          <button
+            type="button"
+            className={styles['reveal']}
+            /*
+             * Pressed means "the password is showing". The accessible name stays constant
+             * so the state is carried by the attribute rather than by a name that changes
+             * under the reader — which is what `aria-pressed` is for.
+             */
+            aria-pressed={revealed}
+            aria-label="Show password"
+            onClick={() => setRevealed((current) => !current)}
+          >
+            <Icon name={revealed ? 'eye-off' : 'eye'} size={18} />
+            <span aria-hidden="true">{revealed ? 'Hide' : 'Show'}</span>
+          </button>
+        </div>
       )}
     </FieldShell>
   );

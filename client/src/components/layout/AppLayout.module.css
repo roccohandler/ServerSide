@@ -1,0 +1,287 @@
+/*
+ * The private workspace shell.
+ *
+ * Charcoal header, cream page, white cards — the same identity as the marketing site,
+ * arranged so it reads as a place you work rather than a page you read. The one visual
+ * difference is deliberate: the header is solid charcoal here and transparent-over-cream
+ * on the marketing site, which is the signal that you have crossed a boundary.
+ */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-page);
+}
+
+.skipLink {
+  position: absolute;
+  left: var(--space-3);
+  top: -3rem;
+  /* Above the header, which it has to cover when focused. */
+  z-index: var(--z-overlay);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-weight: var(--weight-semibold);
+  transition: top 150ms ease;
+}
+
+.skipLink:focus {
+  top: var(--space-3);
+}
+
+/* ------------------------------------------------------------------- header */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: var(--color-surface-dark);
+  border-bottom: 1px solid var(--color-border-dark);
+}
+
+.headerInner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-5);
+}
+
+.wordmark {
+  flex: none;
+  color: var(--color-ink-inverse);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-extrabold);
+  letter-spacing: var(--tracking-wordmark);
+  text-decoration: none;
+}
+
+.wordmark:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
+
+.menuToggle {
+  display: none;
+  margin-left: auto;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink-inverse);
+  cursor: pointer;
+}
+
+.menuToggle:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  width: 100%;
+}
+
+.navList {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navLink {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-inverse-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
+}
+
+.navLink:hover {
+  color: var(--color-ink-inverse);
+  background: var(--color-surface-on-dark);
+}
+
+.navLink:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/*
+ * The current page. Ember is rationed to one thing at a time, and inside the workspace
+ * "where am I" is the thing worth spending it on.
+ */
+.navLinkActive,
+.navLinkActive:hover {
+  color: var(--color-ink-inverse);
+  background: var(--color-surface-on-dark-strong);
+  box-shadow: inset 2px 0 0 var(--color-accent);
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+}
+
+.accountName {
+  color: var(--color-ink-inverse-muted);
+  font-size: var(--text-sm);
+}
+
+.signOut {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink-inverse);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.signOut:hover {
+  background: var(--color-surface-on-dark);
+}
+
+.signOut:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------- main */
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-5) var(--space-9);
+}
+
+.main:focus {
+  outline: none;
+}
+
+.footer {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-5);
+  text-align: center;
+}
+
+.footer p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.footer a {
+  color: var(--color-accent-text);
+  font-weight: var(--weight-semibold);
+}
+
+/* --------------------------------------------------------------- small screens */
+
+/*
+ * `47.999rem`, not `48rem`: the `md` step starts at 48rem, and a `max-width` of exactly
+ * 48rem would match at the same width the `min-width` rules do.
+ */
+@media (max-width: 47.999rem) {
+  .headerInner {
+    flex-wrap: wrap;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .menuToggle {
+    display: inline-flex;
+  }
+
+  /*
+   * Collapsed rather than removed. `display: none` would take the links out of the
+   * accessibility tree entirely, which is right — a menu that is closed is closed for
+   * everybody, and the toggle's `aria-expanded` says so.
+   */
+  .nav {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    padding: var(--space-4) 0 var(--space-2);
+  }
+
+  .navOpen {
+    display: flex;
+  }
+
+  .navList {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-hair);
+  }
+
+  .navLink {
+    padding: var(--space-3);
+    /* 44px minimum touch target once padding and line height are counted. */
+    min-height: 44px;
+  }
+
+  .account {
+    margin-left: 0;
+    justify-content: space-between;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border-dark);
+  }
+
+  .main {
+    padding: var(--space-5) var(--space-4) var(--space-8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skipLink,
+  .navLink {
+    transition: none;
+  }
+}
+
+/*
+ * The deliberate way out of the workspace.
+ *
+ * Quieter than "Sign out" — leaving to look at the marketing site is not the same act
+ * as ending a session, and the two sitting side by side at equal weight would invite
+ * the wrong one. Underlined rather than bordered so it reads as a link that navigates
+ * somewhere, which is exactly what it is.
+ */
+.exit {
+  color: var(--color-ink-inverse-muted);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
+.exit:hover {
+  color: var(--color-ink-inverse);
+}
+
+.exit:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

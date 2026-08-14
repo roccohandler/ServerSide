@@ -16,8 +16,8 @@ export interface TrustCommitment {
 }
 
 export const trust = {
-  heading: 'How I work',
-  intro: 'A few things I will commit to in writing before you spend anything.',
+  heading: 'How we work',
+  intro: 'A few things we will commit to in writing before you spend anything.',
 
   /**
    * Shown on both the homepage and the examples page, where the grid sits above it in
@@ -25,44 +25,44 @@ export const trust = {
    * line only when it stops being true: when there is real client work on the page.
    */
   disclosure:
-    'Straight answer: this is a new business, so there are no client testimonials or case studies here yet. The examples on this site are demonstration sites I built to show the approach, and they are labelled as such. When there is real client work to show, it will replace them.',
+    'Straight answer: this is a new business, so there are no client testimonials or case studies here yet. The examples are demonstration sites, labelled as such. Real client work will replace them.',
 
   commitments: [
     {
       id: 'ownership',
       title: 'You own everything',
       description:
-        'The domain, the hosting account and the content are registered in your name, even though I am the one managing them. If you ever want to work with someone else, you take the site with you and I hand over the keys.',
+        'The domain, the hosting account and the content are registered in your name, even while we manage them. Leave, and you take the site with you.',
     },
     {
       id: 'plain-english',
       title: 'Plain English',
       description:
-        'No jargon, no acronyms, and no pretending a decision is more technical than it is. If I cannot explain why something matters to your business, it probably does not.',
+        'No jargon, no acronyms, and no pretending a decision is more technical than it is.',
     },
     {
       id: 'pricing',
       title: 'Scoped and priced before work starts',
       description:
-        'You will know what is being built and what it costs before you commit. The prices are published on this site rather than extracted from you on a call, and neither number moves unless you ask for something different.',
+        'Published on this site rather than extracted from you on a call — and neither number moves unless you ask for something different.',
     },
     {
       id: 'responsibility',
       title: 'The same person, before and after launch',
       description:
-        'The person who builds your website is the person who maintains it and the person who answers when you call. No account managers, and no handover to somebody you have never spoken to.',
+        'The person who builds your website is the one who maintains it and answers when you call. No account managers.',
     },
     {
       id: 'quality',
       title: 'Fast and accessible by default',
       description:
-        'Speed and accessibility are not upgrades. A site that is slow on a phone or unusable with a screen reader is a site that loses work.',
+        'A site that is slow on a phone, or unusable with a screen reader, is a site that loses work.',
     },
     {
       id: 'honesty',
       title: 'Honest about what will not help',
       description:
-        'If your website is not what is holding the business back, I will say so — even though it means not selling you one.',
+        'If your website is not what is holding the business back, we will say so — even though it means not selling you one.',
     },
   ] satisfies readonly TrustCommitment[],
 } as const;

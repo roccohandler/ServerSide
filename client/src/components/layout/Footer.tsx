@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { industryMeta, site } from '../../content';
 import { routes } from '../../config/routes';
+import { Logo } from '../brand/Logo';
 import { Container } from '../ui/Layout';
 import { EmailLink, PhoneLink } from '../ui/ContactLink';
 import styles from './Footer.module.css';
@@ -17,7 +18,9 @@ export function Footer() {
       <Container>
         <div className={styles['grid']}>
           <div>
-            <p className={styles['name']}>{site.name}</p>
+            <p className={styles['name']}>
+              <Logo onDark />
+            </p>
             <p className={styles['description']}>{site.description}</p>
           </div>
 

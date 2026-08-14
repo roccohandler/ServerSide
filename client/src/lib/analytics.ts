@@ -39,7 +39,14 @@ export type AnalyticsEvent =
   | 'hero_form_started'
   /** Step one validated and the visitor moved to the qualification step. */
   | 'hero_form_step_completed'
-  /** A lead request was sent to the API. Fires for the hero and the contact page. */
+  /**
+   * A lead request was sent to the API. `source` says which form.
+   *
+   * The doc comment used to claim this fired "for the hero and the contact page". It did
+   * not — `useContactForm` had no instrumentation at all, so the main contact form was the
+   * one surface in the funnel that reported nothing. The comment was the only thing
+   * asserting parity, and a comment is not a mechanism. Both now fire it with a `source`.
+   */
   | 'lead_form_submitted'
   /** The API accepted the submission. This is the conversion. */
   | 'website_review_requested'
@@ -50,33 +57,46 @@ export type AnalyticsEvent =
   /** The pricing block was scrolled into view — how far down the page people get. */
   | 'pricing_viewed'
   /**
-   * The recurring plan was reached, separately from the project prices.
+   * Growth Partner was reached, separately from the project prices.
    *
-   * Worth its own event: the plan sits below the project tiers, so the gap between this
-   * and `pricing_viewed` is the share of readers who see a price and stop before learning
-   * what happens after launch. If that gap is large the plan is too far down the page.
+   * Worth its own event: the plan sits below the build price, so the gap between this and
+   * `pricing_viewed` is the share of readers who see a price and stop before learning what
+   * happens after launch. If that gap is large the plan is too far down the page.
+   *
+   * **Renamed from `care_plans_viewed`.** The product is Growth Partner in every
+   * customer-facing string, and an event name carrying the old vocabulary is how the old
+   * vocabulary survives a rename — it becomes the column heading in a report and then
+   * somebody writes copy to match the column. Renaming cost nothing: `track()` has no sink
+   * configured, so no report exists to be regrouped. Do not rename it again once one does.
    */
-  | 'care_plans_viewed'
+  | 'growth_partner_viewed'
   /**
-   * A project tier's call to action was clicked. `tier` carries which one.
+   * A product's call to action was clicked. `tier` carries which product, `from` the surface.
    *
-   * The whole point of three tiers is learning which one people actually reach for, and
-   * that is unanswerable from a single `cta_clicked`. If nobody ever clicks Foundation it
-   * is not an entry point, it is an anchor — and that is a pricing decision, not a copy
-   * one.
+   * The point is learning which of the three people actually reach for, and that is
+   * unanswerable from a single `cta_clicked`. `tier` takes an offer id — `'flagship'` or
+   * `'conversion-fix'` — so a new product is a new value rather than a new event.
    */
   | 'pricing_tier_selected'
-  /*
-   * `care_plan_selected` was declared here and never fired, because there is no
-   * recurring-plan call to action to fire it: the plan is not separately purchasable, it
-   * starts after launch, and the card deliberately has no button of its own — a fourth
-   * identical "get my free assessment" on the same screen buys nothing.
+  /**
+   * The Growth Partner call to action was clicked. `from` carries the surface.
    *
-   * Deleted rather than kept "for later". A declared event nothing emits looks exactly like
-   * an event nobody triggers once a provider is connected, which is the worst of both. What
-   * the plan actually needs measuring is whether readers reach it, and `care_plans_viewed`
-   * carries a `location` so the homepage and the services page stay separable.
+   * ## Why this is back
+   *
+   * `care_plan_selected` was declared here once, never fired, and deleted — correctly, and
+   * for a reason recorded at the time: *"there is no recurring-plan call to action to fire
+   * it… the card deliberately has no button of its own — a fourth identical 'get my free
+   * assessment' on the same screen buys nothing."*
+   *
+   * That reasoning held while the plan's card had no action. The redesign gives it one, and
+   * the button is deliberately not a fourth identical assessment CTA — it asks about Growth
+   * Partner specifically and carries `?intent=partner` into the form, so the prospect never
+   * has to re-explain what they want. The premise changed, so the event comes back.
+   *
+   * It comes back under the **product's** name rather than the old one. See the note on
+   * `growth_partner_viewed`.
    */
+  | 'growth_partner_selected'
   /**
    * The risk-reversal block was reached. Worth separating from `pricing_viewed`: if
    * readers see the price and never reach the guarantee, the guarantee is not the reason
@@ -126,6 +146,68 @@ export type AnalyticsEvent =
    * unknowable, because both funnels end at the same audit and the same form.
    */
   | 'industry_page_viewed'
+  /** A new client submitted the onboarding form on /welcome. */
+  | 'onboarding_submitted'
+  /**
+   * A collapsed answer was opened. `id` carries which question.
+   *
+   * One event for every `<details>` on the site rather than one per surface: what it
+   * answers is "which objection do people actually go looking for", and that question is
+   * about the question, not about the page it was on.
+   */
+  | 'faq_opened'
+  /**
+   * Somebody began an authentication attempt. `mode` is `signin` or `signup`; `method` is
+   * `password` or `google`.
+   *
+   * **One event with two fields rather than four events.** The brief asked for
+   * `auth_started`, `sign_in_selected`, `account_creation_selected` and `account_created`.
+   * The first three are one moment described three ways, and the server cannot even tell
+   * signup from signin on the Google path — so three names would promise a distinction the
+   * system does not make. Fields answer the same questions and stay countable together.
+   *
+   * `account_created` is deliberately **not** here: the authoritative record is the server's
+   * `account.created` activity entry, and a browser-side duplicate of a server truth is the
+   * kind of event that disagrees with the database six months later.
+   */
+  | 'auth_started'
+  /*
+   * ==========================================================================
+   * THE CAPABILITY EXPLORER — THREE EVENTS, NOT SEVEN
+   * ==========================================================================
+   *
+   * The surface has four interactive controls (trade, category, availability toggle, and an
+   * expander per capability) and the obvious instrumentation is one event each plus a page
+   * view. That would be five names for two questions, and the two questions are the only
+   * reason to instrument this page at all:
+   *
+   *   1. **Which capabilities do owners actually go looking for?** Answered by
+   *      `capability_opened`, keyed by id. This is the valuable one: a library of forty
+   *      entries is also a survey of what the market wants, and the answer should decide
+   *      what gets built next.
+   *   2. **Does reading this page make somebody more likely to ask for an assessment?**
+   *      Answered by `capabilities_viewed` plus the existing `cta_clicked` locations, with
+   *      no new event needed.
+   *
+   * `capability_filtered` collapses the three filter controls into one event with a
+   * `control` field, for the same reason `auth_started` collapses three: they are one
+   * behaviour — narrowing the list — and splitting them would make "how many people filter
+   * at all" a sum across three names instead of a count of one.
+   * ==========================================================================
+   */
+  /** The explorer was scrolled into view. `trade` carries a preselection if one arrived. */
+  | 'capabilities_viewed'
+  /**
+   * One capability was expanded. `id` carries which, `tier` and `availability` carry what
+   * kind of thing it was — so "are people opening the things they cannot buy" is answerable
+   * without a second event.
+   */
+  | 'capability_opened'
+  /**
+   * A filter was changed. `control` is `trade`, `category` or `available`; `value` is what
+   * it was set to.
+   */
+  | 'capability_filtered'
   /** Somebody asked for the complete PlayBook workbook by email. */
   | 'playbook_download_requested'
   /** The subscribe request failed. `reason` carries the error code. */
@@ -203,12 +285,46 @@ export type CtaLocation =
   | 'review'
   | 'review-sample'
   | 'demo'
+  /* The bridge under the before/after mocks: "the finished version exists" → examples. */
+  | 'demo-finished'
   | 'final'
   | 'playbook'
   | 'playbook-success'
   | 'teardown-review'
-  | 'qualification-playbook'
   | 'qualification-exception'
+  | 'qualification-playbook'
+  /* The teardown's third beat: "these principles, fully built" → the hvac demo. */
+  | 'teardown-built'
+  /*
+   * The secondary action on the "which situation are you in" chooser, for a reader who
+   * cannot place themselves in any of the three and would rather be told which they are.
+   * Separate from `review` because the question it answers is different: `review` is
+   * somebody accepting a free diagnosis, this is somebody declining to self-diagnose.
+   */
+  | 'paths-unsure'
+  /*
+   * The audit's "leave it alone" branch. The one CTA on the site attached to a
+   * recommendation not to buy anything, which makes it the one worth watching: if nobody
+   * clicks it the branch is decoration, and the honest recommendation is not landing.
+   */
+  | 'audit-keep'
+  /*
+   * The capability explorer's two exits.
+   *
+   * `capabilities-close` is the section that says a list cannot tell you which ones you
+   * need. `capabilities-generic` is narrower and more interesting: it is the CTA a reader
+   * sees only when the library has nothing written for their kind of business, so clicks on
+   * it are a direct signal about which trade to write for next.
+   */
+  | 'capabilities-close'
+  | 'capabilities-generic'
   | `industry-${string}-hero`
   | `industry-${string}-offer`
-  | `industry-${string}-close`;
+  | `industry-${string}-close`
+  /*
+   * The demonstration sites. `-back` is somebody leaving, `-cta` is somebody converting
+   * from inside one, and the trade is in the string because which trade's demo produces
+   * enquiries is the only question five of them exist to answer.
+   */
+  | `demo-${string}-back`
+  | `demo-${string}-cta`;
