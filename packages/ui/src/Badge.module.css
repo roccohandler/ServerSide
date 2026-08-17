@@ -1,0 +1,43 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  border-radius: var(--radius-full);
+}
+
+.badgeNeutral {
+  color: var(--color-ink-muted);
+  background-color: var(--color-surface-sunken);
+}
+
+.badgeBrand {
+  color: var(--color-brand);
+  background-color: var(--color-tint-brand);
+}
+
+/* `--color-accent-strong` is 4.3:1 on this tint; the text ember is 5.2:1. */
+.badgeAccent {
+  color: var(--color-accent-text);
+  background-color: var(--color-tint-accent);
+}
+
+/*
+ * Tone is carried entirely by a background here, and forced colours discards backgrounds —
+ * so all three badges arrive as the same rectangle with the same text. An edge is what
+ * survives, and it at least keeps a badge readable *as* a badge rather than as stray words.
+ *
+ * The three tones do not become three system colours, deliberately. There are not three
+ * defensible keywords for "brand", "accent" and "neutral", and inventing a mapping would
+ * make one of them read as selected or as a link. The status text inside a badge already
+ * says which it is.
+ */
+@media (forced-colors: active) {
+  .badge {
+    border: 1px solid CanvasText;
+  }
+}

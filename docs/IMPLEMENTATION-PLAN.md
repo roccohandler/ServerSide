@@ -169,12 +169,12 @@ content/entry.ts       NEW — the three ways in (launch / rescue / manage-exist
 
 ### Phase 5 — PlayBook capture + workbook
 
-- [x] `server/src/features/subscribers/`: types, schema, model, repository, service, controller, routes, email
-- [x] `server/src/app/routes.ts`: mount `/api/subscribers`
-- [x] `server/src/testing/fakes.ts`: in-memory subscriber repository
+- [x] `apps/server/src/features/subscribers/`: types, schema, model, repository, service, controller, routes, email
+- [x] `apps/server/src/app/routes.ts`: mount `/api/subscribers`
+- [x] `apps/server/src/testing/fakes.ts`: in-memory subscriber repository
 - [x] Server tests: schema, service, API
-- [x] `client/src/types/api.ts`: subscriber request/response contract
-- [x] `client/src/lib/api.ts`: `subscribe()`
+- [x] `apps/client/src/types/api.ts`: subscriber request/response contract
+- [x] `apps/client/src/lib/api.ts`: `subscribe()`
 - [x] `features/playbook/PlayBookPdfSection.tsx` + `usePlayBookSubscribe.ts`
 - [x] `content/playbook.ts`: capture copy matched to what actually happens
 - [x] `content/playbook.ts`: `workbook` content — audit sheets, worksheets, checklists

@@ -1,0 +1,71 @@
+/*
+ * White on cream, with a lift.
+ *
+ * On the old white page a card needed a border to exist at all. On the cream ground the
+ * surface itself is the separation and the shadow is what sells it as a physical object
+ * sitting on the page — the border is now a hairline that defines the edge rather than
+ * the thing doing the work.
+ */
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.cardInteractive {
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base),
+    transform var(--transition-base);
+}
+
+/* Two pixels. Enough to answer "is this a thing I can interact with", and no more. */
+.cardInteractive:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardInteractive:hover {
+    transform: none;
+  }
+}
+
+.cardFlush {
+  padding: 0;
+  overflow: hidden;
+}
+
+/*
+ * A card is separated from the page by elevation, and forced colours removes `box-shadow`
+ * outright. Without this, every card on every screen dissolves into the page and a list of
+ * six cards reads as one long column of text.
+ */
+@media (forced-colors: active) {
+  .card {
+    border: 1px solid CanvasText;
+  }
+}
+
+/*
+ * A card is one thing, so it belongs on one sheet. Without this a project card splits at a
+ * page fold with its heading on one side and its status on the other, which is the shape
+ * that makes a printout unreadable rather than merely ugly.
+ *
+ * The edge replaces the elevation, for the same reason as the forced-colors block above:
+ * `--shadow-card` is `none` in the print block in `global.css`, so without a border a page
+ * of cards prints as one undivided column of text.
+ */
+@media print {
+  .card {
+    break-inside: avoid;
+    border: 1px solid var(--color-border);
+    box-shadow: none;
+  }
+}

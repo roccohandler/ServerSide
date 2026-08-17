@@ -1,0 +1,180 @@
+.thumbnail {
+  aspect-ratio: 3 / 2;
+  width: 100%;
+  /*
+   * Load-bearing, not belt-and-braces: without it the `height` attribute on the <img>
+   * stays a definite height, and `aspect-ratio` only sizes an axis that is auto. With
+   * both axes definite the box was 100% x 800px, and `object-fit: cover` cropped every
+   * screenshot to a zoomed vertical slice — invisibly close to correct while the
+   * attributes said 600x400, obviously wrong once they said 1200x800.
+   */
+  height: auto;
+  object-fit: cover;
+  background-color: var(--color-surface-sunken);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.title {
+  margin: 0;
+}
+
+.description {
+  color: var(--color-ink-muted);
+}
+
+.highlights {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.highlight {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The AA-safe ember rather than Ember itself. This one class renders on two grounds —
+ * a white card in the grid, and directly on the cream page in the showcase rows — and
+ * Ember is 3.0:1 on cream, which a 16px stroked glyph cannot carry.
+ */
+.highlightMarker {
+  flex-shrink: 0;
+  margin-top: 0.2em;
+  color: var(--color-accent-text);
+}
+
+.actions {
+  margin-top: auto;
+  padding-top: var(--space-4);
+}
+
+.noDemo {
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The demonstration label is deliberately prominent. Nothing on this site may read as
+ * client work when it is not.
+ */
+.demoNotice {
+  max-width: 46rem;
+  margin-bottom: var(--space-7);
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--color-tint-accent);
+  border-inline-start: 4px solid var(--color-accent);
+  border-radius: var(--radius-md);
+}
+
+.teardownLink {
+  max-width: 46rem;
+  margin-top: var(--space-7);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * ---------------------------------------------------------------- showcase
+ *
+ * The full-width feature rows on /portfolio, one per project. One column on a phone —
+ * frames first, because the capture is the claim and the copy is the caption — and two
+ * columns from 48rem, alternating sides so five rows do not read as one template
+ * stamped five times. The alternation is visual only (`order`), so the reading order
+ * for assistive technology stays frames-then-words on every row.
+ */
+.showcase {
+  display: grid;
+  gap: var(--space-9);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.showcaseRow {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.showcaseFrames {
+  position: relative;
+  /* Room for the phone's overhang below the browser frame. */
+  padding-bottom: var(--space-7);
+}
+
+.showcaseBrowser {
+  width: 88%;
+}
+
+/*
+ * A project with captures but no published demo renders its desktop still without
+ * browser chrome: the address pill's whole point is a URL the visitor can type and
+ * land on, and an unpublished demo has none. The border does the framing instead.
+ */
+.showcaseStill {
+  overflow: hidden;
+  width: 88%;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.showcaseStill img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/*
+ * Proportional, like the hero's product shot: the phone stays about a quarter of the
+ * frames column, so in the stacked phone-width layout it shrinks with everything else
+ * instead of dominating it.
+ */
+.showcasePhone {
+  position: absolute;
+  inset-inline-end: 0;
+  bottom: 0;
+  width: 25%;
+}
+
+.showcaseBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (min-width: 48rem) {
+  .showcaseRow {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--space-8);
+    align-items: center;
+  }
+
+  /* The frames keep the wider column on both sides of the alternation. */
+  .showcaseRow:nth-child(even) {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+
+  .showcaseRow:nth-child(even) .showcaseFrames {
+    order: 2;
+  }
+}

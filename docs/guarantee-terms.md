@@ -1,6 +1,6 @@
 # Guarantee terms — internal boundaries
 
-**Internal.** The public wording lives in `client/src/content/offer.ts` (`guarantee`,
+**Internal.** The public wording lives in `apps/client/src/content/offer.ts` (`guarantee`,
 `launchStandard`) and `content/growth.ts` (`responseGuarantee`). This file defines where
 each promise starts and stops, so none of them quietly becomes an unlimited warranty.
 **The written client agreement must say the same things — see the legal flag at the end.**

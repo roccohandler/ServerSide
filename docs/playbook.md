@@ -16,9 +16,9 @@ visitors a service business already has into calls and quote requests.
 | ----------- | ---------------------------------------------------------------------------------------------- |
 | Public page | `/playbook` — the whole thing, unfolded, no email required. Carries the email form too.        |
 | Workbook    | `/playbook/workbook` — `noindex`, unlinked. Print it to PDF.                                   |
-| Content     | `client/src/content/playbook.ts`                                                               |
+| Content     | `apps/client/src/content/playbook.ts`                                                          |
 | Types       | `PlaybookPrinciple`, `PlaybookStageMeta`, `ScorecardCategory`, `ScorecardBand`, `PriorityTier` |
-| Guards      | `client/src/content/playbook.test.ts`                                                          |
+| Guards      | `apps/client/src/content/playbook.test.ts`                                                     |
 
 ---
 

@@ -1,0 +1,28 @@
+/*
+ * A field laid on its side.
+ *
+ * `SelectField` stacks its label above its control, which is right everywhere a form is. The
+ * console bar is not a form — it is one row that has to stay one row — so the shell's column
+ * is turned back into a row here rather than a `direction` prop being added to the primitive
+ * for a single call site. That is composition rule 3: one consumer, so it lives with its
+ * consumer.
+ */
+.control > * {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The bar is charcoal in both themes, so the label takes the band's text colour rather than
+   the page's. `--color-ink` here would be charcoal on charcoal in light mode. */
+.control label {
+  color: var(--color-ink-inverse);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.control select {
+  min-height: 2.25rem;
+  padding-block: var(--space-1);
+  font-size: var(--text-sm);
+}

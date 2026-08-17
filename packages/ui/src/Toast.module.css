@@ -1,0 +1,109 @@
+/*
+ * Bottom-centre on a phone, bottom-right above it.
+ *
+ * Bottom rather than top, because the top of a phone screen is where the browser chrome and
+ * the site header already are, and a message that appears under a URL bar is a message
+ * somebody scrolls past. Centre on a phone because there is no corner worth the name.
+ *
+ * `--z-toast` (60), the layer `tokens.css` reserved above `--z-modal` — a notification about
+ * the thing you are doing has to be readable while you are doing it.
+ */
+
+.toast {
+  position: fixed;
+  bottom: var(--space-4);
+  inset-inline: var(--space-4);
+  z-index: var(--z-toast);
+  display: flex;
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+@media (min-width: 30rem) {
+  .toast {
+    /* Released from the start edge, so it settles against the end one — right in a
+       left-to-right document, left in a right-to-left one. */
+    inset-inline-start: auto;
+    max-width: 26rem;
+  }
+}
+
+/*
+ * Solid surfaces rather than tints.
+ *
+ * A `Notice` sits inside the page and takes a wash so it reads as part of it. A toast floats
+ * over arbitrary content — a table, a photograph, a charcoal band — so a translucent or
+ * lightly tinted panel would be unreadable against something. Each pair below states both
+ * halves in one rule, so `tokens.test.ts` measures the contrast rather than trusting it.
+ */
+.success {
+  background-color: var(--color-tint-success);
+  border-inline-start: 3px solid var(--color-success);
+  color: var(--color-success);
+}
+
+.problem {
+  background-color: var(--color-tint-danger);
+  border-inline-start: 3px solid var(--color-danger);
+  color: var(--color-danger);
+}
+
+.info {
+  background-color: var(--color-surface-dark);
+  border-inline-start: 3px solid var(--color-accent);
+  color: var(--color-ink-inverse);
+}
+
+/* Font-relative, so the icon stays optically centred beside the text at every size. */
+.icon {
+  flex-shrink: 0;
+  margin-top: 0.1em;
+}
+
+.body {
+  flex: 1;
+}
+
+.close {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  /* 44px: a dismiss control is aimed at in a hurry, often while doing something else. */
+  min-width: 44px;
+  min-height: 44px;
+  margin: calc(var(--space-3) * -1);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.close:hover {
+  opacity: 1;
+}
+
+/*
+ * A toast floats over arbitrary content, which is why the rules above use solid surfaces
+ * rather than tints. Forced colours takes the surface away and the toast is then a paragraph
+ * of text sitting on top of a table.
+ *
+ * The 3px inline-start rule survives as a border — forced colours recolours borders rather
+ * than removing them — so the tone still reads as *a* mark. The full edge is what makes it
+ * read as a panel.
+ */
+@media (forced-colors: active) {
+  .toast {
+    background-color: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+  }
+}

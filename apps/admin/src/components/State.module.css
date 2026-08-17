@@ -1,0 +1,52 @@
+.loading {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+  padding: var(--space-5);
+}
+
+.failure {
+  background: var(--color-tint-danger);
+  border-inline-start: 4px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  padding: var(--space-4);
+}
+
+.failureBody {
+  line-height: var(--leading-normal);
+  margin: 0;
+}
+
+.empty {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-6);
+}
+
+.emptyHeading {
+  font-size: var(--text-lg);
+  margin: 0;
+}
+
+.emptyBody {
+  color: var(--color-ink-muted);
+  line-height: var(--leading-normal);
+  margin: 0;
+  max-width: 60ch;
+}
+
+/* The console's three data states. `.failure` is a tint with a rule down its start edge and
+   `.empty` is a dashed well; forced colours flattens both into the page. */
+@media (forced-colors: active) {
+  .failure,
+  .empty,
+  .loading {
+    border: 1px solid CanvasText;
+  }
+}

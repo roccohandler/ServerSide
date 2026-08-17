@@ -1,0 +1,140 @@
+/*
+ * ============================================================================
+ * THE INTERNAL SURFACE
+ * ============================================================================
+ *
+ * Visually unlike the customer application on purpose. A staff member operating five
+ * customers' projects must never be in doubt about which surface they are on, and the
+ * mistake that prevents is a specific one: writing something intended as an internal note
+ * into a thread the customer reads.
+ *
+ * The separate origin helps but does not settle it — the two are still two tabs in one
+ * browser. So the bar is charcoal and permanently says "Internal", and the page ground is
+ * the sunken tone rather than the cream the marketing site and the portal both use.
+ * ============================================================================
+ */
+
+.shell {
+  background: var(--color-surface-sunken);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ------------------------------------------------------------------ skip link */
+
+/*
+ * Off-screen until focused, then the first thing in the tab order.
+ *
+ * Deliberately the same treatment the customer application uses — charcoal panel, ember
+ * border — because it is the same control doing the same job, and a keyboard user who works
+ * across both surfaces should not have to learn two of them. `transform` rather than
+ * `display` so it stays focusable while hidden.
+ */
+.skipLink {
+  position: absolute;
+  top: var(--space-2);
+  inset-inline-start: var(--space-2);
+  z-index: var(--z-overlay);
+  padding: var(--space-3) var(--space-4);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-dark);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skipLink:focus {
+  color: var(--color-ink-inverse);
+  transform: translateY(0);
+}
+
+/* ------------------------------------------------------------------ the bar */
+
+.bar {
+  background: var(--color-surface-dark);
+  border-bottom: 3px solid var(--color-accent-strong);
+  position: sticky;
+  top: 0;
+  /* Names the layer rather than picking a number; the token guard fails the build on a raw
+     stacking value. */
+  z-index: var(--z-sticky);
+}
+
+.barInner {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 80rem;
+  padding: var(--space-3) var(--space-5);
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+}
+
+/* The right-hand end of the bar: a setting and the way out, in that order, so the control
+   that ends a session is the last thing under the pointer rather than the first. */
+.barTools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/*
+ * The word that stops a mistake. Ember on charcoal, uppercase, and it never changes — an
+ * operator glancing at a tab strip should be able to tell this apart from the customer
+ * application without reading anything.
+ */
+.mark {
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-extrabold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.who {
+  color: var(--color-ink-inverse-muted);
+  font-size: var(--text-xs);
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.navLink {
+  border-bottom: 2px solid transparent;
+  color: var(--color-ink-inverse-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  padding-bottom: var(--space-1);
+  text-decoration: none;
+}
+
+.navLink:hover {
+  color: var(--color-ink-inverse);
+}
+
+.navLinkActive {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-ink-inverse);
+}
+
+.main {
+  display: grid;
+  gap: var(--space-5);
+  margin: 0 auto;
+  max-width: 80rem;
+  padding: var(--space-6) var(--space-5) var(--space-9);
+  width: 100%;
+}

@@ -1,0 +1,74 @@
+/*
+ * The console's one message shape.
+ *
+ * A left rule rather than a full border, because these stack against tables and forms where
+ * a boxed panel reads as another record. The rule carries the tone at a glance and the tint
+ * carries it up close.
+ *
+ * Every foreground/background pair below is stated in the same rule on purpose, so
+ * `tokens.test.ts` measures it. That is the check that stops somebody reaching for
+ * `--color-accent` where `--color-accent-text` belongs.
+ */
+
+.notice {
+  align-items: start;
+  border-radius: var(--radius-sm);
+  display: flex;
+  font-size: var(--text-sm);
+  gap: var(--space-2);
+  line-height: var(--leading-normal);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+}
+
+.problem {
+  background-color: var(--color-tint-danger);
+  border-inline-start: 4px solid var(--color-danger);
+  color: var(--color-danger);
+}
+
+.success {
+  background-color: var(--color-tint-success);
+  border-inline-start: 4px solid var(--color-success);
+  color: var(--color-success);
+}
+
+/*
+ * Ink on the brand wash rather than a colour of its own. An informational line is not a
+ * status — it is context — and giving it a hue would put a third signal colour on a surface
+ * whose whole job is that the two that mean something stand out.
+ */
+.info {
+  background-color: var(--color-tint-brand);
+  border-inline-start: 4px solid var(--color-border-strong);
+  color: var(--color-ink);
+}
+
+/*
+ * Nudged by a fraction of the line beside it. `em` rather than a rhythm step, and the token
+ * guard allows it for exactly this: an optical alignment against text has to scale with the
+ * text, and a rem value is correct at one size only.
+ */
+.icon {
+  flex-shrink: 0;
+  margin-top: 0.1em;
+}
+
+.body {
+  margin: 0;
+}
+
+.body > p {
+  margin: 0;
+}
+
+/*
+ * Same problem the customer application's `Notice` has, and the same answer — see the note
+ * there. Tone is a tint plus an inline-start rule; forced colours keeps the rule and
+ * discards the tint, so the panel stops reading as a panel.
+ */
+@media (forced-colors: active) {
+  .notice {
+    border: 1px solid CanvasText;
+  }
+}

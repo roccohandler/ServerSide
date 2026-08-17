@@ -11,18 +11,18 @@ founding ones. It never edits an existing Price.
 
 ## The steps, in order
 
-1. **Publish the change** — in `client/src/config/pricing.ts`, set
+1. **Publish the change** — in `apps/client/src/config/pricing.ts`, set
    `foundingOffer.taken: 10` (or `enabled: false`). The site now shows one price,
    $7,500, and every founding block, saving line and comparison removes itself.
 
 2. **Mirror the server's expected amounts** — in
-   `server/src/features/billing/billing.amounts.ts`, set
+   `apps/server/src/features/billing/billing.amounts.ts`, set
    `BUILD_PRICE_CENTS = 750_000`. The halves ($3,750) stay derived; do not type them.
-   _Guard:_ `client/src/config/pricing.sync.test.ts` fails the build until steps 1 and
+   _Guard:_ `apps/client/src/config/pricing.sync.test.ts` fails the build until steps 1 and
    2 agree.
 
 3. **Create the standard Prices in Stripe** (test mode first, then live) — run
-   `npm run stripe:setup --workspace server`. Because the amounts now derive to
+   `npm run stripe:setup --workspace @jobforge/server`. Because the amounts now derive to
    $3,750, the script creates the new Prices under the same **Website Build** product.
    Give them fresh lookup keys by archiving the old ones first, or create manually:
    - Standard deposit — $3,750 one-time

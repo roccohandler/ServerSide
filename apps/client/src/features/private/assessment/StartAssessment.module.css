@@ -1,0 +1,74 @@
+/*
+ * The assessment, inside the workspace.
+ *
+ * Panels rather than the public page's full-bleed alternating sections: this is one
+ * task on one screen, not a document somebody is being walked through.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 52rem;
+}
+
+.header {
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+}
+
+.lede {
+  max-width: 46rem;
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+}
+
+.panel {
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.panelTitle {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink);
+}
+
+/*
+ * `.error` was here, and it served three call sites across two pages — the validation
+ * message on the scorecard, the submission failure, and the request page's rejection. All
+ * three are `components/patterns/Notice` now.
+ */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+/*
+ * The request form's own stack, on `/app/assessment/request`.
+ *
+ * A class of its own rather than reusing `.page`, which it briefly did: that rule carries a
+ * `max-width` meant for the whole screen and a gap sized for the space between panels, and a
+ * form is neither of those things. Two rules that happen to look alike today is how one of
+ * them gets changed for the other's sake later.
+ */
+.form {
+  display: grid;
+  gap: var(--space-4);
+}

@@ -2,7 +2,7 @@
 
 **Internal.** This defines what the $299/month actually obligates the business to do, so
 the plan's published promises always have an operational answer behind them. The public
-copy lives in `client/src/content/offer.ts` (`carePricing`) and `content/growth.ts`; the
+copy lives in `apps/client/src/content/offer.ts` (`carePricing`) and `content/growth.ts`; the
 written client agreement governs. Where this file says **[OWNER DECISION REQUIRED]**, the
 repository contains no answer and one must not be invented — decide it in
 `docs/owner-decisions-required.md` and record it here.

@@ -1,6 +1,6 @@
 # The Launch Standard — internal working checklist
 
-**Internal.** The public version is `launchStandard` in `client/src/content/offer.ts` —
+**Internal.** The public version is `launchStandard` in `apps/client/src/content/offer.ts` —
 eight customer-verifiable checks. This is the working checklist behind it: what actually
 gets done before a site is called finished, one copy per project. **The public page may
 only ever promise checks that appear here.** If an item is dropped from practice, it must

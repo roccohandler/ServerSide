@@ -1,0 +1,30 @@
+.lede {
+  margin: 0 0 var(--space-4);
+  color: var(--color-ink-muted);
+  line-height: var(--leading-normal);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Who is being signed in, stated rather than asked for. See the note in ReauthDialog.tsx. */
+.who {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The escape hatch sits after the action and is the quieter of the two, because it costs the
+ * page — but it is a button rather than a line of small print, because it is where the
+ * password-reset link is and somebody in this dialog may well need it.
+ */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}

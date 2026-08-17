@@ -3,7 +3,7 @@
 What the marketing site uses to _show_ the product, the transformation and the customer —
 where each asset comes from, where it appears, and how to regenerate or extend the set.
 This is the companion to `docs/MEDIA-CREDITS.md` (licensing of the underlying photography)
-and `client/scripts/capture-previews.ts` (the pipeline that produces the screenshots).
+and `apps/client/scripts/capture-previews.ts` (the pipeline that produces the screenshots).
 
 The one-sentence policy: **every product visual is a screenshot of this repository's own
 build, and everything that is not client work says so next to the pixels.** Illustrations
@@ -13,7 +13,7 @@ a client.
 
 ## The asset inventory
 
-### Captured product screenshots — `client/src/assets/portfolio/`
+### Captured product screenshots — `apps/client/src/assets/portfolio/`
 
 Produced by `npm run capture` (after a build) from the five demonstration sites this
 repository serves at `/demo/<trade>`. The demonstration disclosure bar travels inside
@@ -52,16 +52,16 @@ npm run capture --workspace @jobforge/client   # requires local Chrome/Edge
 A stale screenshot is a preview that lies about what clicking it reveals — recapture in
 the same commit as the demo change.
 
-### Social preview — `client/public/og-image.png`
+### Social preview — `apps/client/public/og-image.png`
 
 Rasterised from `og-image.svg` by the same capture run. Stays in `public/` at a stable
 URL because social scrapers cache the address, not the content hash.
 
-### Demo-site photography — `client/src/assets/demos/<trade>/`
+### Demo-site photography — `apps/client/src/assets/demos/<trade>/`
 
 The licensed Unsplash/Pexels photography (and three ambient clips) the demonstration
 sites themselves render. Provenance: every file has a row in
-`client/scripts/media.manifest.json` **and** `docs/MEDIA-CREDITS.md`, enforced
+`apps/client/scripts/media.manifest.json` **and** `docs/MEDIA-CREDITS.md`, enforced
 bidirectionally by `demos.test.ts`. These ride only the lazy demo chunks; the marketing
 pages show this photography indirectly, inside the captures above — which keeps the
 marketing bundle photography-free and the licensing story one layer deep.
@@ -71,10 +71,10 @@ credits row. Never commit a loose image file.
 
 ### CSS-built illustrations (no image bytes)
 
-| Component                              | What it is                                                              | Why not a screenshot                                                                                                                                                             |
-| -------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `features/public/home/SiteMock.tsx`    | The before/after wireframe miniatures in `DemoSection` and the teardown | The differences shown are _wording_, unreadable in a thumbnail screenshot — and a "before" screenshot of a real business would be someone's actual website used as a bad example |
-| `components/marketing/DeviceFrame.tsx` | `BrowserFrame` / `PhoneFrame` chrome around captures                    | Presentation, not content: the address pill shows the capture's real route on this site, so a framed preview documents where it can be verified                                  |
+| Component                             | What it is                                                              | Why not a screenshot                                                                                                                                                             |
+| ------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `features/public/home/SiteMock.tsx`   | The before/after wireframe miniatures in `DemoSection` and the teardown | The differences shown are _wording_, unreadable in a thumbnail screenshot — and a "before" screenshot of a real business would be someone's actual website used as a bad example |
+| `components/patterns/DeviceFrame.tsx` | `BrowserFrame` / `PhoneFrame` chrome around captures                    | Presentation, not content: the address pill shows the capture's real route on this site, so a framed preview documents where it can be verified                                  |
 
 ## Rules for adding a visual
 

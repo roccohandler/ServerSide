@@ -1,0 +1,104 @@
+/* Styles owned by DifferentiatorSection. Shared offer vocabulary lives in Offer.module.css. */
+
+/* ------------------------------------------------------------------ differentiator */
+.differentiator {
+  max-width: 44rem;
+}
+
+.differentiatorHeading {
+  font-size: var(--text-3xl);
+}
+
+.differentiatorBody {
+  margin-top: var(--space-4);
+  font-size: var(--text-lg);
+  color: var(--color-ink-inverse-muted);
+}
+
+/* ------------------------------------------------------------------ the two lanes */
+.laneList {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: var(--space-7) 0 0;
+  list-style: none;
+}
+
+.lane {
+  padding: var(--space-5);
+  background-color: var(--color-surface-on-dark);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-lg);
+}
+
+/* The second lane is the one being sold, so it gets the weight. */
+.laneStrong {
+  background-color: var(--color-surface-on-dark-strong);
+  border-color: var(--color-accent);
+}
+
+.laneLabel {
+  font-size: var(--text-lg);
+  color: var(--color-ink-inverse-muted);
+}
+
+.laneSteps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  list-style: none;
+}
+
+.laneStep {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-on-dark-strong);
+  border-radius: var(--radius-sm);
+}
+
+/*
+ * The steps only the strong lane has: a solid chip punched out of the band, rather than the
+ * translucent one its neighbours get.
+ *
+ * The pair is the band inverted — the chip takes the band's *text* colour as its fill and
+ * the band's own colour as its text. That is what it looks like, and it is also the only
+ * spelling that survives both themes: this used to read `--color-ink` on
+ * `--color-ink-inverse`, which worked by coincidence, because ink is dark and ink-inverse is
+ * cream *in the light theme*. In dark both of those are cream and the chip rendered cream on
+ * cream at 1.00:1 — invisible. `tokens.test.ts` found it the first time it measured the
+ * second palette, which is the entire argument for measuring one.
+ */
+.laneStrong .laneStep:nth-child(n + 3) {
+  color: var(--color-surface-dark);
+  background-color: var(--color-ink-inverse);
+}
+
+.laneArrow {
+  display: inline-flex;
+  margin-inline-start: var(--space-1);
+  color: var(--color-ink-inverse-muted);
+  opacity: 0.7;
+}
+
+.laneNote {
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-ink-inverse-muted);
+}
+
+.laneClosing {
+  margin-top: var(--space-6);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink-inverse);
+}

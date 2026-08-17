@@ -1,0 +1,138 @@
+/* Loading, failure and empty — the three states every private page can be in. */
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.blocks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.block,
+.blockShort {
+  height: 5rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.blockShort {
+  height: 3rem;
+  max-width: 60%;
+}
+
+/*
+ * ------------------------------------------------------------------- shapes
+ *
+ * Three, and each is the shape of a real screen rather than the name of one. The default
+ * (`lines`) is what the blocks above already are; the other two adjust the same three
+ * blocks rather than declaring new ones, which is what keeps this a shape prop instead of
+ * three skeletons in a trench coat.
+ */
+
+/* The dashboard and the billing page: panels side by side, not stacked paragraphs. */
+.cards .blocks {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 48rem) {
+  .cards .blocks {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.cards .blockShort {
+  max-width: 100%;
+}
+
+/* A list: rows of one height, flush, the way a table reads before it arrives. */
+.table .blocks {
+  gap: var(--space-2);
+}
+
+.table .block,
+.table .blockShort {
+  height: var(--space-8);
+  border-radius: var(--radius-sm);
+  max-width: 100%;
+}
+
+/*
+ * No shimmer animation. It would be a decorative loop running on a page whose whole
+ * pitch is that nothing on it wastes the visitor's time, and it is the first thing a
+ * reduced-motion preference would have to switch off anyway.
+ */
+
+.error {
+  padding: var(--space-5);
+  border-inline-start: 3px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  background: var(--color-tint-danger);
+}
+
+.errorHeading {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink);
+}
+
+.errorBody {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink);
+}
+
+/*
+ * `.retry` and `.emptyAction` used to live here — a button and a link, hand-styled with
+ * their own padding, radius, weight and focus ring. Both are now `Button` and `ButtonLink`.
+ * A pattern that re-implements a primitive is the drift the primitive exists to prevent,
+ * and these two had already drifted: neither carried the `:disabled` handling the real
+ * button has, and the focus ring was a local 2px against the global 3px.
+ */
+
+.empty {
+  padding: var(--space-7) var(--space-5);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.emptyHeading {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink);
+}
+
+.emptyBody {
+  max-width: 40rem;
+  margin: 0 auto var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The skeleton blocks are pure fill — nothing else says a page is loading — and forced
+ * colours removes the fill, leaving an empty area indistinguishable from a page that has
+ * finished and had nothing to show. `GrayText` is the placeholder value.
+ */
+@media (forced-colors: active) {
+  .block,
+  .blockShort {
+    background: GrayText;
+  }
+
+  .error,
+  .empty {
+    border: 1px solid CanvasText;
+  }
+}

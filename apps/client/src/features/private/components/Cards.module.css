@@ -1,0 +1,283 @@
+/*
+ * The card vocabulary for the private application.
+ *
+ * One stylesheet for the summary cards rather than one per component: they are the same
+ * object seen five times, and five files would be five places for the padding to drift.
+ */
+
+/* ------------------------------------------------------------ current action */
+
+.action {
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
+}
+
+/*
+ * Waiting on the customer: ember, the one accent the whole design rations. This is the
+ * single most important thing on the page when it is true, and nothing else on the
+ * screen is allowed to compete with it.
+ */
+.actionWaiting {
+  background: var(--color-surface-dark);
+  color: var(--color-ink-inverse);
+  border-inline-start: 4px solid var(--color-accent);
+}
+
+/* We are working: quiet. Reassurance does not need to shout. */
+.actionWorking {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
+}
+
+.actionEyebrow {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.actionWaiting .actionEyebrow {
+  /* Ember on charcoal is 5.0:1 — the one place it may carry words. See tokens.css. */
+  color: var(--color-accent);
+}
+
+.actionWorking .actionEyebrow {
+  color: var(--color-ink-muted);
+}
+
+.actionHeading {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+}
+
+.actionBody {
+  max-width: 46rem;
+  margin: 0 0 var(--space-5);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+}
+
+.actionWaiting .actionBody {
+  color: var(--color-ink-inverse-muted);
+}
+
+.actionWorking .actionBody {
+  color: var(--color-ink-muted);
+}
+
+.actionCta {
+  display: inline-block;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-strong);
+  color: var(--color-on-accent);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.actionCta:hover {
+  background: var(--color-accent-deep);
+}
+
+.actionCta:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* -------------------------------------------------------------------- cards */
+
+/*
+ * A modifier on the shared `Card` primitive, not a card of its own.
+ *
+ * This file used to define its own `.card` — padding, border, radius and surface — which
+ * was the primitive re-implemented one radius step smaller and without its shadow. Five
+ * components used it, so the portal's summary cards quietly did not match the cards on
+ * every other page of the site. They now compose `<Card as="article">` and this rule is
+ * the one thing they genuinely add.
+ */
+.cardAttention {
+  border-inline-start: 3px solid var(--color-danger);
+}
+
+.cardTitle {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink);
+}
+
+.status {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+
+.statusDetail {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+}
+
+.meta {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.links a {
+  color: var(--color-accent-text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+/* ------------------------------------------------------------------ progress */
+
+.progress {
+  margin: var(--space-4) 0 0;
+}
+
+.progressTrack {
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-sunken);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-strong);
+}
+
+.progressLabel {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+}
+
+/* --------------------------------------------------------------------- score */
+
+.score {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.scoreValue {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-extrabold);
+  line-height: 1;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+}
+
+.scoreOutOf {
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* --------------------------------------------------------------- definitions */
+
+.definitions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.definitions > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.definitions dt {
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.definitions dd {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+  text-align: end;
+}
+
+/* ------------------------------------------------------------------ activity */
+
+.activity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.activityItem {
+  padding-inline-start: var(--space-4);
+  border-inline-start: 2px solid var(--color-border);
+}
+
+.activitySummary {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink);
+}
+
+/*
+ * Spacing only. The marker is `Badge` in its accent tone, whose colours are an
+ * independently measured pair in the design system — restating them here would be a second
+ * place the contrast has to be right, and the one nobody re-measures.
+ */
+.activityNew {
+  margin-inline-end: var(--space-2);
+  vertical-align: baseline;
+}
+
+.activityTime {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * A progress bar is two rectangles that differ only in fill, so forced colours reduces it to
+ * one rectangle and the reader is told nothing at all about where their project has got to.
+ * `role="progressbar"` still carries the number for a screen reader; this is the sighted
+ * half, and `Highlight` against a bordered track is what an operating system's own progress
+ * bar does.
+ */
+@media (forced-colors: active) {
+  .progressTrack {
+    border: 1px solid CanvasText;
+  }
+
+  .progressFill {
+    background: Highlight;
+  }
+}

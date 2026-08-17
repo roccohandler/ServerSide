@@ -1,0 +1,30 @@
+/*
+ * A well, not a dialog.
+ *
+ * The muted ground and the hairline are what separate the question from the panel it sits
+ * inside, and they are deliberately quiet: this appears where a button was, in the middle of
+ * a page somebody is reading, and a loud treatment on an "are you sure?" turns a moment of
+ * care into an alarm.
+ *
+ * Moved verbatim from `Project.module.css`, where `ApprovalPanel` invented it.
+ */
+
+.confirm {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+.question {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

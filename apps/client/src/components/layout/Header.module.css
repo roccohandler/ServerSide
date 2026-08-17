@@ -1,0 +1,383 @@
+/*
+ * A charcoal bar, not a white one.
+ *
+ * The brand board draws the navigation as a struck charcoal block with a single ember
+ * pill in it, and that is the arrangement that makes the primary action unmissable: on
+ * a white bar the ember button competes with five dark nav labels for attention, and on
+ * charcoal it is the only warm thing on the screen. It also gives the page a top edge —
+ * a cream page under a white sticky bar has no horizon.
+ */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-dark);
+  border-bottom: 1px solid var(--color-border-dark);
+}
+
+/* ------------------------------------------------------------------ utility strip */
+
+/*
+ * The top tier: hours, phone, account. Hidden below the desktop breakpoint, where the
+ * mobile bar carries a tap-to-call button instead and a strip of small text would be
+ * three more things to miss above the fold.
+ *
+ * A shade lighter than the bar beneath it, so the two tiers separate without a rule.
+ */
+.utility {
+  display: none;
+  background-color: var(--color-surface-dark-raised);
+  border-bottom: 1px solid var(--color-border-dark);
+}
+
+.utilityInner {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-5);
+  /*
+   * 30px. A utility strip carries 13px text and is secondary to the bar under it; the
+   * previous 36px made the two read as equals and pushed the combined header to 110px,
+   * well over the 64–80px a site header should occupy.
+   */
+  min-height: 1.875rem;
+}
+
+.hours {
+  /* Pushes itself and nothing else to the left edge. */
+  margin-inline-end: auto;
+  font-size: var(--text-xs);
+  color: var(--color-ink-inverse-muted);
+}
+
+.utilityPhone,
+.utilityLink,
+.utilityAction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-inverse);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.utilityPhone:hover,
+.utilityLink:hover,
+.utilityAction:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+/*
+ * Sign out is a button because it *does* something rather than going somewhere, and a
+ * link that performs an action is a link a screen reader announces wrongly and a middle
+ * click opens in a tab that then signs nobody out.
+ *
+ * Everything visible about it comes from the rule above, so the row does not read as two
+ * kinds of thing. This block only undoes what a `<button>` brings with it: the user-agent
+ * chrome, and the font, which is the one property a button does not inherit.
+ */
+.utilityAction {
+  padding: 0;
+  font-family: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/*
+ * The rule between the two account controls.
+ *
+ * Two 13px text links separated by a gap read as one label; a rule makes them two
+ * choices. `--space-5` matches the flex gap on `.utilityInner`, so the line sits exactly
+ * halfway and the pair stays symmetrical.
+ *
+ * `border-inline-start`, not `border-left` — rule 7 of `tokens.test.ts` fails the build
+ * on a physical side on the inline axis, and this rule would be on the wrong side of the
+ * pair in a right-to-left document.
+ */
+.utilityDivided {
+  padding-inline-start: var(--space-5);
+  border-inline-start: 1px solid var(--color-border-dark);
+}
+
+/* The number is the one thing in this strip anybody hunts for, so it gets the icon. */
+.utilityPhone svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/*
+ * The bar is a single row and has to stay one.
+ *
+ * With the phone number and the account link moved up to the strip, this row is a brand,
+ * four destinations and one button — which fits with room to spare at every width the
+ * desktop navigation is shown at. Nothing wraps: `white-space: nowrap` on the items that
+ * could, and the button never shrinks.
+ */
+.inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  /*
+   * 64px — the bottom of the 64–80px band rather than 72px in the middle of it, because
+   * this bar is not the whole header: the utility strip sits above it. The two together
+   * are what a reader loses off every screen, and 95px is the number that has to be in
+   * band, not 72.
+   */
+  min-height: 4rem;
+}
+
+/* ------------------------------------------------------------------ brand */
+
+/*
+ * The mark and the wordmark, and nothing else.
+ *
+ * The tagline that used to sit under the name was removed rather than resized: it needed
+ * 427px and the bar could offer 141px, so it rendered ellipsis-clipped above 1280px and
+ * was hidden outright below it. See the note in `Header.tsx`.
+ */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+  color: var(--color-ink-inverse);
+  text-decoration: none;
+  line-height: 1.15;
+}
+
+.brand:hover {
+  color: var(--color-ink-inverse);
+}
+
+.brandMark {
+  --mark-size: 2.125rem;
+}
+
+/*
+ * Size only. Weight, width, tracking and the uppercase all belong to the `Wordmark`
+ * component — the wordmark is one specification and this is not a second copy of it.
+ */
+.brandName {
+  font-size: var(--text-lg);
+}
+
+/* ------------------------------------------------------------------ desktop nav */
+
+.desktop {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.navList {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+/*
+ * `white-space: nowrap` is the fix for the defect that started this: "Free audit" is the
+ * only two-word item in the navigation, and without it the label broke across two lines
+ * at every width, which pushed the bar to two rows and left one nav item visibly taller
+ * than its neighbours.
+ */
+.navLink {
+  display: inline-block;
+  padding-block: var(--space-2);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-inverse);
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+
+/* The button is the last thing that should shrink, and it must never wrap. */
+.navCta {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.navLink:hover {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-border-dark);
+}
+
+/* The current page is marked by weight and an underline, not by colour alone. */
+.navLinkActive,
+.navLinkActive:hover {
+  color: var(--color-accent);
+  font-weight: var(--weight-semibold);
+  border-bottom-color: var(--color-accent);
+}
+
+/* ------------------------------------------------------------------ mobile */
+
+.mobileBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/*
+ * Tap-to-call, in the bar rather than buried in the menu. 2.75rem square clears the
+ * minimum comfortable touch target on every phone.
+ */
+.callButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-dark-raised);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+}
+
+.callButton:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* On the narrowest phones the icon carries it; the accessible name is on the link. */
+.callLabel {
+  display: none;
+}
+
+@media (min-width: 26rem) {
+  .callLabel {
+    display: inline;
+  }
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  min-height: 2.75rem;
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-inverse);
+  background-color: transparent;
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-md);
+}
+
+.toggle:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.mobileMenu {
+  border-top: 1px solid var(--color-border-dark);
+  background-color: var(--color-surface-dark-raised);
+  padding-block: var(--space-4);
+}
+
+.mobileMenu[hidden] {
+  display: none;
+}
+
+.mobileList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 0;
+  margin: 0 0 var(--space-4);
+  list-style: none;
+}
+
+.mobileLink,
+.mobileAction {
+  display: block;
+  padding: var(--space-3) var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-inverse);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.mobileLink:hover,
+.mobileAction:hover {
+  background-color: var(--color-surface-dark);
+  color: var(--color-accent);
+}
+
+/*
+ * The mobile half of `.utilityAction`, and the same argument — see the note there. The
+ * two extra declarations are the ones a `<button>` needs and an `<a>` does not: it does
+ * not stretch to its container, and it centres its own text.
+ *
+ * `text-align: start`, not `left`. Rule 7 again.
+ */
+.mobileAction {
+  width: 100%;
+  font-family: inherit;
+  text-align: start;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.mobileLinkActive {
+  color: var(--color-accent);
+  font-weight: var(--weight-semibold);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.mobileActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mobilePhone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-inverse);
+  text-decoration: none;
+}
+
+@media (min-width: 64rem) {
+  .utility {
+    display: block;
+  }
+
+  .desktop {
+    display: flex;
+  }
+
+  .mobileBar,
+  .mobileMenu {
+    display: none;
+  }
+}
+
+/*
+ * Below the wide-desktop step the strip drops the hours and keeps the two things
+ * somebody is actually looking for. The number stays at every width — it is the reason
+ * the strip exists.
+ */
+@media (max-width: 79.999rem) {
+  .hours {
+    display: none;
+  }
+}

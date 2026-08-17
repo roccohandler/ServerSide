@@ -12,7 +12,7 @@
      * type-checking we point at the TypeScript sources instead. Same module, same types.
      */
     "paths": {
-      "@jobforge/server": ["./server/src/index.ts"]
+      "@jobforge/server": ["./apps/server/src/index.ts"]
     }
   },
   "include": ["api", "vitest.config.ts"]

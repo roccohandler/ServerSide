@@ -1,17 +1,18 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "npm run build",
-  "outputDirectory": "client/dist",
+  "buildCommand": "npm run build:server && npm run build:client",
+  "outputDirectory": "apps/client/dist",
 
   "cleanUrls": true,
   "trailingSlash": false,
 
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/app/(.*)", "destination": "/app" },
-    { "source": "/admin/(.*)", "destination": "/admin" }
+    { "source": "/app/(.*)", "destination": "/app" }
   ],
+
+  "crons": [{ "path": "/api/cron/digest", "schedule": "0 16 * * *" }],
 
   "headers": [
     {
@@ -19,7 +20,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data:; font-src 'self'; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests"
+          "value": "default-src 'self'; script-src 'self' 'sha256-/UmV3Msq0qb+wrIZNi9JtxZKZsD3ctydoKoWbdSuwWQ=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests"
         },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
@@ -36,10 +37,6 @@
     },
     {
       "source": "/app/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "private, no-store" }]
-    },
-    {
-      "source": "/admin/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "private, no-store" }]
     },
     {

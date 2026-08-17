@@ -1,0 +1,235 @@
+/*
+ * The sign-in and sign-up panel.
+ *
+ * A single narrow column on a cream page. Narrow on purpose: the form is the only thing
+ * on the screen worth doing, and a wide one reads as a data-entry chore rather than as
+ * two fields and a button.
+ */
+
+/*
+ * The page gutter, which used to come from `Container`. Only the gutter: the centring and
+ * the vertical rhythm belong to `AuthLayout`'s `main`, and stacking a second set of
+ * padding here is what pushed the card off the fold. See the note in `AuthShell.tsx`.
+ */
+.panelOuter {
+  width: 100%;
+  padding-inline: var(--container-gutter);
+}
+
+/*
+ * The card, and the rhythm inside it.
+ *
+ * A flex column with one gap replaces the six `margin-bottom`/`margin-top` values its
+ * children used to carry. That is not tidying: those margins had to be right in two
+ * layouts at once once the credential card gained a second column, and a stack that spaces
+ * itself cannot disagree with itself about which of two adjacent margins wins.
+ *
+ * The gap and the block padding are keyed to the viewport's height. On a tall window they
+ * are exactly the rhythm steps they always were; on a short one they give space back to the
+ * fields, which are the thing the visitor came for. Both ends of each clamp are `--space-*`
+ * steps, so the value never leaves the scale — see the spacing rule in `tokens.test.ts`,
+ * which excludes composed values for this reason.
+ */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(var(--space-3), 2vh, var(--space-4));
+  width: 100%;
+  max-width: 27rem;
+  margin: 0 auto;
+  /*
+   * space-5 inline, and less than that on the block axis when the window is short. The card
+   * is the whole page here, so its padding competes with the fold rather than with
+   * neighbouring content — see the note in AuthShell.tsx.
+   */
+  padding: clamp(var(--space-3), 2.4vh, var(--space-5)) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+/*
+ * ============================================================================
+ * TWO COLUMNS FROM `md`, AND WHY THE NARROW COLUMN WAS NOT ENOUGH
+ * ============================================================================
+ *
+ * This card was one 27rem column, described here as narrow on purpose: the form is the only
+ * thing on the screen worth doing and a wide one reads as a data-entry chore. That reasoning
+ * is still right about the *form*, and it turned out to be wrong about the *card*, because
+ * the card carries more than the form. Measured at 1400x657 — a maximised window on a 1080p
+ * laptop, which is what prompted this — `/get-my-assessment` at its third step stacked to
+ * 835px inside 537px of usable height. Every state of the sign-up flow past step one
+ * scrolled, and no amount of tightening closes a 298px gap without deleting content.
+ *
+ * So the two things the card holds stop queueing behind each other. The pitch — the title,
+ * the lede, the reassurance — is what somebody reads once and decides on; the form is what
+ * they then work through. Side by side, the card's height is the taller of the two rather
+ * than their sum, and on the page that was 298px over it is now under.
+ *
+ * `md` (48rem) rather than `lg`: at 768px the two columns are about 330px and 350px, which
+ * is narrow for a form and still wide enough for one, and 768–960px is exactly the band of
+ * short laptop and tablet-landscape windows with the least height to spare. Below it the
+ * card is the single column it always was, on screens that are tall relative to their width.
+ *
+ * `align-items: start` so the pitch sits against the top of the card rather than floating
+ * beside the middle of a form whose height changes at every step.
+ * ============================================================================
+ */
+@media (min-width: 48rem) {
+  .split {
+    display: grid;
+    /*
+     * The form column is the wider of the two, and both are fractions rather than one of
+     * them being a fixed 27rem. A fixed form track is the obvious spelling and it fails at
+     * the step it matters: at 768px it would take its full width and leave the pitch 202px,
+     * which is a column of two-word lines. Fractions keep the ratio at every width — about
+     * 350px and 400px at the `md` step, 365px and 420px at the card's full size.
+     *
+     * `minmax(0, …)` rather than a bare fraction on both: a grid track's automatic minimum
+     * is its content, so one long unbroken word — an email address in the echo panel — would
+     * otherwise push its own column wider than the fraction it was given.
+     */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    align-items: start;
+    gap: var(--space-6);
+    max-width: 52rem;
+  }
+}
+
+/* The pitch. One unit, so it moves between the two layouts as one thing. */
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  /* A grid item's `auto` minimum would let a long word push the column past its track. */
+  min-width: 0;
+}
+
+/* The form and the ways in. Same reason, same rule. */
+.action {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(var(--space-3), 2vh, var(--space-4));
+  min-width: 0;
+}
+
+/*
+ * `--text-xl`, which is where this ended up rather than where it started.
+ *
+ * It was `--text-2xl` — up to 32px — and that is a page-title size for a page. This is a
+ * card title above its own form, in a column narrower than a paragraph of body copy, and at
+ * 32px "Get your free website assessment" set two lines of 37px before the visitor reached
+ * anything they could do. At 24px it still reads as the one heading on the screen and costs
+ * 19px less on the tallest page in the flow.
+ */
+.title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+}
+
+.lede {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+}
+
+/* The "your answers are saved" reassurance. Reassuring, so not styled as a warning. */
+.notice {
+  margin: 0;
+  padding: var(--space-3);
+  border-inline-start: 3px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  background: var(--color-tint-accent);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink);
+}
+
+.notice :global(p) {
+  margin: 0;
+}
+
+/* No margins: `.action` and `.panel` above are what space this from its neighbours. */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-ink-muted);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.dividerLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+/*
+ * The gap between the last field and the submit button.
+ *
+ * A class rather than an inline style: an inline `marginTop` is invisible to
+ * `styles/tokens.test.ts`, which only reads stylesheets — so a spacing value written there
+ * is a spacing value nothing can check. The rule that catches it is worth more than the
+ * two lines it saves.
+ */
+.submit {
+  margin-top: var(--space-4);
+}
+
+.footer {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+  text-align: center;
+}
+
+.footer a,
+.legal a {
+  color: var(--color-accent-text);
+  font-weight: var(--weight-semibold);
+}
+
+.legal {
+  /*
+   * Pulled back against the line above it. `.action`'s gap is the distance between two
+   * blocks a visitor reads separately, and this is a footnote to the button — the negative
+   * value is the gap cancelled, not a rhythm step of its own.
+   */
+  margin: calc(var(--space-2) - var(--space-3)) 0 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+  text-align: center;
+}
+
+/*
+ * `29.999rem`, not `30rem`: the `sm` step starts at 30rem, and a `max-width` of exactly
+ * 30rem matches at the same width the `min-width` rules do. See the breakpoint note in
+ * `styles/tokens.css`.
+ */
+@media (max-width: 29.999rem) {
+  .panel {
+    /*
+     * Edge to edge, and the block padding goes with the border. There is no card to inset
+     * from at this width — the panel *is* the page — so the padding was buying nothing but
+     * height on the screens with the least of it.
+     */
+    padding: clamp(var(--space-3), 1.5vh, var(--space-4)) var(--space-4);
+    border: none;
+    border-radius: 0;
+  }
+}

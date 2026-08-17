@@ -1,0 +1,193 @@
+/* Styles owned by ManagementSection. Shared offer vocabulary lives in Offer.module.css. */
+
+.careIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: var(--space-4);
+  color: var(--color-ink);
+  background-color: var(--color-tint-brand);
+  border-radius: var(--radius-md);
+}
+
+.careTitle {
+  margin-bottom: var(--space-2);
+}
+
+.careSummary {
+  color: var(--color-ink-muted);
+}
+
+.blockBody {
+  max-width: 44rem;
+  margin-top: var(--space-4);
+  color: var(--color-ink-muted);
+}
+
+.whyClosing {
+  max-width: 44rem;
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-inline-start: 4px solid var(--color-accent);
+  border-radius: var(--radius-md);
+}
+
+/* ------------------------------------------------------------------ the month */
+.loop {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: var(--space-6) 0 0;
+  list-style: none;
+}
+
+.loopItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.loopCard {
+  flex: 1;
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.loopIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-dark);
+  border-radius: var(--radius-full);
+}
+
+.loopTitle {
+  font-size: var(--text-lg);
+}
+
+.loopBody {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.loopArrow {
+  flex-shrink: 0;
+  display: flex;
+  color: var(--color-border-strong);
+  /* Points down the column on a phone, along the row on a wide screen. */
+  transform: rotate(90deg);
+}
+
+.loopItem:last-child .loopArrow {
+  display: none;
+}
+
+/* Closes the circle: the last step leads back to the first. */
+.loopBack {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+  padding: var(--space-2) var(--space-4);
+  font-weight: var(--weight-semibold);
+  color: var(--color-accent-text);
+  background-color: var(--color-tint-accent);
+  border-radius: var(--radius-full);
+}
+
+.loopBackIcon {
+  transform: rotate(180deg);
+}
+
+/* ------------------------------------------------------------------ comparison */
+.compare {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  margin-top: var(--space-6);
+}
+
+.compareColumn {
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.compareStrong {
+  border-color: var(--color-ink);
+  box-shadow: var(--shadow-md);
+}
+
+.compareLabel {
+  font-size: var(--text-lg);
+}
+
+.compareList {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.compareItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+.compareMarker {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--color-success);
+}
+
+.compareMuted {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--color-border-strong);
+}
+
+/* ------------------------------------------------------------------ responsive */
+@media (min-width: 48rem) {
+  /* The month reads left to right once there is room for it to. */
+  .loop {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .loopItem {
+    align-items: stretch;
+  }
+
+  .loopArrow {
+    align-items: center;
+    transform: none;
+  }
+
+  .loopItem:nth-child(3n) .loopArrow {
+    display: none;
+  }
+
+  .loopItem:last-child .loopArrow {
+    display: none;
+  }
+}

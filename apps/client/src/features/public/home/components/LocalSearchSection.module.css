@@ -1,0 +1,86 @@
+/* Styles owned by LocalSearchSection. Shared offer vocabulary lives in Offer.module.css. */
+
+/* ------------------------------------------------------------------ local search */
+.searchGrid {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+/* Relevance from the search all the way to the call — the point of the section. */
+.searchChain {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  margin: 0 0 var(--space-5);
+  list-style: none;
+}
+
+.searchChainItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.searchChainIndex {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-dark);
+  border-radius: var(--radius-full);
+}
+
+/* Muted rather than white: this section sits on the cream page. */
+.searchCaveat {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  max-width: 34rem;
+  padding: var(--space-4);
+  color: var(--color-ink-muted);
+  background-color: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.searchCaveatIcon {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--color-ink);
+}
+
+.searchList {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.searchItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.searchMarker {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--color-accent-text);
+}
+
+@media (min-width: 64rem) {
+  .searchGrid {
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: var(--space-8);
+  }
+}

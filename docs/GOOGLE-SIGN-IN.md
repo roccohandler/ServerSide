@@ -41,7 +41,7 @@ The browser never decides anything. It hands over an opaque credential; the serv
 decides whether it is real and who it belongs to.
 
 Verification lives in
-[`server/src/features/auth/providers/google.verifier.ts`](../server/src/features/auth/providers/google.verifier.ts)
+[`apps/server/src/features/auth/providers/google.verifier.ts`](../server/src/features/auth/providers/google.verifier.ts)
 and is tested against real RSA signatures — including forged ones — in the file beside
 it.
 
@@ -149,7 +149,7 @@ origin will not match — and that is the point.
 ## 5. What happens when it is not configured
 
 The button is **always rendered**. There is no `import.meta.env.PROD` anywhere in
-[`GoogleSignInButton.tsx`](../client/src/features/auth/components/GoogleSignInButton.tsx),
+[`GoogleSignInButton.tsx`](../apps/client/src/features/auth/components/GoogleSignInButton.tsx),
 and no branch that decides whether the option exists.
 
 | State                      | What the visitor sees                            |
@@ -176,7 +176,7 @@ first person to find out it is broken is a customer.
 
 The rule when somebody signs in with Google and an account already exists for that
 address. Implemented and commented in
-[`auth.service.ts`](../server/src/features/auth/auth.service.ts); tested in
+[`auth.service.ts`](../apps/server/src/features/auth/auth.service.ts); tested in
 `auth.service.test.ts`.
 
 | Case                                            | What happens                                                            |

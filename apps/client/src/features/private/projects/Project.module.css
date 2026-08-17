@@ -1,0 +1,369 @@
+/* The project portal: header, tabs, and the panels each tab shows. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.header {
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+}
+
+.status {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+
+.statusDetail {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+}
+
+/* --------------------------------------------------------------------- tabs */
+
+/*
+ * .tabs, .tab and .tabActive were here. They are Tabs in @jobforge/ui now — a nav of links
+ * that look like tabs, deliberately not an ARIA tablist, because these four views are real
+ * routes and that is a product decision this page has always argued for. See Tabs.tsx.
+ */
+
+/* ------------------------------------------------------------------- panels */
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.panel {
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.panelTitle {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink);
+}
+
+.panelBody {
+  max-width: 46rem;
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+}
+
+.panelBody a,
+.primaryLink {
+  color: var(--color-accent-text);
+  font-weight: var(--weight-semibold);
+}
+
+.primaryLink {
+  display: inline-block;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-strong);
+  color: var(--color-on-accent);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.primaryLink:hover {
+  background: var(--color-accent-deep);
+  color: var(--color-on-accent);
+}
+
+.primaryLink:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.panelMeta {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/*
+ * `.actionError` was here, and it was one of ten near-identical message treatments across
+ * five stylesheets. It is `components/patterns/Notice` now — the shape is the same, the
+ * `role="alert"` is decided once, and the tint no longer differs by a border width from the
+ * one on the billing page.
+ */
+
+/* The approval confirmation. Deliberately inline rather than a modal — see the panel. */
+/*
+ * `.confirm` and `.confirmBody` were here — the well `ApprovalPanel` drew around "Approve
+ * this website?". They are `components/patterns/InlineConfirm` now, unchanged, because the
+ * console needed the same shape twice over: a milestone change that rewrites what a customer
+ * sees, and a reply that leaves as email and cannot be recalled. Three occurrences is the bar.
+ */
+
+/* -------------------------------------------------------------------- tasks */
+
+.taskList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.task {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.taskText {
+  flex: 1 1 18rem;
+}
+
+.taskTitle {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+
+.taskDescription {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+}
+
+.taskAttached {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+}
+
+.taskActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.taskDoneHeading {
+  margin: var(--space-5) 0 var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.taskDone {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.taskDoneIcon {
+  flex: none;
+  color: var(--color-success);
+}
+
+/* -------------------------------------------------------------------- files */
+
+.upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.uploadProgress {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+  /* The number changes ten times a second; proportional figures make the line twitch. */
+  font-variant-numeric: tabular-nums;
+}
+
+.fileList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+/* Deliberately the same frame as `.task` — a row in a project panel looks one way. */
+.file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.fileText {
+  flex: 1 1 18rem;
+}
+
+.fileName {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+
+.fileMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+}
+
+.fileNote {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+}
+
+/* ----------------------------------------------------------------- feedback */
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+  margin-bottom: var(--space-5);
+}
+
+.composer > :global(div) {
+  width: 100%;
+}
+
+.threads {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.thread {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.threadHead {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.threadAuthor {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+
+.threadTime {
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+}
+
+.threadDone {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-tint-success);
+  color: var(--color-success);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.threadBody {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink);
+  /* Somebody's change request may contain a very long URL. */
+  overflow-wrap: anywhere;
+}
+
+.replies {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding: 0 0 0 var(--space-4);
+  border-inline-start: 2px solid var(--color-border);
+  list-style: none;
+}
+
+.reply {
+  margin: 0;
+}
+
+/*
+ * A project's status, taken into a meeting.
+ *
+ * The composer and the reply controls go — a sheet of paper cannot leave a comment — and so
+ * does the primary action, which on this screen is usually "Approve", and which is exactly
+ * the thing that must not appear to have been done because it was printed next to a tick.
+ * The thread stays: what was asked for and what was answered is most of why somebody prints
+ * this at all.
+ */
+@media print {
+  .composer,
+  .actions,
+  .primaryLink {
+    display: none;
+  }
+
+  .panel,
+  .thread,
+  .task {
+    break-inside: avoid;
+  }
+}

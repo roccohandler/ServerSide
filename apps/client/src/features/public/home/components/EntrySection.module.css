@@ -1,0 +1,109 @@
+/* Styles owned by EntrySection. Shared offer vocabulary lives in Offer.module.css. */
+
+/* ------------------------------------------------------------------ entry paths */
+.entryItem {
+  display: flex;
+}
+
+.entryCard {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.entryIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--color-ink);
+  background-color: var(--color-tint-brand);
+  border-radius: var(--radius-md);
+}
+
+.entryTitle {
+  margin-top: var(--space-4);
+  font-size: var(--text-lg);
+}
+
+.entrySituation {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The product's name.
+ *
+ * Ember text and semibold, because it is the one phrase on the card the reader has to be
+ * able to carry to the next screen — "I want the Conversion Fix" is a sentence somebody can
+ * say on the phone, and "I want the middle one" is not.
+ */
+.entryProduct {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-accent-text);
+}
+
+.entryResponse {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+/* Pushed to the bottom so the three prices line up whatever the copy above them does. */
+.entryPrice {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink);
+  border-top: 1px solid var(--color-border);
+}
+
+/* The qualification on the published figure, directly beneath it. */
+.entryNote {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+}
+
+.entryThen {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The path's own action.
+ *
+ * `margin-top` rather than `margin-top: auto`, because `.entryPrice` above already owns the
+ * auto margin that keeps the three prices aligned — two auto margins in one flex column
+ * split the free space between them and the prices stop lining up.
+ */
+.entryAction {
+  align-self: flex-start;
+  margin-top: var(--space-4);
+}
+
+/*
+ * The fourth option, for the reader who is none of the three.
+ *
+ * It carries a real button rather than a sentence, because "not sure which one you are?" with
+ * nothing to press is the same dead end the three cards just stopped being.
+ */
+.entryClosing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: flex-start;
+  max-width: 46rem;
+  margin-top: var(--space-7);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.entryClosingBody {
+  font-weight: var(--weight-medium);
+}

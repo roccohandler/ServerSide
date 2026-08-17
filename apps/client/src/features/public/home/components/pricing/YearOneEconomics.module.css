@@ -1,0 +1,141 @@
+/*
+ * ============================================================================
+ * WHAT A YEAR ACTUALLY COSTS, AND THE QUESTION THAT FOLLOWS
+ * ============================================================================
+ *
+ * The first stylesheet split out of `Pricing.module.css` under E5 — see
+ * `03_plan/deferred_work_plan.md` §3.8 and `code_design_improvement_plan.md` §0e.
+ *
+ * Ten classes, one consumer, and no other component in the repository refers to any of them.
+ * That is what made it the first: the seam was already there and cutting along it required
+ * deciding nothing. `Pricing.module.css` was 681 lines serving eight components, which is
+ * eight reasons to change one file.
+ *
+ * The block-level responsive rules travel with the block. They were 130 lines below the
+ * declarations they modify, at the bottom of a file that also holds the media queries for
+ * seven other components — which is precisely the arrangement that makes a stylesheet this
+ * size hard to edit safely.
+ *
+ * `YearOneEconomics.tsx` stopped importing `Pricing.module.css` altogether as a result — once
+ * these ten moved, it was reaching for nothing else in a 681-line file. It still imports
+ * `Offer.module.css` for the block heading and lede its siblings share, which is the two-
+ * stylesheet shape `CommercialTermsDisclosure` already had.
+ *
+ * **Measured:** eager CSS 118.4 → 118.3 kB raw, 19.2 kB gzipped unchanged. E5 was blocked for
+ * two plans on the argument that splitting a stylesheet can *increase* the total through
+ * duplication. On this file it decreased it, because the split found a dead rule — see below.
+ * ============================================================================
+ */
+
+/*
+ * Both paths, in full. A page that prices a build and a monthly service owes the reader
+ * the year-one arithmetic — leaving it as homework is how recurring costs get hidden.
+ */
+
+/*
+ * The two year-one totals and the question a reader asks while looking at them.
+ * Paired from the desktop step — see the note in `PricingBlock.tsx`.
+ */
+.yearOneRow {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+.yearOne {
+  margin-top: var(--space-7);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+/*
+ * `.yearOnePaths` was here and is deliberately not — it was dead, and it had been dead long
+ * enough that a guard failed to notice.
+ *
+ * `YearOneEconomics.tsx` reaches for `offer['yearOnePaths']`, so the rule that lays the two
+ * paths out lives in `Offer.module.css`. `Pricing.module.css`'s copy of the same name was
+ * never applied to anything, and the split is what surfaced it.
+ *
+ * `content.test.ts`'s dead-class sweep could not see it, because it matches a class *name*
+ * against the source and `offer['yearOnePaths']` is a use of that name. Which stylesheet the
+ * name came from is the part it does not check — and a 681-line file shared by eight
+ * components, several of which also import a second stylesheet, is exactly where that blind
+ * spot hides something.
+ */
+
+.yearOnePath {
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.yearOnePathLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.yearOneFigure {
+  margin-top: var(--space-2);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+}
+
+.yearOneBreakdown {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.yearOneNote {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------- the question underneath */
+.whyNot {
+  max-width: 46rem;
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.whyNotQuestion {
+  font-size: var(--text-lg);
+}
+
+.whyNotAnswer {
+  margin-top: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+@media (min-width: 64rem) {
+  /* The year-one totals, and the question they raise, level with each other. */
+  .yearOneRow {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: var(--space-7);
+  }
+
+  /*
+   * Level with the year-one figures, so it takes their rule and drops the card treatment
+   * it needed when it sat alone underneath them.
+   */
+  .whyNot {
+    max-width: none;
+    margin-top: var(--space-7);
+    padding: var(--space-6) 0 0;
+    background-color: transparent;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0;
+  }
+}

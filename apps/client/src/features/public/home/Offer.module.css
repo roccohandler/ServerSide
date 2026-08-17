@@ -1,0 +1,277 @@
+/*
+ * ============================================================================
+ * THE OFFER'S SHARED VOCABULARY
+ * ============================================================================
+ *
+ * What is left of a 3,048-line stylesheet after each section took the classes only it
+ * uses. Everything here is used by components in **two or more** different sections, which
+ * is the whole rule for what stays: a class one component uses is that component's
+ * business, and a class five components use is a decision about the offer surface.
+ *
+ * The three clusters worth naming, because they are why this file still exists:
+ *
+ *   - **`blockHeading` / `blockLede`** — the heading pair every offer block renders, ten
+ *     components deep. Duplicating it per section is how two of them end up different sizes.
+ *   - **`care*`** — the plan-feature list, shared by conversion, management, growth,
+ *     the guarantee and the offer stack.
+ *   - **`stackListItem` / `stackMarker` / `priceIncludes`** — the ticked list, which both
+ *     price cards and the care plans render.
+ *
+ * Everything below is built from the tokens in `styles/tokens.css` and the primitives in
+ * `components/ui` — no new colours, no new spacing scale, no new card.
+ * ============================================================================
+ */
+
+/* ------------------------------------------------------------------ ongoing care */
+
+/* Shared by the management, outcome, stack and testimonial grids. */
+.careItem {
+  display: flex;
+}
+
+.careCard {
+  width: 100%;
+}
+
+.careList {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.careListItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+.careMarker {
+  flex-shrink: 0;
+  margin-top: 0.2em;
+  color: var(--color-accent-text);
+}
+
+.careNote {
+  max-width: 46rem;
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-inline-start: 4px solid var(--color-ink);
+  border-radius: var(--radius-md);
+}
+
+/* ------------------------------------------------------------------ sub-blocks */
+
+/* A section-within-a-section, for arguments that belong to the recurring service. */
+.block {
+  margin-top: var(--space-9);
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--color-border);
+}
+
+.stackListItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+.stackMarker {
+  flex-shrink: 0;
+  margin-top: 0.2em;
+  color: var(--color-accent-text);
+}
+
+.stackSummaryLine {
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  text-align: center;
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-dark);
+  border-radius: var(--radius-lg);
+}
+
+/* ------------------------------------------------------------------ included */
+.included,
+.pricing {
+  margin-top: var(--space-9);
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--color-border);
+}
+
+.blockHeading {
+  font-size: var(--text-2xl);
+}
+
+.blockLede {
+  max-width: 42rem;
+  margin-top: var(--space-3);
+  font-size: var(--text-lg);
+  color: var(--color-ink-muted);
+}
+
+.includedList {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: var(--space-6) 0 0;
+  list-style: none;
+}
+
+.includedItem {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.includedIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--color-accent-text);
+  background-color: var(--color-tint-accent);
+  border-radius: var(--radius-md);
+}
+
+.includedTitle {
+  margin-bottom: var(--space-1);
+}
+
+.includedBody {
+  color: var(--color-ink-muted);
+}
+
+.priceIncludes {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.termsSummary:hover .blockHeading {
+  color: var(--color-accent-text);
+}
+
+/* ------------------------------------------------------------------ cancellation */
+.exitList {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.exitItem {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.exitMarker {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--color-success);
+  background-color: var(--color-tint-success);
+  border-radius: var(--radius-full);
+}
+
+.exitTitle {
+  font-size: var(--text-lg);
+}
+
+.exitBody {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.exitClosing {
+  max-width: 46rem;
+  margin-top: var(--space-6);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+}
+
+/* ------------------------------------------------------------------ testimonials */
+
+/* Rendered on the brand surface, so the card is a translucent panel rather than white. */
+.testimonial {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5);
+  background-color: var(--color-surface-on-dark);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-lg);
+}
+
+.quote {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.quote::before {
+  content: '\201C';
+}
+
+.quote::after {
+  content: '\201D';
+}
+
+.quoteAuthor {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+  padding-top: var(--space-4);
+  font-weight: var(--weight-semibold);
+}
+
+.quoteBusiness {
+  font-weight: var(--weight-regular);
+  color: var(--color-ink-inverse-muted);
+}
+
+/* ------------------------------------------------------------------ responsive */
+@media (min-width: 48rem) {
+  .laneList,
+  .compare,
+  .matchPanels,
+  .variantGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .includedList {
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: var(--space-7);
+  }
+
+  .termsList,
+  .exitList {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* The paired panels: the after-launch choice, year-one paths, who-does-what. */
+  .careChoice,
+  .yearOnePaths,
+  .respGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

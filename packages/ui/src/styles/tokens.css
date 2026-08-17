@@ -1,0 +1,586 @@
+/*
+ * Design tokens — the JobForge "Ember Charcoal" identity.
+ *
+ * Every colour, size, radius and shadow used anywhere in the application is defined
+ * here. Components reference these variables and never hard-code a raw value, so the
+ * whole site can be re-skinned from this one file.
+ *
+ * ============================================================================
+ * THE BRAND, AND THE ONE THING THAT MAKES IT WORK
+ * ============================================================================
+ *
+ * Four colours, and only four: charcoal for authority, cream for premium warmth,
+ * a single ember accent reserved for moments of momentum, and white for the cards
+ * that lift off the page. No gradients, no noise, no fifth colour.
+ *
+ * The discipline that keeps it honest is that **ember is rationed**. It marks the
+ * primary action and nothing else competes for it. The moment a second element earns
+ * ember, the first one stops meaning anything.
+ *
+ * ## The accent is three values, not one — and they are not interchangeable
+ *
+ * Ember Orange is a light colour. That is what makes it read as heat, and it is also
+ * why it cannot do every job a brand colour is usually asked to do:
+ *
+ *   --color-accent        #E85C24  Ember. Graphic use: rules, marks, icons, bars,
+ *                                  and text *on charcoal* (5.0:1). Never body text
+ *                                  on a light ground — it is 3.0:1 on cream.
+ *   --color-accent-strong #C4471A  Ember Deep. Solid fills that carry white text
+ *                                  (4.9:1) — the primary button is this, not Ember.
+ *   --color-accent-deep   #A2360F  The hover and pressed state of a fill (6.8:1).
+ *   --color-accent-text   #B03E14  The AA-safe ember. Links and inline emphasis on
+ *                                  cream (5.1:1) and white (5.9:1).
+ *
+ * Reaching for the wrong one is the single easiest way to fail an audit here, so each
+ * is named for the job rather than for its lightness. If a new rule needs ember, pick
+ * by asking what sits on what — the ratios below are measured, not estimated.
+ *
+ * ## Contrast
+ *
+ * Colour pairs were checked against WCAG 2.2 AA (4.5:1 for body text, 3:1 for large
+ * text and interface borders). The comment next to each foreground colour records the
+ * contrast ratio it achieves on its intended background. Where a value is documented
+ * as graphic-only it is because it does not clear 4.5:1, and it must not be used for
+ * body copy however good it looks.
+ * ============================================================================
+ */
+
+/*
+ * ------------------------------------------------------------- brand palette
+ *
+ * The four literals from the brand board, and the whole identity:
+ *
+ *   Forge Charcoal  #17191E      Ember Orange  #E85C24
+ *   Cast Cream      #F3EEE4      Pure White    #FFFFFF
+ *
+ * They are documented here rather than declared as `--brand-*` custom properties, and
+ * that is a considered trade rather than an oversight. A foundation layer earns its keep
+ * when the semantic tokens *reference* it, so that changing one literal changes twenty
+ * values. Here every semantic token below is a single measured value chosen for a
+ * measured contrast ratio against a measured ground — `--color-accent-text` is not
+ * "ember, darker", it is the one ember that clears 4.5:1 on cream — so an indirection
+ * would resolve to nothing a re-skin could safely turn.
+ *
+ * Four unreferenced custom properties are four declarations in every visitor's first
+ * stylesheet, which this repository has a payload budget about. A comment costs nothing:
+ * it is stripped at build time and it is where a reader looks anyway.
+ */
+
+:root {
+  /* ---------------------------------------------------------------- colour */
+
+  /* Text on light grounds */
+  --color-ink: #17191e; /* 15.2:1 on cream, 17.6:1 on white */
+  --color-ink-muted: #5f5b54; /* 5.8:1 on cream, 6.8:1 on white, 5.3:1 on --color-surface-muted */
+
+  /*
+   * Text on charcoal grounds.
+   *
+   * Cream rather than pure white: on a dark ground the warm value is what stops the
+   * palette reading as a generic dark theme. It is 15.2:1 on charcoal, so the warmth
+   * costs nothing.
+   *
+   * `--color-on-accent` is separate and is *white*, because cream on Ember Deep is
+   * 4.3:1 and fails. Anything sitting on an ember fill uses that one.
+   */
+  --color-ink-inverse: #f3eee4; /* 15.2:1 on charcoal */
+  --color-ink-inverse-muted: #b9b4aa; /* 8.5:1 on charcoal */
+  --color-on-accent: #ffffff; /* 4.9:1 on --color-accent-strong */
+
+  /* Surfaces — a warm ramp. White is the *raised* value here, not the ground. */
+  --color-surface: #ffffff; /* cards, forms, anything that should lift */
+  --color-page: #f3eee4; /* the page ground (Cast Cream) */
+  --color-surface-muted: #eae4d8; /* alternating bands and wells on the cream page */
+  --color-surface-sunken: #dfd8c9; /* deeper wells, table stripes */
+
+  /* Charcoal surfaces — the structural bands: header, footer, section anchors. */
+  --color-surface-dark: #17191e;
+  --color-surface-dark-raised: #22252c; /* a card sitting on a charcoal band */
+
+  /*
+   * Translucent panels on a charcoal band.
+   *
+   * Cream at low alpha rather than white: on a warm charcoal the white version reads grey
+   * and drains the panel of the warmth the rest of the palette spends effort establishing.
+   *
+   * These are alpha rather than a solid value on purpose — a charcoal band is sometimes
+   * `--color-surface-dark` and sometimes carries an image or an ember glow behind it, and a
+   * solid panel would only match on the first. `-strong` is the emphasised form: the tier
+   * being sold, an icon tile, a chip.
+   */
+  --color-surface-on-dark: rgb(243 238 228 / 8%);
+  --color-surface-on-dark-strong: rgb(243 238 228 / 14%);
+
+  /*
+   * Brand — charcoal. Structure rather than decoration.
+   *
+   * Note that this is now within a hair of `--color-ink`, which it was not when the
+   * brand was blue. That is deliberate, and it has one consequence worth stating: the
+   * brand colour can no longer carry "this is interactive". Links and controls take
+   * their affordance from `--color-accent-text` and from underlines. A rule that says
+   * `color: var(--color-brand)` on a light ground is now invisible as a link.
+   */
+  --color-brand: #17191e; /* 15.2:1 on cream */
+  --color-brand-strong: #0e1013;
+  --color-tint-brand: #e3e0da; /* the soft brand wash: chips, wells, quiet panels */
+
+  /*
+   * Accent — ember. The call-to-action colour, and the only warm colour on the page,
+   * so the primary action is never ambiguous. Read the three-value note at the top of
+   * this file before using any of them.
+   */
+  --color-accent: #e85c24; /* 5.0:1 on charcoal. Graphic use on light grounds. */
+  --color-accent-strong: #c4471a; /* fills carrying white text (4.9:1) */
+  --color-accent-deep: #a2360f; /* the hover/pressed state of the above (6.8:1 with white) */
+  --color-accent-text: #b03e14; /* 5.1:1 on cream, 5.9:1 on white */
+  --color-tint-accent: #faede5; /* warm ember wash */
+
+  /*
+   * The ground behind a dialog or a drawer.
+   *
+   * Charcoal at 55%, not black. A neutral black scrim over a cream page reads as grey haze;
+   * the brand's own dark value keeps the warmth and makes the panel look lit rather than cut
+   * out. 55% is the point at which body text behind it stops being readable — which is the
+   * whole job, since `aria-modal` is telling a screen reader the same thing.
+   *
+   * Added with `Modal` and `Drawer` in one change, which is the rule this file states: add
+   * the token in the same commit as the thing that needs it. Two consumers, both here.
+   */
+  --color-scrim: rgb(23 25 30 / 55%);
+
+  /* Lines */
+  --color-border: #e4ded2; /* hairline dividers — decorative, not an interface border */
+  --color-border-strong: #8c8375; /* 3.2:1 on cream, 3.7:1 on white — inputs, controls */
+  --color-border-dark: #333740; /* dividers inside a charcoal band */
+
+  /* Feedback */
+  /*
+   * The focus ring has to be visible on cream, on white *and* on charcoal, which no
+   * value in the palette proper manages — Ember itself is 3.0:1 on cream, under the
+   * 3:1 floor once rounding is against you. This is ember pulled one step deeper: it
+   * still reads as the brand and it clears 3:1 on all three grounds.
+   */
+  --color-focus: #d9501c; /* 3.6:1 on cream, 4.1:1 on white, 4.3:1 on charcoal */
+  --color-success: #14663f; /* 6.1:1 on cream, 7.0:1 on white */
+  --color-tint-success: #e4f0e7;
+  /*
+   * Deeper and cooler than the accent on purpose. An error red that sits next to a
+   * burnt-orange brand has to be told apart from it at a glance, and the two were
+   * three points apart in hue before this was pushed down.
+   */
+  --color-danger: #9b1c14; /* 7.1:1 on cream, 8.2:1 on white */
+  --color-tint-danger: #fbe9e6;
+
+  /* ---------------------------------------------------------------- type */
+
+  /*
+   * Archivo — a grotesk with squared terminals and industrial proportions that stays
+   * sharp from a billboard to a browser tab. Loaded in `index.html` with `display=swap`
+   * behind a preconnect, and the system stack below it is a genuine fallback rather
+   * than a formality: nothing on the first screen depends on the web font having
+   * arrived, and the metrics are close enough that the swap does not reflow the page.
+   */
+  --font-sans:
+    'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Fluid sizes in rem so they still respond to the reader's browser font size. */
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  /*
+   * The supporting-paragraph size — every section lede on every page.
+   *
+   * It capped at 1.25rem (20px), which is large-print for body copy: 16–18px is the band,
+   * and 20px at a 1.55 leading gives 31px of height per line on the paragraph that appears
+   * directly under every heading on the site. Measured on `/contact`, the three-line lede
+   * cost 93px of a first screen that had already spent 198px on the header and the section
+   * padding above it.
+   *
+   * The cap moves to 1.125rem (18px) — top of the band rather than above it. The lower
+   * bound comes down to 1.0625rem so the token matches `--text-base` on a phone, where a
+   * lede set larger than the body text it introduces buys nothing.
+   */
+  --text-lg: clamp(1.0625rem, 1rem + 0.28vw, 1.125rem);
+  --text-xl: clamp(1.25rem, 1.15rem + 0.5vw, 1.5rem);
+  --text-2xl: clamp(1.5rem, 1.32rem + 0.9vw, 2rem);
+  --text-3xl: clamp(1.875rem, 1.6rem + 1.4vw, 2.5rem);
+  /*
+   * The display size — every `h1` on the site.
+   *
+   * This was raised to 3.5rem (56px) on the reasoning that a desktop *hero* headline wants
+   * the middle of the 48–64px band. That reasoning was right about the hero and wrong about
+   * the token, because the same token titles every inner page, where an `h1` is a page
+   * title rather than a hero statement. At 56px with a 1.15 leading, the two-line title on
+   * `/contact` cost 129px of a first screen that was already 56% spent before it.
+   *
+   * 3rem (48px) is the bottom of the band for the hero and the right size for a page title,
+   * and it keeps a clear step above `h2` at 40px. The fluid slope is untouched, so nothing
+   * below 1086px of viewport changes at all.
+   */
+  --text-4xl: clamp(2.125rem, 1.7rem + 2.1vw, 3rem);
+
+  --leading-tight: 1.15;
+  --leading-snug: 1.3;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.7;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800; /* headings and the wordmark */
+
+  --tracking-tight: -0.02em;
+  --tracking-wordmark: -0.018em; /* the measured wordmark value: −1.8% */
+  --tracking-wide: 0.06em;
+  /*
+   * The kicker. A 12px uppercase label at this tracking is the most repeated element in
+   * the identity after the wordmark, and it only works because the tracking is extreme —
+   * at anything under about 0.25em it reads as shouting rather than as a label.
+   */
+  --tracking-kicker: 0.32em;
+
+  /* ---------------------------------------------------------------- space */
+
+  /*
+   * 4px base scale.
+   *
+   * `--space-hair` sits below the base step and is not part of the rhythm. It exists for
+   * the two places that need an inset rather than a gap — the track a segmented control's
+   * thumb sits inside, and a print contents row — where the 4px step reads as a gap and
+   * doubles the density of a list. Reach for it only when 4px is visibly wrong.
+   */
+  --space-hair: 0.125rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 2.5rem;
+  --space-8: 3rem;
+  --space-9: 4rem;
+  --space-10: 5rem;
+  --space-11: 6rem;
+
+  /* Vertical rhythm between page sections, tighter on small screens. */
+  --section-gap: clamp(3rem, 2rem + 5vw, 5.5rem);
+
+  /* ---------------------------------------------------------------- shape */
+
+  /*
+   * Softer than the previous set by 2–4px at every step. The identity is built on solid
+   * struck shapes — a stamped tile, a slab, a filled bar — and those need enough radius
+   * to read as deliberate rather than as a rectangle that missed.
+   */
+  /* For controls small enough that `--radius-sm` would round them into a blob: a 16px
+     checkbox at 8px radius is a circle with corners. */
+  --radius-xs: 2px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+
+  /* Warm shadows. A neutral-grey shadow reads as dirt on a cream ground. */
+  --shadow-sm: 0 1px 2px rgb(23 25 30 / 6%);
+  --shadow-md: 0 4px 12px rgb(23 25 30 / 8%);
+  --shadow-lg: 0 12px 32px rgb(23 25 30 / 12%);
+  /* For white cards on the cream page, where the lift is what separates them. */
+  --shadow-card: 0 1px 2px rgb(23 25 30 / 4%), 0 8px 24px rgb(23 25 30 / 6%);
+
+  /* ---------------------------------------------------------------- layout */
+
+  /*
+   * 80rem — 1280px — rather than the 70rem it was.
+   *
+   * The old value was the single most expensive number in the stylesheet. It capped every
+   * row on the site at 1120px however wide the monitor, which is what starved the header:
+   * the brand tagline needed 427px and the bar could offer it 141px, so it rendered
+   * clipped at every desktop width. The same cap squeezed the hero's copy column narrow
+   * enough that a 50px headline set three lines.
+   *
+   * 1280px is the low end of the common 1200–1440 range, chosen rather than something
+   * wider because the prose containers below are what protect line length, and a page that
+   * grows past about 1280 starts to feel like a spreadsheet on a large display.
+   */
+  --container-width: 80rem;
+  /*
+   * Nudged with it, so running text stays near 70 characters as the outer container grows.
+   * This is the value that actually governs readability; `--container-width` governs layout.
+   */
+  --container-narrow: 48rem;
+  --container-gutter: clamp(1rem, 0.5rem + 2.5vw, 2rem);
+
+  /* ------------------------------------------------------------ breakpoints */
+
+  /*
+   * Custom properties cannot be used inside a media query, so these cannot be tokens in
+   * the enforceable sense. They are recorded here as the single stated source anyway, and
+   * `styles/tokens.test.ts` fails the build on any media query in the codebase whose width
+   * is not one of them — which is the part that actually stops the scale drifting.
+   *
+   * Six steps, every one of them earning its place:
+   *
+   *   xs   26rem /  416px  the narrowest useful step: a second word fits beside an icon
+   *                        (the header's "Call" label). One rule uses it.
+   *   sm   30rem /  480px  large phone. Stacked buttons stop being full-width.
+   *   md   48rem /  768px  tablet. Two-column grids. The most-used step by a distance.
+   *   lg   60rem /  960px  content-dense three-column grids — evidence citations, audit
+   *                        categories, teardown findings. These need more room than `md`
+   *                        and should not have to wait for the desktop navigation at `xl`.
+   *   xl   64rem / 1024px  desktop navigation appears.
+   *   2xl  80rem / 1280px  wide desktop.
+   *
+   * Mobile-first: every step is a `min-width`. The three `max-width` exceptions are all
+   * "undo this below the step that introduces it" rules, and they use the step minus
+   * 0.001rem so there is no width at which both match and no width at which neither does.
+   */
+
+  /* ---------------------------------------------------------------- layering */
+
+  /*
+   * Every `z-index` in the application comes from this scale.
+   *
+   * Stacking is the one part of CSS where a local decision has global consequences, and
+   * the failure mode is always the same: somebody needs to sit above one thing, picks a
+   * number bigger than the one they can see, and the number ratchets until the codebase
+   * is full of `9999`. Naming the layers makes the question "what is this above?" rather
+   * than "what number is big enough?".
+   *
+   * The three layers the application had, and the three it named as gaps: "a dropdown
+   * belongs at 30, a modal at 50, a toast at 60". Those three are declared now, in the same
+   * change as the components that need them — DECISION 029 — which is the rule this comment
+   * has always stated rather than an exception to it.
+   *
+   * The ordering is the whole content of the scale, so it is worth reading as one:
+   *
+   *   10  raised    content lifted within its own section
+   *   20  sticky    the site header, the demo disclosure bar
+   *   30  dropdown  a menu or a popover anchored to a control
+   *   40  overlay   the skip link, and anything that covers the header
+   *   50  modal     a dialog and the scrim behind it
+   *   60  toast     above everything, including a dialog — a notification about the thing
+   *                 you are doing has to be readable while you are doing it
+   *
+   * The one that is not obvious is `overlay` sitting *below* `modal`: the skip link is
+   * chrome, and a dialog is a thing the reader asked for. A skip link painted over an open
+   * dialog would be the site interrupting itself.
+   */
+  --z-raised: 10; /* content lifted within its own section */
+  --z-sticky: 20; /* the site header, the demo disclosure bar */
+  --z-dropdown: 30; /* a menu or popover anchored to a control */
+  --z-overlay: 40; /* the skip link, and anything that covers the header */
+  --z-modal: 50; /* a dialog, and the scrim behind it */
+  --z-toast: 60; /* above everything, a dialog included */
+
+  /* ---------------------------------------------------------------- motion */
+
+  /*
+   * Durations carry their own easing because they are consumed in the `transition`
+   * shorthand. `--ease-emphasised` is separate because keyframe animations set easing
+   * apart from duration.
+   */
+  --transition-fast: 120ms ease;
+  --transition-base: 180ms ease;
+
+  /* A gentle overshoot-free curve: quick to leave, slow to settle. */
+  --ease-emphasised: cubic-bezier(0.2, 0.6, 0.2, 1);
+
+  /*
+   * What this document is painted in, told to the browser.
+   *
+   * `light dark` — both, in that order — is what makes native form controls, scrollbars
+   * and the space beyond the page follow the theme instead of staying white behind a dark
+   * page. The two `[data-theme]` rules below narrow it to one when the reader has chosen.
+   */
+  color-scheme: light dark;
+}
+
+/*
+ * ============================================================================
+ * THE SAME IDENTITY WITH THE LIGHTS OFF
+ * ============================================================================
+ *
+ * Every token above is a light-mode value, and this file used to say so — both `index.html`
+ * documents declared `color-scheme: light` under a comment calling it "a committed light
+ * design". That was a decision, it is superseded here, and the reason is worth stating
+ * rather than deleting: a committed design is a defensible thing to have, and it stops
+ * being defensible when the commitment is to ignore something the reader's browser is
+ * already telling us.
+ *
+ * `prefers-color-scheme: dark` arrives on a large share of every page load this site has
+ * ever served. A light-only answer was not the absence of a feature; it was a wrong answer
+ * to a question that had been asked. See `03_plan/deferred_work_plan.md` §1.
+ *
+ * ## Every value below was measured, not inverted
+ *
+ * This is the part that took the time. The note at the top of this file explains why there
+ * is no foundation colour tier: each semantic token is an independently measured contrast
+ * value against a specific ground, not a derivation of a brand hue. That is exactly what
+ * makes a dark theme expensive here — none of these are the light value with its channels
+ * flipped, because a flipped `#B03E14` is not a colour that clears anything in particular.
+ *
+ * `tokens.test.ts` computes AA over **both** palettes from these hex values, against every
+ * foreground/background pair any stylesheet in the repository states together. A guessed
+ * value fails the build, which is the only reason a second palette is safe to have.
+ *
+ * ## What changes role, and what does not
+ *
+ *   `--color-ink` / `--color-brand`   invert. They are "the colour text is" and they follow
+ *                                     the ground.
+ *   `--color-ink-inverse`             does **not** invert. It is the text on a charcoal
+ *                                     band, and a charcoal band is still charcoal at night.
+ *   `--color-brand-strong`            does not invert either — it is a deep fill carrying
+ *                                     `--color-ink-inverse`, and it goes deeper still so it
+ *                                     stays distinguishable from a page that is now dark.
+ *   `--color-on-accent`               inverts from white to charcoal, because the ember fill
+ *                                     it sits on gets *brighter* rather than deeper. A dark
+ *                                     interface wants a lit primary button, not a dimmed one.
+ *   `--color-accent`                  does not change at all. It was always the value chosen
+ *                                     to work on charcoal (5.0:1) and the whole page is
+ *                                     charcoal now.
+ *   the `--shadow-*` set              is rewritten. Charcoal at 6% alpha over charcoal is
+ *                                     invisible, so elevation stops reading entirely — and
+ *                                     elevation is the only thing separating a card from the
+ *                                     page once both are dark.
+ *
+ * ## Declared twice, deliberately
+ *
+ * `@media (prefers-color-scheme: dark)` answers the operating system. `[data-theme='dark']`
+ * answers an explicit choice on a light system. The media block is narrowed by
+ * `:not([data-theme='light'])` so that choosing light on a dark system wins, which is the
+ * case a single unguarded media query gets wrong.
+ *
+ * `light-dark()` would express all of this once instead of twice and it is not used, for one
+ * reason: a browser that does not know the function drops the declaration, and a dropped
+ * *token* is not a fallback to light — it is a page with no colours at all. The duplication
+ * degrades to the light theme on anything old, and gzip charges almost nothing for a block
+ * that is structurally identical to one thirty lines above it.
+ * ============================================================================
+ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    /* Text. Cream rather than white — the warmth is the identity, and it is 15.5:1 here. */
+    --color-ink: #f3eee4; /* 15.5:1 on --color-page */
+    --color-ink-muted: #aba69c; /* 7.4:1 on page, 6.7:1 on surface, 6.2:1 on surface-muted */
+    --color-ink-inverse: #f3eee4; /* unchanged: 16.8:1 on the deeper dark band */
+    --color-ink-inverse-muted: #b9b4aa; /* 9.4:1 on --color-surface-dark */
+    --color-on-accent: #17191e; /* 5.0:1 on --color-accent-strong — see the note above */
+
+    /*
+     * Surfaces — the same warm ramp, read from the other end. The page is no longer the
+     * lightest thing on it: a card *lifts* by getting lighter, exactly as white lifts off
+     * cream, and the wells go deeper instead of dirtier.
+     */
+    --color-surface: #1d2027; /* cards, forms, anything that should lift */
+    --color-page: #15171c; /* the page ground */
+    --color-surface-muted: #24272f; /* alternating bands and wells */
+    --color-surface-sunken: #0f1115; /* deeper wells, table stripes */
+
+    /*
+     * The structural band goes *below* the page rather than above it. In light mode a
+     * charcoal header is an inversion; here there is nothing to invert, so the band earns
+     * its separation by being the darkest surface in the document.
+     */
+    --color-surface-dark: #0b0d11;
+    --color-surface-dark-raised: #22252c;
+
+    /* Brand. `--color-brand` is the colour structure is drawn in, so it follows the ground. */
+    --color-brand: #f3eee4; /* 11.8:1 on --color-tint-brand */
+    --color-brand-strong: #05070a; /* a deep fill carrying cream at 17.4:1 */
+    --color-tint-brand: #2a2e36; /* the quiet panel, one step above the page */
+
+    /*
+     * Ember, unchanged where it was already right. `--color-accent` was chosen for charcoal
+     * and the page is charcoal; `-strong` becomes that same lit ember because a fill on a
+     * dark page reads by being brighter than it, and `-deep` — the hover — goes brighter
+     * still rather than darker, which is the direction reversal a dark theme actually needs.
+     */
+    --color-accent: #e85c24; /* 5.5:1 on the dark band, 5.1:1 on the page */
+    --color-accent-strong: #e85c24; /* fills carrying --color-on-accent (5.0:1) */
+    --color-accent-deep: #ff8551; /* the hover/pressed state of the above (7.3:1) */
+    --color-accent-text: #f4763f; /* 6.4:1 on page, 5.8:1 on surface */
+    --color-tint-accent: #2b1810; /* the ember wash, banked down */
+
+    /* Blacker and heavier: a 55% charcoal veil over a charcoal page separates nothing. */
+    --color-scrim: rgb(5 6 8 / 70%);
+
+    /* Lines */
+    --color-border: #2b2f37;
+    --color-border-strong: #948b7d; /* 5.3:1 on page, 4.9:1 on surface — inputs, controls */
+    --color-border-dark: #333740;
+
+    /* Feedback */
+    --color-focus: #f4763f; /* 6.4:1 on page, 5.8:1 on surface, 7.0:1 on the dark band */
+    --color-success: #63c68c; /* 8.5:1 on page, 7.7:1 on --color-tint-success */
+    --color-tint-success: #12251a;
+    --color-danger: #f2887c; /* 7.3:1 on page, 7.0:1 on --color-tint-danger */
+    --color-tint-danger: #2c1512;
+
+    /*
+     * Elevation, rebuilt. The light set is charcoal at 4–12%, which over a charcoal page is
+     * nothing at all — so a card would sit on the page with no edge and no lift, and the
+     * whole surface ramp above would be doing the separating on its own. Black at a much
+     * higher alpha is what reads on a dark ground.
+     */
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow-md: 0 4px 12px rgb(0 0 0 / 45%);
+    --shadow-lg: 0 12px 32px rgb(0 0 0 / 55%);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 35%), 0 8px 24px rgb(0 0 0 / 40%);
+
+    color-scheme: dark;
+  }
+}
+
+/* An explicit dark choice on a light system. Same values; see the note above on why twice. */
+:root[data-theme='dark'] {
+  --color-ink: #f3eee4;
+  --color-ink-muted: #aba69c;
+  --color-ink-inverse: #f3eee4;
+  --color-ink-inverse-muted: #b9b4aa;
+  --color-on-accent: #17191e;
+
+  --color-surface: #1d2027;
+  --color-page: #15171c;
+  --color-surface-muted: #24272f;
+  --color-surface-sunken: #0f1115;
+
+  --color-surface-dark: #0b0d11;
+  --color-surface-dark-raised: #22252c;
+
+  --color-brand: #f3eee4;
+  --color-brand-strong: #05070a;
+  --color-tint-brand: #2a2e36;
+
+  --color-accent: #e85c24;
+  --color-accent-strong: #e85c24;
+  --color-accent-deep: #ff8551;
+  --color-accent-text: #f4763f;
+  --color-tint-accent: #2b1810;
+
+  --color-scrim: rgb(5 6 8 / 70%);
+
+  --color-border: #2b2f37;
+  --color-border-strong: #948b7d;
+  --color-border-dark: #333740;
+
+  --color-focus: #f4763f;
+  --color-success: #63c68c;
+  --color-tint-success: #12251a;
+  --color-danger: #f2887c;
+  --color-tint-danger: #2c1512;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 45%);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 55%);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 35%), 0 8px 24px rgb(0 0 0 / 40%);
+
+  color-scheme: dark;
+}
+
+/* An explicit light choice. Every token above already holds it; this is the browser's half. */
+:root[data-theme='light'] {
+  color-scheme: light;
+}

@@ -1,0 +1,47 @@
+<!--
+  The Forge Stamp, struck in ember — the owner console's tab icon.
+
+  Same geometry as `apps/client/public/favicon.svg`; the colour roles swap. The customer
+  app is a charcoal tile with an ember bar; this is an ember tile with a charcoal bar. At
+  16px in a tab strip that is instantly tellable apart, and it is still one logo.
+
+  Values are tokens.css colours, written out because a tab icon is requested before any
+  stylesheet exists: #C4471A accent-strong, #F3EEE4 ink-inverse, #17191E ink.
+
+  Keep this comment short — sharp sniffs the SVG signature from the head of the file, and
+  a long preamble pushes `<svg` out of that window. The rationale lives in
+  `docs/design-system.md`. Change one copy of this geometry and change all of them.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" role="img" aria-label="JobForge console">
+  <!-- The struck tile — ember here, charcoal on the customer app. -->
+  <rect width="88" height="88" rx="24" fill="#C4471A" />
+  <!-- The F's upper arm, tilted forward. -->
+  <rect
+    x="39"
+    y="18.5"
+    width="32"
+    height="11.5"
+    rx="5.75"
+    transform="rotate(-14 39 24.25)"
+    fill="#F3EEE4"
+  />
+  <!-- The F's lower arm — the ember bar on the customer app, struck charcoal here. -->
+  <rect
+    x="39"
+    y="37"
+    width="28"
+    height="11.5"
+    rx="5.75"
+    transform="rotate(-14 39 42.75)"
+    fill="#17191E"
+  />
+  <!-- The J, drawn last so its cap closes over both arms. -->
+  <path
+    d="M39 18.5 L39 56 Q39 67 28.5 67"
+    fill="none"
+    stroke="#F3EEE4"
+    stroke-width="12"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

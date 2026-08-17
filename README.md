@@ -9,11 +9,21 @@ Two jobs: get a service-business owner to make contact, and then take them from 
 assessment through payment, the build, their approval and launch without either side
 losing track of whose move it is.
 
-- **`client/`** — React + TypeScript (Vite). The public marketing site and the private
-  customer workspace at `/app`, sharing one design system and nothing else
-- **`server/`** — Express + TypeScript API: leads, accounts, assessments, projects,
-  tasks, feedback, billing and deployments
+An npm-workspaces monorepo: **two frontends, one backend, and one security boundary.**
+
+- **`apps/client/`** — React + TypeScript (Vite). The public marketing site and the private
+  customer workspace at `/app`
+- **`apps/admin/`** — the owner console. Its own bundle, its own origin, its own sign-in.
+  Never imported by the client and never importing it — ESLint fails the build both ways
+- **`apps/server/`** — Express + TypeScript API: leads, accounts, assessments, projects,
+  tasks, feedback, conversations, billing and deployments. **The only security boundary**
+- **`packages/ui/`** — `@jobforge/ui`, the tokens and primitives both frontends render
+- **`packages/shared/`** — `@jobforge/shared`, the API contract both frontends speak
 - **`api/`** — a nine-line Vercel adapter around the Express app
+
+Capabilities are a shared language, not a shared decision: a frontend uses them to choose
+what to _render_, and `apps/server` re-checks them against the session to decide what is
+actually _allowed_. Only the second one counts. **No bundle contains a secret.**
 
 The lifecycle and the architecture behind it are documented in
 [docs/CUSTOMER-PLATFORM.md](docs/CUSTOMER-PLATFORM.md); Google sign-in in
@@ -43,16 +53,21 @@ The lifecycle and the architecture behind it are documented in
 
 ## Requirements
 
-| Tool    | Version   | Notes                                                 |
-| ------- | --------- | ----------------------------------------------------- |
-| Node.js | ≥ 20.19   | Developed on 22.x                                     |
-| npm     | ≥ 10      | Workspaces are used; npm ships with Node              |
-| MongoDB | any 6/7/8 | Atlas free tier is enough. Only needed to store leads |
-| Resend  | free plan | Only needed to email lead notifications               |
+| Tool    | Version   | Notes                                                               |
+| ------- | --------- | ------------------------------------------------------------------- |
+| Node.js | ≥ 20.19   | Developed on 22.x                                                   |
+| npm     | ≥ 10      | Workspaces are used; npm ships with Node                            |
+| MongoDB | any 6/7/8 | Atlas free tier is enough. **Required for anything behind sign-in** |
+| Resend  | free plan | Only needed to email lead notifications                             |
 
-MongoDB and Resend are optional in development. Without them the site runs, the pages
-work, and the contact endpoint returns a clear "call or email instead" error rather
-than pretending a submission succeeded.
+**Resend** is genuinely optional in development: without it, leads are stored and the
+owner notification is what fails, which is logged and visible on the lead.
+
+**MongoDB is not.** It backed one thing when this started — the contact form — and now
+backs accounts, projects, feedback and the owner console. Without `MONGODB_URI` the
+marketing site still runs and every page still renders, but **signing in returns 503**
+along with everything else that reads or writes. That is deliberate rather than
+degraded: nothing here claims a success it cannot back up.
 
 ---
 
@@ -108,7 +123,7 @@ the Stripe product description. It used to be a "care plan" in six of those, whi
 commodity framing the whole offer argues against — `content.test.ts` now sweeps both
 workspaces' source and fails the build if the phrase returns to anything a customer can read.
 
-**Every figure lives in `client/src/config/pricing.ts` as a number**, formatted on the way
+**Every figure lives in `apps/client/src/config/pricing.ts` as a number**, formatted on the way
 out. `content/offer.ts` derives its strings from it and remains the only file in the
 _content_ layer allowed to name a figure — a test sweeps every string and fails the build
 on any figure the config did not produce, because "$299 on the homepage, $149 in an FAQ" is
@@ -128,7 +143,7 @@ starts the Growth Partner subscription. Payment state is advanced only by verifi
 webhooks. To turn it on:
 
 1. Set `STRIPE_SECRET_KEY` (test mode) in `.env`, then run
-   `npm run stripe:setup --workspace server` — it idempotently creates or verifies the
+   `npm run stripe:setup --workspace @jobforge/server` — it idempotently creates or verifies the
    whole catalog (two Products: Website Build and Growth Partner; four Prices: $2,450
    deposit, $2,450 launch payment, $299/month, $2,990/year) and prints the
    `STRIPE_PRICE_*` lines to paste into `.env`. It refuses live-mode keys. When
@@ -151,7 +166,7 @@ with an instruction.
 ### Replacing the placeholders
 
 Values that have not been decided are written as `[PLACEHOLDER]` tokens in
-`client/src/content/`. **In development the site shows a banner listing every one still in
+`apps/client/src/content/`. **In development the site shows a banner listing every one still in
 place**; it disappears from the production bundle entirely. Until a value is replaced the
 phone number and email render as plain text rather than dead `tel:`/`mailto:` links, and
 `ProfessionalService` structured data is omitted rather than published with a fake name.
@@ -236,6 +251,10 @@ happens, so no secret exists to leak.
 | `VITE_API_BASE_URL` | no       | empty                   | Leave empty for same-origin. Set only if the API is on another domain |
 | `VITE_SITE_URL`     | for prod | `http://localhost:5173` | Canonical URLs, Open Graph URLs and `sitemap.xml`                     |
 
+Both frontends read `VITE_API_BASE_URL`, and on the console's Vercel project it is
+**required** — the console is on its own origin, so an empty base makes it fetch itself.
+One name, two projects, two values.
+
 **The server refuses to start in production if any required variable is missing**, and
 prints all of them at once rather than failing on the first request.
 
@@ -250,7 +269,7 @@ Run from the repository root.
 | `npm run dev`                               | Express and Vite together, with reload                        |
 | `npm run dev:client` / `npm run dev:server` | One side only                                                 |
 | `npm run build`                             | Builds the server, then the client and its per-route SEO HTML |
-| `npm start`                                 | Runs the built server (`server/dist/server.js`)               |
+| `npm start`                                 | Runs the built server (`apps/server/dist/server.js`)          |
 | `npm test`                                  | Vitest in watch mode, both workspaces                         |
 | `npm run test:run`                          | Vitest once                                                   |
 | `npm run typecheck`                         | `tsc --noEmit` over server, client and the Vercel adapter     |
@@ -275,7 +294,7 @@ npx vitest run --root client           # frontend only
 
 **No test needs MongoDB or a Resend account.** The lead service depends on a
 `LeadRepository` interface and an `EmailService` interface, and the suite injects
-in-memory implementations from `server/src/testing/fakes.ts`. The HTTP tests drive the
+in-memory implementations from `apps/server/src/testing/fakes.ts`. The HTTP tests drive the
 real Express app — helmet, CORS, body limits, validation, rate limiting and the central
 error handler all included — with only those two external dependencies replaced.
 
@@ -299,9 +318,9 @@ What is covered:
 npm run build
 ```
 
-1. `tsc` compiles the server to `server/dist/`.
-2. `vite build` bundles the client to `client/dist/`.
-3. `client/scripts/build-seo.ts` writes **one real HTML file per route** — `index.html`,
+1. `tsc` compiles the server to `apps/server/dist/`.
+2. `vite build` bundles the client to `apps/client/dist/`.
+3. `apps/client/scripts/build-seo.ts` writes **one real HTML file per route** — `index.html`,
    `services.html`, `about.html`, `contact.html`, `portfolio.html`, `privacy.html`,
    `terms.html`, `404.html` — each with its own `<title>`, description, canonical link
    and Open Graph tags, plus `sitemap.xml` and `robots.txt`.
@@ -362,6 +381,11 @@ the whole flow is testable offline. Production refuses to start without one.
 
 ## Vercel deployment
 
+There are **two Vercel projects** against this one repository. This section covers the
+first — the marketing site, the customer portal and `/api`. The owner console is the
+second, and it has its own guide: [apps/admin/DEPLOY.md](apps/admin/DEPLOY.md). Deploy this
+one first; the console is useless without an API to talk to.
+
 `vercel.json` is already configured — build command, output directory, the `/api/*`
 rewrite, `cleanUrls`, cache headers and a content security policy.
 
@@ -371,10 +395,13 @@ rewrite, `cleanUrls`, cache headers and a content security policy.
 
    > **Root Directory must stay at the repository root.** It is the one setting
    > `vercel.json` cannot control — and Vercel reads `vercel.json` _from_ the Root
-   > Directory, so pointing it at `client/` makes the whole file invisible. Vercel then
-   > auto-detects the Vite app inside `client/`, builds only the frontend, looks for
-   > `dist` in the wrong place, and never deploys `/api` at all. If a build succeeds but
-   > ends with `No Output Directory named "dist" found`, this is why.
+   > Directory, so pointing it at `apps/client/` makes the whole file invisible. Vercel
+   > then auto-detects the Vite app inside it, builds only the frontend, looks for `dist`
+   > in the wrong place, and never deploys `/api` at all. If a build succeeds but ends
+   > with `No Output Directory named "dist" found`, this is why.
+   >
+   > The console's project is the exception and sets Root Directory to `apps/admin` on
+   > purpose — it has its own `vercel.json` there. See its guide.
 
 3. **Settings → Environment Variables**, for Production _and_ Preview:
 
@@ -392,8 +419,14 @@ rewrite, `cleanUrls`, cache headers and a content security policy.
    VITE_SITE_URL=https://yourdomain.com
    ```
 
-   Leave `CLIENT_ORIGIN` and `VITE_API_BASE_URL` unset — the site and the API share one
-   origin, so no CORS configuration is needed.
+   Leave `VITE_API_BASE_URL` unset — the site and the API share one origin.
+
+   `CLIENT_ORIGIN` stays unset **until the console is deployed**, and then it must list
+   the console's origin: `CLIENT_ORIGIN=https://yourdomain.com,https://admin.yourdomain.com`.
+   Left unset, the server derives the `admin.` subdomain from `PUBLIC_SITE_URL` (or
+   `VITE_SITE_URL` when that is unset) as a fallback, so a conventional setup works without
+   it. It is never `*` — these requests carry the session cookie, and the server refuses to
+   start if you set it to one.
 
 4. Deploy, then check in order:
    - `https://yourdomain.com/api/health` → `{"success":true,"data":{"status":"ok"}}`
@@ -407,8 +440,12 @@ rewrite, `cleanUrls`, cache headers and a content security policy.
 
 `api/index.ts` is the only Vercel-aware file and it contains no logic. To host on
 Railway, Render, Fly or a VPS: set the same environment variables, run `npm run build`,
-start `node server/dist/server.js`, serve `client/dist` as static files, and set
-`CLIENT_ORIGIN` if the two end up on different domains.
+start `node apps/server/dist/server.js`, serve `apps/client/dist` and `apps/admin/dist` as
+static files behind their own hostnames, and list both in `CLIENT_ORIGIN` if any of them
+end up on a different domain from the API.
+
+Whatever the host, the console's hostname must stay a subdomain of the API's — that is a
+cookie rule, not a Vercel one. See [apps/admin/DEPLOY.md](apps/admin/DEPLOY.md).
 
 ---
 
@@ -431,21 +468,32 @@ start `node server/dist/server.js`, serve `client/dist` as static files, and set
 
 ## Troubleshooting
 
-| Symptom                                                        | Cause and fix                                                                                                                                                                |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vercel build fails within seconds, during `npm install`        | `NODE_ENV=production` is set in Vercel's environment variables. Delete it and redeploy — npm omits devDependencies when it sees it, so `tsc` and `vite` are never installed. |
-| Build succeeds, then `No Output Directory named "dist" found`  | Vercel's Root Directory is set to `client/` instead of the repository root, so `vercel.json` is never read. Fix it in **Settings → General → Root Directory**.               |
-| Only the client builds — no `@jobforge/server` line in the log | Same cause as above: Vercel auto-detected the Vite app and ignored `vercel.json`.                                                                                            |
-| Server exits with "Invalid environment configuration"          | A required production variable is missing. The message lists all of them.                                                                                                    |
-| Form returns 503 "we could not save your request"              | `MONGODB_URI` is unset or unreachable. This is deliberate — the form never claims success it cannot back up.                                                                 |
-| Lead is in MongoDB but no email arrived                        | Resend failed. Look for `lead.notification_failed` in the logs, and for `notificationStatus: "failed"` on the lead. Persisting first is intentional; see below.              |
-| Resend returns "domain not verified"                           | The domain in `RESEND_FROM_EMAIL` is not verified, or the DNS records have not propagated.                                                                                   |
-| MongoDB times out on Vercel but works locally                  | Atlas Network Access does not include `0.0.0.0/0`.                                                                                                                           |
-| Form returns 429                                               | The rate limit is doing its job. Defaults are 5 per IP per 15 minutes; tune with `LEAD_RATE_LIMIT_*`.                                                                        |
-| `/about` 404s on Vercel                                        | `cleanUrls` is not applied, or the build did not run `build-seo`. Check the build log for `[build-seo] wrote 17 pages`.                                                      |
-| Link previews show the wrong title                             | `VITE_SITE_URL` was not set at build time, or the build ran without step 3. Redeploy.                                                                                        |
-| Browser console: blocked by CSP                                | The CSP in `vercel.json` allows same-origin only. Adding a third-party script means adding it there deliberately.                                                            |
-| Dev banner listing placeholders                                | Working as intended. It never ships to production.                                                                                                                           |
+| Symptom                                                                | Cause and fix                                                                                                                                                                                                                    |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vercel build fails within seconds, during `npm install`                | `NODE_ENV=production` is set in Vercel's environment variables. Delete it and redeploy — npm omits devDependencies when it sees it, so `tsc` and `vite` are never installed.                                                     |
+| Build succeeds, then `No Output Directory named "dist" found`          | Vercel's Root Directory is set to `apps/client/` instead of the repository root, so `vercel.json` is never read. Fix it in **Settings → General → Root Directory**.                                                              |
+| Only the client builds — no `@jobforge/server` line in the log         | Same cause as above: Vercel auto-detected the Vite app and ignored `vercel.json`.                                                                                                                                                |
+| Server exits with "Invalid environment configuration"                  | A required production variable is missing. The message lists all of them.                                                                                                                                                        |
+| 503 "we cannot reach our records right now" — **including on sign-in** | `MONGODB_URI` is unset or unreachable. Deliberate: nothing claims a success it cannot back up. Storage backs accounts and projects now, not just the contact form, so an unset URI stops sign-in rather than degrading the site. |
+| Lead is in MongoDB but no email arrived                                | Resend failed. Look for `lead.notification_failed` in the logs, and for `notificationStatus: "failed"` on the lead. Persisting first is intentional; see below.                                                                  |
+| Resend returns "domain not verified"                                   | The domain in `RESEND_FROM_EMAIL` is not verified, or the DNS records have not propagated.                                                                                                                                       |
+| MongoDB times out on Vercel but works locally                          | Atlas Network Access does not include `0.0.0.0/0`.                                                                                                                                                                               |
+| Form returns 429                                                       | The rate limit is doing its job. Defaults are 5 per IP per 15 minutes; tune with `LEAD_RATE_LIMIT_*`.                                                                                                                            |
+| `/about` 404s on Vercel                                                | `cleanUrls` is not applied, or the build did not run `build-seo`. Check the build log for `[build-seo] wrote 17 pages`.                                                                                                          |
+| Link previews show the wrong title                                     | `VITE_SITE_URL` was not set at build time, or the build ran without step 3. Redeploy.                                                                                                                                            |
+| Browser console: blocked by CSP                                        | The CSP in `vercel.json` allows same-origin only. Adding a third-party script means adding it there deliberately.                                                                                                                |
+| Dev banner listing placeholders                                        | Working as intended. It never ships to production.                                                                                                                                                                               |
+
+The console has three failure modes of its own, and all three look like "it does not work"
+against a perfectly healthy server. They are one table in
+[apps/admin/DEPLOY.md](apps/admin/DEPLOY.md) rather than scattered here, but these are the
+ones worth knowing before you pick domains:
+
+| Symptom                                                           | Cause                                                                                                                                                                              |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sign-in succeeds and the console immediately shows the form again | The console is not a subdomain of the API's domain. `SameSite=Lax` is evaluated on the registrable domain, so two `*.vercel.app` names are two _sites_ and no cookie is ever sent. |
+| Every console screen: "The server could not be reached"           | `VITE_API_BASE_URL` is unset on the console's project, or its `connect-src` does not list the API origin.                                                                          |
+| "That request could not be verified as coming from this site"     | The console's origin is not in `CLIENT_ORIGIN`. Both dev servers are allowed by default; production derives the `admin.` subdomain when `CLIENT_ORIGIN` is unset.                  |
 
 To find leads whose notification failed:
 
@@ -460,32 +508,64 @@ db.leads.find({ notificationStatus: 'failed' }).sort({ createdAt: -1 });
 ```
 .
 ├── api/index.ts              Vercel adapter — no business logic
-├── client/
-│   ├── public/               favicon, OG image, demo thumbnails
-│   ├── scripts/build-seo.ts  per-route HTML, sitemap.xml, robots.txt
-│   └── src/
-│       ├── app/              App shell and routes
-│       ├── components/
-│       │   ├── layout/       header, footer, page shell
-│       │   ├── marketing/    reusable CTA banner
-│       │   └── ui/           button, card, field, icon, contact link
-│       ├── config/           routes, browser-visible env
-│       ├── content/          ← ALL COPY LIVES HERE
-│       ├── features/         home, services, portfolio, faq, about, contact, legal
-│       ├── hooks/            useDocumentMeta
-│       ├── lib/              api client, placeholders, contact links
-│       ├── styles/           design tokens, global CSS
-│       └── types/            API contract, content shapes
-└── server/src/
-    ├── app/                  app assembly, route table
-    ├── config/               validated environment
-    ├── features/leads/       controller, service, repository, model, schema, email
-    ├── features/subscribers/ the same shape, for PlayBook workbook requests
-    ├── infrastructure/       mongoose connection, Resend transport
-    ├── middleware/           errors, 404, rate limit, request context
-    ├── lib/                  AppError, logger, API envelope, HTML escaping
-    └── testing/              in-memory fakes
+├── apps/
+│   ├── client/               the marketing site and the customer portal
+│   │   ├── public/           favicon, OG image, demo thumbnails
+│   │   ├── scripts/          build-seo, check-budget, capture-previews, fetch-media
+│   │   └── src/
+│   │       ├── app/          App root, error boundary
+│   │       │   ├── routes/   one module per audience: marketing, auth, private, demo
+│   │       │   └── router/   RequireAuth — a navigation guard, NOT security
+│   │       ├── components/
+│   │       │   ├── layout/   header, footer, the three page shells
+│   │       │   ├── marketing/ reusable CTA banner, evidence strip
+│   │       │   └── patterns/ AppState · ScoreScale · DeviceFrame
+│   │       ├── config/       routes, pricing, trades, browser-visible env
+│   │       ├── content/      ← ALL COPY LIVES HERE
+│   │       ├── features/     three boundaries, each with its own layout and guard:
+│   │       │   ├── public/   23 marketing and lead-capture features
+│   │       │   ├── auth/     sign-in, sign-up, password, verification
+│   │       │   ├── private/  the customer portal
+│   │       │   └── assessment/ a capability the boundaries share, not a boundary
+│   │       ├── hooks/        useSubmitStatus · useDocumentMeta · useInViewOnce
+│   │       ├── lib/          lead capture, analytics, placeholders
+│   │       ├── session/      AuthProvider and useAuth — a shared root, above features
+│   │       └── types/        content shapes, contract sync test
+│   ├── admin/                the owner console — its own bundle, its own origin
+│   │   ├── DEPLOY.md         the second Vercel project, and the same-site cookie rule
+│   │   └── src/
+│   │       ├── app/          App root, ConsoleLayout (charcoal, says "Internal")
+│   │       ├── components/   Loading · Failure · Empty
+│   │       ├── config/       the console's own routes
+│   │       ├── features/     inbox · projects · accounts · signIn
+│   │       ├── lib/          api (fetch + credentials), endpoints
+│   │       └── session/      AdminSessionProvider — same identity, one extra capability
+│   └── server/src/
+│       ├── app/              app assembly, route table
+│       ├── config/           validated environment
+│       ├── features/         fourteen, each with an index.ts public API:
+│       │                     auth · leads · subscribers · projects · billing · activity
+│       │                     feedback · tasks · deployments · dashboard · admin
+│       │                     conversations · onboarding · assessments
+│       ├── infrastructure/   mongoose connection, Resend transport
+│       ├── middleware/       errors, 404, rate limit, CSRF, request context
+│       ├── lib/              AppError, logger, API envelope, HTML escaping
+│       └── testing/          in-memory fakes
+└── packages/
+    ├── ui/                   @jobforge/ui — tokens, primitives, useResource
+    └── shared/               @jobforge/shared — the API contract both frontends speak
 ```
+
+Two rules hold this shape together, and both fail the build when broken:
+
+- **A feature is entered through its `index.ts`.** Anything deeper is private. The one
+  sanctioned exception is `app/routes/*`, whose `lazy()` calls reach concrete modules on
+  purpose — routing a dynamic import through a barrel merges chunks `check-budget.ts`
+  exists to keep apart.
+- **Nothing points back up.** `components/` may not import `features/`; `admin` and
+  `private` may not import each other (DECISION 021).
+
+See [CLAUDE.md](CLAUDE.md) for the layer diagram and the composition rules.
 
 ### API
 
@@ -554,61 +634,77 @@ be part of the build or the plan must name the offer artefact that already says 
 pointer breaks and the build fails, which is the mechanism that stops this becoming a second
 description of what is sold.
 
-| File                                      | What it holds                                                      |
-| ----------------------------------------- | ------------------------------------------------------------------ |
-| `client/src/content/capabilities.ts`      | The library, categories, lifecycle, integrations and the page copy |
-| `client/src/lib/capabilityMatch.ts`       | Every matching rule, pure, taking the library as an argument       |
-| `client/src/config/trades.ts`             | The twelve trades and how each trade's work is bought              |
-| `client/src/content/capabilities.test.ts` | Thirty guards, including the ones that keep the labels honest      |
+| File                                                                        | What it holds                                                      |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `apps/client/src/features/public/capabilities/content/capabilities.ts`      | The library, categories, lifecycle, integrations and the page copy |
+| `apps/client/src/features/public/capabilities/utils/capabilityMatch.ts`     | Every matching rule, pure, taking the library as an argument       |
+| `apps/client/src/config/trades.ts`                                          | The twelve trades and how each trade's work is bought              |
+| `apps/client/src/features/public/capabilities/content/capabilities.test.ts` | Thirty guards, including the ones that keep the labels honest      |
 
-`lib/capabilityMatch.ts` deliberately does **not** import the library. That is what lets its
+`capabilities/utils/capabilityMatch.ts` deliberately does **not** import the library. That is what lets its
 tests use fixtures — the cases worth testing are a trade with nothing written for it, a
 dependency that does not resolve, a filter that matches nothing, and none of those exist in the
 real content — and it makes it structurally impossible for the library to be dragged into the
 eager bundle.
 
-### The internal admin surface
+### The owner console
 
-`/admin`, for staff. **[`docs/owner-decisions-required.md` DECISION 019 and 020](docs/owner-decisions-required.md)
-record the two open questions about it.**
+**A separate application** — `apps/admin`, its own bundle on its own origin. It used to be
+`/admin` inside the customer app; DECISION 027 moved it, and a customer's browser now never
+downloads a byte of it. **[`docs/owner-decisions-required.md` DECISION 019, 020 and 027](docs/owner-decisions-required.md)**
+record the reasoning and the open questions.
 
-| Route                        | What it is                                                         |
-| ---------------------------- | ------------------------------------------------------------------ |
-| `/admin`                     | Every project: milestone, whether an account is attached, payments |
-| `/admin/projects/:projectId` | One project — milestone, URLs, tasks, feedback, activity           |
-| `/admin/accounts`            | Every account: role, verification, sign-in methods                 |
+| Route                  | What it is                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| `/`                    | **The inbox** — everybody waiting on a reply, prospects and clients in one list |
+| `/projects`            | Every project: milestone, whether an account is attached, payments              |
+| `/projects/:projectId` | One project — milestone, URLs, tasks, feedback, activity                        |
+| `/accounts`            | Every account: role, verification, sign-in methods                              |
+
+The inbox is the front page because "who have I not got back to?" is the question the owner
+actually opens this to answer. A lead from the contact form and a change request on a preview
+are the same job from that side of the desk, so they are one list — see
+`apps/server/src/features/conversations`, which assembles it as a read model over both rather
+than as a third collection that could disagree with either.
+
+Deploying it is three settings that have to agree, and one hard constraint: **the console must
+be a subdomain of the domain serving the API**, or the session cookie is never sent and sign-in
+silently loops. Both are in [`apps/admin/DEPLOY.md`](apps/admin/DEPLOY.md).
 
 **Getting in.** There is no sign-up path to an admin role and no button that grants one. Run:
 
 ```bash
-npm run admin:create --workspace server -- --check   # report, change nothing
-npm run admin:create --workspace server              # create, or promote an existing account
+npm run admin:create --workspace @jobforge/server -- --check   # report, change nothing
+npm run admin:create --workspace @jobforge/server              # create, or promote an existing account
 ```
 
 It reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from the server-side environment — see
 `.env.example`. **The running application never loads either**: they are deliberately absent from
-`server/src/config/env.ts`, so no service or error response can reach them. Never give either a
+`apps/server/src/config/env.ts`, so no service or error response can reach them. Never give either a
 `VITE_` prefix; Vite inlines `VITE_*` into the public bundle.
 
 **Where authorization actually happens**, because a route guard looks like it:
 
-| Layer           | Where                                    | What it does                                  |
-| --------------- | ---------------------------------------- | --------------------------------------------- |
-| Authentication  | `createAttachUser` (session cookie)      | Resolves who is asking                        |
-| Role            | `requireAdmin` on the `/api/admin` mount | **404 to everyone else, including anonymous** |
-| Resource        | `createProjectAccess` per project route  | The id has to resolve                         |
-| Navigation only | `client/src/app/router/RequireAdmin.tsx` | Decides which page renders. **Not security**  |
+| Layer           | Where                                     | What it does                                               |
+| --------------- | ----------------------------------------- | ---------------------------------------------------------- |
+| Authentication  | `createAttachUser` (session cookie)       | Resolves who is asking                                     |
+| Role            | `requireAdmin` on the `/api/admin` mount  | **404 to everyone else, including anonymous**              |
+| Capability      | `requireCapability` per route             | `customer:read:any` to read, `feedback:write:any` to reply |
+| Resource        | `createProjectAccess` per project route   | The id has to resolve                                      |
+| Navigation only | `apps/admin/src/session/AdminSession.tsx` | Decides which page renders. **Not security**               |
 
-`RequireAdmin` reads a role out of a JavaScript variable and anybody can edit that. Defeating it
-renders an admin layout whose every request comes back 404. That is the design; the route being
-unguessable is not part of it either.
+The console's session provider reads a capability out of a JavaScript variable, and anybody can
+edit that. Defeating it renders a console whose every request comes back 404. That is the
+design — and the "enforces every capability somewhere" guard in `admin.api.test.ts` is what
+keeps the _server's_ half of the table honest: a capability nothing checks fails the build until
+somebody either wires it up or writes down why not.
 
 **What is deliberately absent:** no impersonation ("view as customer"), no role control in the
 UI, no password reset for other accounts, no account deletion, and no Stripe controls — the
 billing endpoints are behind a bearer token and would mean shipping it to a browser. Each
 omission is argued at its call site.
 
-`server/src/features/admin/admin.api.test.ts` is where unauthorized access is tested explicitly:
+`apps/server/src/features/admin/admin.api.test.ts` is where unauthorized access is tested explicitly:
 anonymous, customer, and a customer trying the admin verb on their own project.
 
 ### The demonstration sites
@@ -617,7 +713,7 @@ Five example websites — one per trade — running inside this application rath
 deployments. `/demo/hvac`, `/demo/hvac/services`, `/demo/hvac/contact`, and the same for
 plumbing, roofing, landscaping and electrical.
 
-They render **outside `SiteLayout`**, under `features/demo/DemoLayout.tsx`, so no
+They render **outside `SiteLayout`**, under `features/public/demo/DemoLayout.tsx`, so no
 JobForge header or footer appears on them — a demonstration of somebody else's website
 cannot be wrapped in this one's navigation. Each trade's content is its own lazy chunk;
 `content/demos/` is deliberately absent from the content barrel, and a test fails the build
@@ -632,15 +728,15 @@ on any of it. Phone numbers are in the 555-01xx block reserved for fiction, emai
 because it does not import it.
 
 **The photography and video are licensed stock, and every asset has a provenance row.**
-`client/scripts/media.manifest.json` records each photograph's source page, author and
-licence; `client/scripts/fetch-media.ts` downloads and encodes the committed variants
+`apps/client/scripts/media.manifest.json` records each photograph's source page, author and
+licence; `apps/client/scripts/fetch-media.ts` downloads and encodes the committed variants
 (AVIF+WebP, per-role byte budgets); [`docs/MEDIA-CREDITS.md`](docs/MEDIA-CREDITS.md) is the
 human-readable record. A test asserts the assets on disk, the manifest and the credits file
 agree exactly. Imagery illustrates kinds of work — no caption or alt text claims a job, a
 customer or a crew, which would be evidence. Every product image on the marketing pages —
 the hero's framed shot, the portfolio cards and showcase, the industry and teardown
 previews — is a real screenshot of the demos, captured from this repository's own build by
-`client/scripts/capture-previews.ts` (`npm run capture`) at desktop and true phone width,
+`apps/client/scripts/capture-previews.ts` (`npm run capture`) at desktop and true phone width,
 disclosure bar included; the same run renders `og-image.png`. The full inventory and the
 rules for adding a visual are in [`docs/VISUAL-ASSETS.md`](docs/VISUAL-ASSETS.md).
 
@@ -684,10 +780,10 @@ tells a spammer which trick worked.
 `acmeplumbing.com` gains a scheme rather than an error. Rejecting a real customer's
 phone number costs more than accepting an odd one.
 
-**Content is data, not JSX.** Every word lives in `client/src/content/`. Changing the
+**Content is data, not JSX.** Every word lives in `apps/client/src/content/`. Changing the
 business name, the service list, the FAQ or the geography is an edit to a data file.
 
-**The offer has one source of truth.** `client/src/content/offer.ts` holds the name of
+**The offer has one source of truth.** `apps/client/src/content/offer.ts` holds the name of
 the offer, its ten components, the ongoing service, the value stack, the prices, the
 published terms and the guarantee. The homepage sections and the services page both render
 that file, so the two can never describe different services, and testing a different offer
@@ -717,7 +813,7 @@ built, maintained and improved. `content.test.ts` sweeps every string in the con
 layer for the claims this business has decided not to make, so a hurried edit that adds
 "guaranteed leads" fails the build rather than reaching a customer.
 
-**The hero asks for three things, then three more.** `features/contact/HeroLeadForm.tsx`
+**The hero asks for three things, then three more.** `features/public/contact/HeroLeadForm.tsx`
 splits the ask so somebody who arrived already convinced can start in the time it takes
 to read the headline. It is progressive _disclosure_, not progressive capture: the API
 takes a whole lead or nothing, so there is exactly one request, sent at the end of step
@@ -791,8 +887,8 @@ Stated plainly rather than discovered later:
   covered by interface-level tests with injected fakes, and the wiring has been type
   checked and built — but the first real submission after deploying is still the
   first real submission. Do it before pointing traffic at the site.
-- **The inquiry-type slugs are duplicated** between `client/src/types/api.ts` and
-  `server/src/features/leads/lead.types.ts`. Both files have a test pinning the list, so
+- **The inquiry-type slugs are duplicated** between `apps/client/src/types/api.ts` and
+  `apps/server/src/features/leads/lead.types.ts`. Both files have a test pinning the list, so
   drift fails the build rather than reaching production. A shared package would cost a
   build step on every deploy for fifteen lines.
 - **The legal pages have not been reviewed by a lawyer**, and say so on screen. They are

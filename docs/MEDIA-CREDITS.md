@@ -6,10 +6,10 @@ the one at download time, and a dated record of what was downloaded under which 
 is the defence against both licence drift and bogus claims. See
 `docs/DEMO-QUALITY-UPGRADE.md` §4 for the licence analysis.
 
-Generated from `client/scripts/media.manifest.json` (the machine-readable source of
+Generated from `apps/client/scripts/media.manifest.json` (the machine-readable source of
 truth); `demos.test.ts` asserts the two stay in step and that every asset on disk has
 a row here. All assets were modified from the originals: cropped to slot aspect
-ratios, resized, and re-encoded (AVIF/WebP) by `client/scripts/fetch-media.ts`.
+ratios, resized, and re-encoded (AVIF/WebP) by `apps/client/scripts/fetch-media.ts`.
 
 Downloaded: 2026-08-12. Licence tier verified per asset at download time
 (free tier, not Unsplash+; Pexels License; video pages checked for the Mixkit-style
@@ -84,7 +84,7 @@ restricted tier — none applied).
 
 ## Screenshots
 
-The portfolio thumbnails (`client/src/assets/portfolio/*.webp`) and `og-image.png` are
+The portfolio thumbnails (`apps/client/src/assets/portfolio/*.webp`) and `og-image.png` are
 not stock media: they are captures of this repository's own pages, produced by
-`client/scripts/capture-previews.ts`. Their photographic content is the demo imagery
+`apps/client/scripts/capture-previews.ts`. Their photographic content is the demo imagery
 credited above.

@@ -2,7 +2,7 @@
 
 **This file is authoritative.** It records what the business sells, for how much, and on
 what terms. Every price, term and promise rendered by the site derives from
-`client/src/config/pricing.ts` and `client/src/content/offer.ts`, and those files must
+`apps/client/src/config/pricing.ts` and `apps/client/src/content/offer.ts`, and those files must
 agree with this one and with the written client agreement.
 
 If you are an agent working in this repository: **do not change any decision below on your
@@ -99,7 +99,7 @@ tiers and two care plans to **one flagship build and one care plan**:
   landing pages, copy alignments and testing-where-traffic-supports-it in three other
   places, and what remained was an undefined "priority response".
 
-All figures live in **`client/src/config/pricing.ts`** as numbers, formatted on the way
+All figures live in **`apps/client/src/config/pricing.ts`** as numbers, formatted on the way
 out. `content/offer.ts` derives `prices` from it and remains the only file in the content
 layer that names a figure. A test sweeps every string in the content layer and fails the
 build on any figure the config did not produce.
@@ -347,7 +347,7 @@ in the months (most months, for most local businesses) where traffic is too thin
 
 ## 9. Response guarantee
 
-`responseGuarantee` in `client/src/content/growth.ts`. **Live** (`enabled: true`).
+`responseGuarantee` in `apps/client/src/content/growth.ts`. **Live** (`enabled: true`).
 Unchanged by the simplification:
 
 | Term                    | Value                                                            |
@@ -403,7 +403,7 @@ conversion figure, and the site's whole credibility position depends on not doin
 
 ## 12. The three ways in
 
-`entryPaths` in `client/src/content/entry.ts`.
+`entryPaths` in `apps/client/src/content/entry.ts`.
 
 | Situation                      | Response                        | Price           | Then                             |
 | ------------------------------ | ------------------------------- | --------------- | -------------------------------- |
@@ -513,46 +513,46 @@ model and had drifted from the live site.
 
 ## 16. Where each decision lives in the code
 
-| Decision                              | File                                                                          |
-| ------------------------------------- | ----------------------------------------------------------------------------- |
-| **All prices, as numbers**            | **`client/src/config/pricing.ts`**                                            |
-| The build outcome groups              | `config/pricing.ts` → `buildOutcomes` (derives `flagship.includes`)           |
-| **Conversion Fix + its price gate**   | **`config/pricing.ts` → `conversionFix`, `fixPriceLabel()`**                  |
-| The monthly report                    | `content/offer.ts` → `websiteReport`; UI `components/marketing/ReportExample` |
-| Launch → baseline → 30 days → monthly | `content/offer.ts` → `afterLaunch`; UI `AfterLaunchSection`                   |
-| How the two purchases relate          | `content/offer.ts` → `relationship`                                           |
-| Market comparison (nobody named)      | `content/offer.ts` → `marketComparison`                                       |
-| The recurring scope, in order         | `content/offer.ts` → `carePricing.plan.groups`                                |
-| The flagship build and its scope      | `config/pricing.ts` → `flagship`, `buildScope`                                |
-| **Founding-client offer and cap**     | **`config/pricing.ts` → `foundingOffer`**                                     |
-| Growth Partner plan                   | `config/pricing.ts` → `growthPartner`                                         |
-| Capacity constraint                   | `config/pricing.ts` → `capacity`                                              |
-| Year-one arithmetic                   | `config/pricing.ts` → `yearOneTotal()`                                        |
-| Price strings the copy interpolates   | `content/offer.ts` → `prices` (derived)                                       |
-| The pricing block, on both pages      | `features/home/sections/PricingBlock.tsx`                                     |
-| The build card / plan / comparison    | `content/offer.ts` → `pricing`, `carePricing`, `comparison`                   |
-| Which action the assessment suggests  | `config/pricing.ts` → `recommendedAction`                                     |
-| The launch standard                   | `content/offer.ts` → `launchStandard`                                         |
-| Published terms (grouped)             | `content/offer.ts` → `commercialTerms.groups`                                 |
-| Cancellation                          | `content/offer.ts` → `cancellation`                                           |
-| Launch process (weeks + choice)       | `content/offer.ts` → `launch`                                                 |
-| Who does what                         | `content/offer.ts` → `responsibilities`                                       |
-| Launch guarantees                     | `content/offer.ts` → `guarantee`                                              |
-| Response guarantee                    | `content/growth.ts` → `responseGuarantee`                                     |
-| A/B testing policy                    | `content/growth.ts` → `abTesting`                                             |
-| Business hours                        | `content/site.ts` → `contact.hours`                                           |
-| The three ways in                     | `content/entry.ts`                                                            |
-| Retention and terms in public words   | `content/legal.ts`                                                            |
-| Stripe products / webhooks            | `server/src/features/billing/` + env (see `.env.example`)                     |
-| Post-deposit onboarding               | `client/src/features/welcome/` + `server/src/features/onboarding/`            |
-| **The capability library**            | **`client/src/content/capabilities.ts`**                                      |
-| Capability shapes + honesty fields    | `client/src/types/content.ts` → `Capability`, `CapabilityAvailability`        |
-| Which capabilities suit which trade   | `client/src/lib/capabilityMatch.ts` (pure; takes the library as an argument)  |
+| Decision                              | File                                                                                                                         |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **All prices, as numbers**            | **`apps/client/src/config/pricing.ts`**                                                                                      |
+| The build outcome groups              | `config/pricing.ts` → `buildOutcomes` (derives `flagship.includes`)                                                          |
+| **Conversion Fix + its price gate**   | **`config/pricing.ts` → `conversionFix`, `fixPriceLabel()`**                                                                 |
+| The monthly report                    | `content/offer.ts` → `websiteReport`; UI `components/marketing/ReportExample`                                                |
+| Launch → baseline → 30 days → monthly | `content/offer.ts` → `afterLaunch`; UI `AfterLaunchSection`                                                                  |
+| How the two purchases relate          | `content/offer.ts` → `relationship`                                                                                          |
+| Market comparison (nobody named)      | `content/offer.ts` → `marketComparison`                                                                                      |
+| The recurring scope, in order         | `content/offer.ts` → `carePricing.plan.groups`                                                                               |
+| The flagship build and its scope      | `config/pricing.ts` → `flagship`, `buildScope`                                                                               |
+| **Founding-client offer and cap**     | **`config/pricing.ts` → `foundingOffer`**                                                                                    |
+| Growth Partner plan                   | `config/pricing.ts` → `growthPartner`                                                                                        |
+| Capacity constraint                   | `config/pricing.ts` → `capacity`                                                                                             |
+| Year-one arithmetic                   | `config/pricing.ts` → `yearOneTotal()`                                                                                       |
+| Price strings the copy interpolates   | `content/offer.ts` → `prices` (derived)                                                                                      |
+| The pricing block, on both pages      | `features/home/sections/PricingBlock.tsx`                                                                                    |
+| The build card / plan / comparison    | `content/offer.ts` → `pricing`, `carePricing`, `comparison`                                                                  |
+| Which action the assessment suggests  | `config/pricing.ts` → `recommendedAction`                                                                                    |
+| The launch standard                   | `content/offer.ts` → `launchStandard`                                                                                        |
+| Published terms (grouped)             | `content/offer.ts` → `commercialTerms.groups`                                                                                |
+| Cancellation                          | `content/offer.ts` → `cancellation`                                                                                          |
+| Launch process (weeks + choice)       | `content/offer.ts` → `launch`                                                                                                |
+| Who does what                         | `content/offer.ts` → `responsibilities`                                                                                      |
+| Launch guarantees                     | `content/offer.ts` → `guarantee`                                                                                             |
+| Response guarantee                    | `content/growth.ts` → `responseGuarantee`                                                                                    |
+| A/B testing policy                    | `content/growth.ts` → `abTesting`                                                                                            |
+| Business hours                        | `content/site.ts` → `contact.hours`                                                                                          |
+| The three ways in                     | `content/entry.ts`                                                                                                           |
+| Retention and terms in public words   | `content/legal.ts`                                                                                                           |
+| Stripe products / webhooks            | `apps/server/src/features/billing/` + env (see `.env.example`)                                                               |
+| Post-deposit onboarding               | `apps/client/src/features/welcome/` + `apps/server/src/features/onboarding/`                                                 |
+| **The capability library**            | **`apps/client/src/features/public/capabilities/content/capabilities.ts`**                                                   |
+| Capability shapes + honesty fields    | `apps/client/src/types/content.ts` → `Capability`, `CapabilityAvailability`                                                  |
+| Which capabilities suit which trade   | `apps/client/src/features/public/capabilities/utils/capabilityMatch.ts` (pure; takes the library as an argument)             |
 | Trades + how each trade's work is     |
-| bought                                | `client/src/config/trades.ts` → `trades`, `Trade.serviceModels`               |
-| The explorer, lifecycle, integrations | `client/src/features/public/capabilities/`                                    |
-| The guards on all of it               | `client/src/content/content.test.ts`                                          |
-| Guards on the capability library      | `client/src/content/capabilities.test.ts` (+ `lib/capabilityMatch.test.ts`)   |
+| bought                                | `apps/client/src/config/trades.ts` → `trades`, `Trade.serviceModels`                                                         |
+| The explorer, lifecycle, integrations | `apps/client/src/features/public/capabilities/`                                                                              |
+| The guards on all of it               | `apps/client/src/content/content.test.ts`                                                                                    |
+| Guards on the capability library      | `apps/client/src/features/public/capabilities/content/capabilities.test.ts` (+ `capabilities/utils/capabilityMatch.test.ts`) |
 
 ---
 

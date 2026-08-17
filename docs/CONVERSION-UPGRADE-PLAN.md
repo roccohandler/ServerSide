@@ -449,7 +449,7 @@ Only the results belong here.
 
 **Three guards, so none of it decays:**
 
-- [x] **An eager payload budget** (`client/scripts/check-budget.ts`) that parses the built
+- [x] **An eager payload budget** (`apps/client/scripts/check-budget.ts`) that parses the built
       `index.html`, sums the entry chunk, every modulepreload and every stylesheet, and
       fails the build over the ceiling. It runs from `scripts/build.ts`, so it runs on
       every `npm run verify`. Current: **eager JS 444.3 kB (134.4 kB gzipped), CSS 83.5 kB
@@ -561,7 +561,7 @@ carries the full report and the eighteen-question final audit.
 What belongs in _this_ plan's register, because it changes things this plan is responsible
 for:
 
-- **`client/src/config/pricing.ts` is now the only file that states a figure as a number.**
+- **`apps/client/src/config/pricing.ts` is now the only file that states a figure as a number.**
   §2 of this plan listed "no literal currency figures added to the content layer" as a rule;
   it is now enforced by derivation rather than by discipline — the currency guard's
   allow-list is generated from the same config the copy interpolates.

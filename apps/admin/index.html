@@ -1,0 +1,75 @@
+<!doctype html>
+<!-- Same pair, same reason, as the customer application. -->
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      Never indexed, never followed. This is the owner's console: there is nothing here for
+      a search engine, and a staff-only surface appearing in results is how somebody who
+      should not be looking finds out it exists.
+    -->
+    <meta name="robots" content="noindex, nofollow" />
+
+    <!--
+      The Forge Stamp struck in ember — the same geometry as the customer application's
+      mark with the colour roles swapped, so the two tabs are tellable apart at 16px
+      without reading either title. See the note in public/favicon.svg.
+
+      The SVG is the real one; the ICO is the fallback for Safari, which has never
+      supported an SVG favicon. There is deliberately no apple-touch-icon: nobody adds a
+      staff console to a home screen, and an unused file is one more thing to keep in step.
+      Both are generated from the SVG — see apps/client/scripts/build-icons.ts.
+    -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Charcoal, matching the console's bar rather than the customer app's page ground. -->
+    <meta name="theme-color" content="#17191E" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B0D11" />
+    <!-- Both, same as the customer application, and superseding the same comment. See the
+         longer note in `apps/client/index.html`. -->
+    <meta name="color-scheme" content="light dark" />
+
+    <!--
+      The theme before the first paint — byte-identical to the customer application's copy,
+      because `scripts/check-csp.ts` asserts that both documents carry the same script and
+      that both `vercel.json` policies carry its digest. Two bootstraps that drifted apart
+      would need two hashes and would be two places to get it wrong.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('jobforge:theme');
+          if (stored === 'light' || stored === 'dark') {
+            document.documentElement.setAttribute('data-theme', stored);
+          }
+        } catch (error) {
+          /* Storage blocked. The operating system's preference still applies. */
+        }
+      })();
+    </script>
+
+    <!--
+      Archivo, the brand typeface.
+
+      The console rendered in the system stack until now, because `@jobforge/ui`'s
+      `--font-sans` names Archivo first and this document never loaded it — so the two
+      applications, sharing one design system, did not share its typeface. `display=swap`
+      means the first paint uses the fallback and never blocks on the network, which is the
+      right trade for a tool somebody opens twenty times a day.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>JobForge — owner console</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

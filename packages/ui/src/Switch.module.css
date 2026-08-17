@@ -1,0 +1,148 @@
+/*
+ * A real checkbox, visually hidden, with a track and thumb drawn beside it.
+ *
+ * The input keeps its size and position rather than being `display: none`, so it stays in the
+ * accessibility tree and the browser's own focus handling still applies — the ring below is
+ * drawn on the track from the input's `:focus-visible`, which only works because the input is
+ * genuinely focusable.
+ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+/*
+ * The clip idiom, not `display: none` and not `opacity: 0` — the first removes it from the
+ * accessibility tree, the second leaves it clickable in the wrong place. `margin: -1px` is
+ * part of the idiom and is why the spacing rule skips negative values.
+ */
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.track {
+  position: relative;
+  flex: none;
+  width: 2.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+  transition: background var(--transition-fast);
+}
+
+/*
+ * The thumb travels along the inline axis, and it is animated by its inset rather than by a
+ * transform on purpose. `translateX` is a physical instruction: in a right-to-left document
+ * a checked switch would slide the wrong way, off the end of its own track. `inset-inline-start`
+ * knows which end it is, and it animates just as smoothly.
+ */
+.thumb {
+  position: absolute;
+  top: var(--space-hair);
+  inset-inline-start: var(--space-hair);
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  transition: inset-inline-start var(--transition-fast);
+}
+
+/*
+ * On is the accent's fill value, which is the one that carries white — and the thumb is
+ * white, so the pair is the same one every primary button already makes.
+ */
+.input:checked + .track {
+  background: var(--color-accent-strong);
+}
+
+/* The track less the thumb less the hairline on the far side: 2.5 − 1.25 − 0.125 = 1.125rem. */
+.input:checked + .track .thumb {
+  inset-inline-start: 1.125rem;
+}
+
+/*
+ * The focus ring is drawn on the track, because the input it belongs to is a clipped pixel
+ * somewhere behind it. Matches the global 3px `:focus-visible` contract rather than
+ * inventing a narrower one.
+ */
+.input:focus-visible + .track {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.input:disabled + .track {
+  opacity: 0.5;
+}
+
+.input:disabled ~ .label {
+  color: var(--color-ink-muted);
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+}
+
+.hint {
+  margin: 0;
+  /* Aligned under the label rather than the track: the track's width plus the row's gap. */
+  padding-inline-start: 3.25rem;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The control with the most to lose to forced colours: on and off are *only* the track's
+ * fill, so both states arrive as the same grey pill and the switch stops saying anything at
+ * all. The thumb's position technically still differs by 0.875rem, which is not a signal
+ * anybody reads.
+ *
+ * `Highlight` is the system's "this is on" — the same value a checked checkbox uses — and
+ * the thumb inverts against it so it stays visible in both positions.
+ */
+@media (forced-colors: active) {
+  .track {
+    background: ButtonFace;
+    border: 1px solid ButtonText;
+  }
+
+  .thumb {
+    background: ButtonText;
+  }
+
+  .input:checked + .track {
+    background: Highlight;
+    border-color: Highlight;
+  }
+
+  .input:checked + .track .thumb {
+    background: HighlightText;
+  }
+
+  .input:disabled + .track {
+    border-color: GrayText;
+  }
+
+  .input:disabled + .track .thumb {
+    background: GrayText;
+  }
+}

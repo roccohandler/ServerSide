@@ -1,0 +1,57 @@
+/*
+ * Links that look like tabs. See `Tabs.tsx` for why they are links and must stay links.
+ *
+ * Moved verbatim from `features/private/projects/Project.module.css`, where the customer's
+ * project page invented it.
+ */
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tab {
+  padding: var(--space-3) var(--space-4);
+  /* 44px once padding and line height are counted — the minimum touch target. */
+  min-height: 44px;
+  border-bottom: 2px solid transparent;
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.tab:hover {
+  color: var(--color-ink);
+}
+
+/*
+ * Inset rather than outside, so the ring is not clipped by the row's own bottom border. The
+ * global `:focus-visible` is a 3px outline at +2 offset; this is the one documented place
+ * that narrows it, because a tab sits flush against a rule.
+ */
+.tab:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.tabActive,
+.tabActive:hover {
+  color: var(--color-ink);
+  border-bottom-color: var(--color-accent);
+}
+
+/*
+ * Which tab is current is the whole content of this component, and it is stated twice — by
+ * colour and by an underline. Forced colours keeps the underline, because it is a border,
+ * and discards the colour. `Highlight` is the system's own word for "this is the selected
+ * one", so the two signals stay two.
+ */
+@media (forced-colors: active) {
+  .tabActive {
+    color: Highlight;
+    border-color: Highlight;
+  }
+}

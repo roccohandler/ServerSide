@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "useDefineForClassFields": true,
+    /* `node` is needed by scripts/build-seo.ts, which runs under tsx at build time. */
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src", "scripts", "vite.config.ts", "vitest.config.ts"]
+}

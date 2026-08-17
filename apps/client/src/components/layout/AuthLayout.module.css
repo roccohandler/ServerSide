@@ -1,0 +1,208 @@
+/*
+ * The credential shell: identity, a way back, and the form. Nothing else competes with it.
+ * See `AuthLayout.tsx` for why the marketing header and footer are not here.
+ */
+
+/*
+ * ============================================================================
+ * THE SHELL IS THE VIEWPORT, NOT MERELY AS TALL AS IT
+ * ============================================================================
+ *
+ * This was `min-height: 100vh`, which says "at least the viewport" — so a card one line
+ * too tall grew the *document*, and the whole page scrolled: the bar, the wordmark and
+ * the card together, to reveal a submit button. On a 657px laptop viewport that was every
+ * state of the sign-up flow past step one.
+ *
+ * A fixed height moves the overflow inside `main` instead. The bar stays put, the card
+ * stays centred while it fits, and the rare state that genuinely cannot fit — a 200% text
+ * zoom, a 400px window — scrolls within the content area rather than taking the page's
+ * identity off screen with it. Nothing is ever clipped; see `.main > *` below.
+ *
+ * `100dvh` after `100vh`, in that order, is the whole of the mobile handling: a browser
+ * that does not know the unit keeps the first declaration, and one that does uses the
+ * height that is actually visible rather than the height the page would have if the
+ * address bar were hidden.
+ * ============================================================================
+ */
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background-color: var(--color-page);
+}
+
+/*
+ * Off-screen until focused, then the first thing in the tab order. Deliberately identical to
+ * the one in `SiteLayout` and the console's — it is the same control doing the same job, and
+ * a keyboard user crossing from the marketing site into the sign-up flow should not meet a
+ * second version of it.
+ */
+.skipLink {
+  position: absolute;
+  top: var(--space-2);
+  inset-inline-start: var(--space-2);
+  z-index: var(--z-overlay);
+  padding: var(--space-3) var(--space-4);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-dark);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skipLink:focus {
+  color: var(--color-ink-inverse);
+  transform: translateY(0);
+}
+
+/*
+ * A bar rather than a floating control, so the back affordance and the wordmark sit in the
+ * same place on every auth page and never overlap the card on a short viewport. Its inner
+ * container is the site container, so both ends line up with the header on every other
+ * page — chrome that drifts to the viewport edge is the tell that a page was built apart
+ * from the rest of the site.
+ */
+.bar {
+  /*
+   * Fluid, and keyed to the viewport's *height* rather than its width, because height is
+   * what this bar is competing with. A 16px band above and below the back control is right
+   * on a desktop and is 32px of a 657px laptop viewport that the form needs — so it gives
+   * the space back as the window gets shorter and takes it again when there is room. Both
+   * ends of the clamp are rhythm steps, so it never leaves the scale.
+   */
+  padding-block: clamp(var(--space-2), 1.5vh, var(--space-4));
+  border-bottom: 1px solid var(--color-border);
+}
+
+.barInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  margin-inline-start: calc(-1 * var(--space-3));
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-muted);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.back:hover {
+  color: var(--color-ink);
+  background-color: var(--color-surface-muted);
+}
+
+/*
+ * The identity, and the reason it is here at all.
+ *
+ * A credential form with no branding is the shape a phishing page takes, and the habit
+ * worth building in a customer is that the real one always says whose it is. It links
+ * home like the header's lockup does everywhere else, so the behaviour is the one the
+ * reader already learned on the marketing pages.
+ */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+/*
+ * No `--mark-size` override here, and that is deliberate rather than an omission.
+ *
+ * It used to carry `--mark-size: 1.75rem`, which did nothing: `Logo` forwards `className`
+ * to the lockup `<span>`, and `Logo.module.css` sets `--mark-size` directly on the `<svg>`
+ * inside it — a property set on the element beats one inherited from its parent, so the
+ * mark stayed at the lockup's designed 1.35em and the rule was decoration.
+ *
+ * The designed proportion is the right one, so the lockup is left to size itself. If this
+ * ever does need a different mark size, `Logo` takes a `size` prop that reaches the svg.
+ */
+.brand:hover {
+  color: var(--color-ink);
+}
+
+/*
+ * The card is centred in what is left after the bar, and this is where the overflow lives.
+ *
+ * `min-height: 0` is the load-bearing line and the one that looks like noise. A flex item's
+ * default `min-height: auto` refuses to shrink below its content, so without it this box
+ * grows past the shell it is supposed to fit inside and `overflow-y` never has anything to
+ * do — the page scrolls again and the fixed height above achieves nothing.
+ *
+ * The padding is symmetric, small, and fluid for the same reason the bar's is: it is the
+ * *only* vertical padding around the card — the shells inside no longer wrap it in a
+ * marketing `Section` — and 24px top and bottom is a fifth of what a short laptop viewport
+ * has left after the bar.
+ */
+.main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  justify-content: center;
+  overflow-y: auto;
+  padding-block: clamp(var(--space-2), 2vh, var(--space-5));
+}
+
+/*
+ * `margin-block: auto` rather than `align-items: center` on the box above.
+ *
+ * They centre identically while the content fits, and they differ in the one case this
+ * shell now has to handle: a card taller than the scroll port. A centred flex item is
+ * positioned outside the scrollable origin, so its *top* — the heading, the first field —
+ * cannot be scrolled to at all. Auto margins distribute only the free space that exists, so
+ * they collapse to nothing the moment there is none and the card starts at the top instead.
+ *
+ * It is `> *` rather than a class because `RouteFallback` and the error boundary render
+ * here too, and they should be centred by the same rule that centres the card.
+ */
+.main > * {
+  margin-block: auto;
+}
+
+.main:focus {
+  outline: none;
+}
+
+/*
+ * Below the phone step the wordmark alone carries the identity — the lockup plus a
+ * "Back to JobForge" label is more text than a 390px bar can hold on one line.
+ */
+@media (max-width: 29.999rem) {
+  .backLabelLong {
+    display: none;
+  }
+
+  /*
+   * The control keeps its full width as a target and gives back the block padding. A phone
+   * is where the form has the least room and where the bar has the least to hold, and 8px
+   * above and below a 23px label is 16px spent on a control nobody came here to press.
+   */
+  .back {
+    padding-block: var(--space-1);
+  }
+
+  /*
+   * Below this step the panel inside goes edge to edge and drops its border and radius —
+   * see `AuthShell.module.css`. There is no card left to inset from, so this padding is not
+   * separating anything: it is 37px of ground above and below a panel the same colour as
+   * the thing it would be inset from.
+   */
+  .main {
+    padding-block: var(--space-2);
+  }
+}

@@ -1,0 +1,148 @@
+/*
+ * The rating scale. See ScoreScale.tsx for why this is a pattern rather than a primitive,
+ * and for why it is not the same control as the radio list in `components/ui/Field`.
+ */
+
+.options {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/*
+ * Two layouts, one control.
+ *
+ * `row` puts every point on one line — right for a short scale where the row itself is the
+ * information ("1 to 5, worst to best"). It stays one line at every width, which is why the
+ * label type inside it steps down; five wrapped tiles read as a list rather than a scale.
+ *
+ * `grid` wraps to three columns, for scales whose point labels are phrases rather than
+ * words and would be unreadable squeezed onto a single line.
+ */
+.optionsRow {
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+
+.optionsGrid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.option {
+  position: relative;
+}
+
+/*
+ * The input is hidden from sight, not from the accessibility tree or the keyboard.
+ *
+ * Never `display: none` and never `visibility: hidden` — either would take the radio out
+ * of the tab order and kill the arrow-key navigation that makes a radio group usable. It
+ * keeps its `radiogroup` semantics; the label is only what it looks like.
+ */
+.radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.optionLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  height: 100%;
+  padding: var(--space-3) var(--space-2);
+  font-size: var(--text-sm);
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+/*
+ * Ember on hover. The brand colour is charcoal now and would barely move off the resting
+ * border, so the accent is the only affordance left that reads as "this is pickable".
+ */
+.optionLabel:hover {
+  border-color: var(--color-accent);
+}
+
+/*
+ * Focus lands on the input; the ring is drawn around the thing you can see.
+ *
+ * `--color-focus` rather than the brand or the accent: charcoal on a charcoal *selected*
+ * tile is no ring at all, and Ember itself is 3.0:1 on cream. This is the one value
+ * measured to clear 3:1 on all three grounds.
+ */
+.radio:focus-visible + .optionLabel {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/*
+ * The selected answer is a solid charcoal tile, its border matching its fill so it reads
+ * as one struck shape rather than a filled box inside a ring.
+ *
+ * Not ember, deliberately: a page can hold twenty of these fieldsets at once, and twenty
+ * ember tiles would spend the accent that the submit button needs. Selection is signalled
+ * three ways — fill, border and text weight — because a page carrying an improvement about
+ * not relying on colour alone has to mean it.
+ */
+.optionLabelSelected,
+.optionLabelSelected:hover {
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-dark);
+  border-color: var(--color-ink);
+}
+
+.optionValue {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+}
+
+.optionText {
+  font-size: var(--text-xs);
+  line-height: var(--leading-tight);
+}
+
+/* The row layout has to fit every point on one line, so its type steps down. */
+.optionsRow .optionLabel {
+  padding: var(--space-2);
+}
+
+.optionsRow .optionValue {
+  font-size: var(--text-base);
+}
+
+/*
+ * Which point on the scale is chosen is stated by a fill and a border, and forced colours
+ * keeps only the second. That is *almost* enough — the border is 2px against 1px — but the
+ * question this component asks is answered forty times in the PlayBook assessment, and
+ * "slightly thicker" is not a reading somebody makes forty times.
+ *
+ * `Highlight`/`HighlightText` is the system's own selected state, which is what a chosen
+ * radio is. The real radio behind the label is what a screen reader reads; this is for
+ * everybody scrolling back up to check what they answered.
+ */
+@media (forced-colors: active) {
+  .optionLabelSelected {
+    background-color: Highlight;
+    color: HighlightText;
+    border-color: Highlight;
+  }
+
+  .optionLabel {
+    border: 1px solid CanvasText;
+  }
+}

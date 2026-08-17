@@ -1,0 +1,124 @@
+<!doctype html>
+<!--
+  `lang` and `dir` both stated.
+
+  `dir` has a default and it is `ltr`, so this attribute changes nothing today. It is here
+  because every stylesheet in the repository now spells its insets on the inline axis
+  (`tokens.test.ts` rule 7 fails the build on `padding-left`), and a document that lays
+  itself out logically while declining to say which direction it reads in is describing
+  half a contract. A reader on a right-to-left system also gets a correct answer instead of
+  an assumed one.
+
+  There is one locale and no message catalogue — see `03_plan/deferred_work_plan.md` §3.1c
+  for why a second one is a product decision rather than an engineering one.
+-->
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      The Forge Stamp, in the two encodings a browser might want. The SVG is the real
+      one; the ICO is the fallback for Safari, which has never supported an SVG favicon,
+      and for everything that requests /favicon.ico without reading this document.
+      Both are generated from the same file — see scripts/build-icons.ts.
+    -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- The bar colour, per theme. The second one wins on a dark system; without it the
+         browser chrome stays charcoal-on-cream while the page below it is charcoal. -->
+    <meta name="theme-color" content="#17191E" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B0D11" />
+    <!--
+      Both, in that order.
+
+      This said `light` until 2026-08-16, under a comment calling it a committed design and
+      explaining that declaring it stops the browser auto-inverting form controls for a
+      reader whose OS is in dark mode. That was true and it was answering the wrong
+      question: the site now has a measured dark palette, so there is nothing to protect the
+      reader from. `light dark` is what tells the browser to paint native controls,
+      scrollbars and the overscroll area in whichever one is active.
+    -->
+    <meta name="color-scheme" content="light dark" />
+
+    <!--
+      The theme, before the first paint.
+
+      `prefers-color-scheme` needs no JavaScript and cannot flash — the stylesheet answers
+      the operating system on its own. This exists for the other case: a reader who has
+      *overridden* their system, whose choice lives in `localStorage`, which no stylesheet
+      can read. Without these six lines they would see one frame of the wrong palette on
+      every navigation that reloads the document.
+
+      It is inline because an external file would be a blocking request before first paint,
+      which is worse than the flash it prevents. Inline scripts are blocked by the
+      `script-src 'self'` policy in `vercel.json`, so the policy carries a `sha256-` of
+      exactly this text — and `scripts/check-csp.ts` recomputes that digest from the built
+      HTML on every build and fails if it has drifted. Edit this script and the build will
+      tell you the new hash to paste; edit it without the guard and the theme silently stops
+      working in production only, on a CSP violation nothing in this project reads a log for.
+
+      `jobforge:theme` is the key `packages/ui/src/useTheme.ts` writes. Changing it here
+      orphans every reader's saved preference.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('jobforge:theme');
+          if (stored === 'light' || stored === 'dark') {
+            document.documentElement.setAttribute('data-theme', stored);
+          }
+        } catch (error) {
+          /* Storage blocked. The operating system's preference still applies. */
+        }
+      })();
+    </script>
+
+    <!--
+      Archivo — the brand typeface.
+
+      One variable woff2 per subset covering weight 400–900 and width 100–125%, which is
+      what lets the wordmark use the expanded 800 cut the brand board specifies without a
+      second file. `display=swap` means the first paint uses the system stack in
+      `--font-sans` and never blocks on the network; the metrics are close enough that
+      the swap does not reflow the page.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&display=swap"
+      rel="stylesheet"
+    />
+
+    <!--
+      Everything between the SEO markers is replaced per route at build time by
+      scripts/build-seo.ts, which writes one HTML file for each page. Do not remove
+      the marker comments.
+    -->
+    <!--seo:start-->
+    <title>Websites built to win work for Seattle service businesses</title>
+    <meta
+      name="description"
+      content="Conversion-focused websites and growth systems for HVAC, plumbing, electrical, roofing and landscaping businesses around Greater Seattle — built to turn visitors into calls and quote requests."
+    />
+    <!--seo:end-->
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <p
+        style="
+          padding: 1.5rem;
+          font-family: Archivo, system-ui, sans-serif;
+          color: #17191e;
+          background: #f3eee4;
+          border-bottom: 3px solid #e85c24;
+        "
+      >
+        This site needs JavaScript to display. The contact details in the page source are still
+        valid — please call or email instead.
+      </p>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

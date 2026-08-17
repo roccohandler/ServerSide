@@ -1,0 +1,133 @@
+/*
+ * ============================================================================
+ * THE SIGNED-OUT CONSOLE
+ * ============================================================================
+ *
+ * `App.tsx` says the console has two states and only two. This is the first of them, and
+ * until now it did not look like the console at all: a white card on the cream page ground,
+ * which is what the *customer* application's sign-in looks like. An operator with both tabs
+ * open had nothing to tell them apart until after they had typed a password.
+ *
+ * So the signed-out state carries the same signature the signed-in one does — a charcoal
+ * bar with a three-pixel ember rule under it and the word "Internal" — and the page ground
+ * behind the card is charcoal rather than cream. `ConsoleLayout.module.css` explains why
+ * that distinction is worth paying for: the mistake it prevents is writing an internal note
+ * into a thread the customer reads.
+ *
+ * ## Why the card itself stays light
+ *
+ * The fields come from `@jobforge/ui`, whose `Field` styles are built for a light surface —
+ * their borders, hints and error states are all measured against it. Rendering them on
+ * charcoal would mean a second set of on-dark input styles in the design system, bought for
+ * one screen. The ground and the bar carry the identity; the form stays where it works.
+ *
+ * ## No `Section` or `Container`
+ *
+ * Both are marketing-page primitives that paint a band with `--section-gap` around it, and
+ * the band is meaningless when the card is the only thing on the page. This is the same
+ * mistake, and the same fix, as the note at the top of the customer application's
+ * `AuthShell` — where it cost a 608px card 232px of stacked padding and made the page
+ * scroll to reveal nothing. Here it left the card floating near the top of a tall empty
+ * page. The grid below centres it instead.
+ * ============================================================================
+ */
+
+.page {
+  align-items: center;
+  background: var(--color-surface-dark);
+  display: grid;
+  justify-items: center;
+  /* `dvh`, so the card stays centred when a mobile browser's toolbars come and go. */
+  min-height: 100dvh;
+  padding: var(--space-6) var(--space-5);
+}
+
+.panel {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  /* Clips the charcoal bar to the card's own corners. */
+  overflow: hidden;
+  width: 100%;
+  max-width: 26rem;
+}
+
+/* --------------------------------------------------------------- the bar */
+
+/*
+ * The console's signature, applied to the state before there is a console. Same charcoal,
+ * same ember rule and same word as `ConsoleLayout`'s header — deliberately identical, so
+ * the two states read as one tool rather than two products.
+ */
+.bar {
+  align-items: center;
+  background: var(--color-surface-dark);
+  border-bottom: 3px solid var(--color-accent-strong);
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+}
+
+/*
+ * The ember stamp, as a file rather than as markup.
+ *
+ * It is `public/favicon.svg` — the console's own tab icon, already in this workspace. Using
+ * it here means the mark on the screen and the mark in the tab strip cannot drift apart,
+ * and it adds no fourth hand-maintained copy of the Forge Stamp geometry to the count in
+ * `docs/design-system.md`. The customer application draws its mark as a React component
+ * because that mark has to invert on a charcoal band; this one never does.
+ */
+.mark {
+  border-radius: var(--radius-sm);
+  display: block;
+  height: 2rem;
+  width: 2rem;
+}
+
+.barLabel {
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-extrabold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------- the body */
+
+.body {
+  padding: var(--space-6) var(--space-5);
+}
+
+.heading {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-2xl);
+}
+
+/*
+ * One line, and it says what to do rather than what this is.
+ *
+ * The page still advertises nothing — no product description, no hint about who holds an
+ * account, no mention of what is behind it. A staff sign-in that describes itself is a page
+ * somebody probes. What it does now is answer the one question a blank card left open:
+ * whether this is the same account as everything else.
+ */
+.lede {
+  margin: 0 0 var(--space-5);
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/*
+ * Spacing only. The panel, the tint, the icon and the `role="alert"` all come from
+ * `components/Notice` now — this page used to draw its own, and the console's project page
+ * drew a second one that differed in a border and a text colour for no reason either could
+ * have named.
+ */
+.error {
+  margin: 0 0 var(--space-4);
+}

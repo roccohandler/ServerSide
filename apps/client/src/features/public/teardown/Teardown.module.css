@@ -1,0 +1,288 @@
+/*
+ * The teardown page.
+ *
+ * The two mocks come from `features/home/SiteMock`, which brings its own styles from
+ * `Value.module.css` — everything below is the frame around them and the findings list.
+ * Nothing here paints a white surface, so the page alternates default and muted bands
+ * without a panel disappearing into either of them.
+ */
+
+/* The composite disclosure. Deliberately hard to skim past. */
+.disclosure {
+  max-width: 46rem;
+  margin-top: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  color: var(--color-ink);
+  background-color: var(--color-tint-accent);
+  border-radius: var(--radius-md);
+}
+
+/* ------------------------------------------------------------------ mocks */
+
+/*
+ * The section's heading is hidden with the global `.visually-hidden` utility from
+ * `styles/global.css`, applied as a plain class name in the TSX — the same way
+ * `components/ui/Field.tsx` and the PlayBook assessment do it. A local copy here would be
+ * a fourth definition of five lines of CSS that already exist.
+ *
+ * (The local copies in `Audit.module.css` and `Assessment.module.css` are a different
+ * thing: they hide a radio *input* that has to stay focusable and operable.)
+ */
+.mocks {
+  display: grid;
+  gap: var(--space-7);
+}
+
+@media (min-width: 60rem) {
+  .mocks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.mockFigure {
+  margin: 0;
+}
+
+.mockCaption {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ built */
+
+/*
+ * The third beat of the mocks section: the wireframe carried through to a finished
+ * demonstration site. Same job as the homepage's `finished` block in `Value.module.css`
+ * — the bridge from a mock to a page that actually exists — and the same tinted-panel
+ * treatment, so the two read as one idea. (A tint is not the white surface the header
+ * note above forbids; the panel stays visible on the muted band.) Stacked on a phone
+ * with the copy first; copy beside frames from 60rem, the same floor the mocks grid
+ * uses.
+ */
+.built {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-7);
+  padding: var(--space-5);
+  background-color: var(--color-tint-brand);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+@media (min-width: 60rem) {
+  .built {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    align-items: center;
+    padding: var(--space-6);
+  }
+}
+
+.builtCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.builtHeading {
+  font-size: var(--text-xl);
+}
+
+.builtBody {
+  max-width: 36rem;
+  color: var(--color-ink-muted);
+  line-height: var(--leading-relaxed);
+}
+
+.builtDisclosure {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  max-width: 36rem;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The desktop capture in browser chrome with the phone capture overlapping its lower
+ * right corner — the composition `ProductShot` established. The frames are width:100%
+ * of whatever holds them, so this wrapper does the sizing; the bottom padding is the
+ * room the phone's overhang stands in.
+ */
+.builtFrames {
+  position: relative;
+  padding-bottom: var(--space-8);
+}
+
+.builtBrowser {
+  width: 88%;
+}
+
+.builtPhone {
+  position: absolute;
+  inset-inline-end: 0;
+  bottom: 0;
+  width: 26%;
+}
+
+/* --------------------------------------------------------------- findings */
+
+.findings {
+  display: grid;
+  gap: var(--space-7);
+  padding: 0;
+  margin: var(--space-7) 0 0;
+  list-style: none;
+}
+
+.finding {
+  padding-top: var(--space-5);
+  border-top: 2px solid var(--color-border-strong);
+}
+
+/*
+ * A label rather than a link, so it is ink and says so — the brand colour it used to carry
+ * is now charcoal and indistinguishable from ink anyway. Not ember: that is rationed to the
+ * primary action, and a numeral has no business competing with one.
+ */
+.findingOrder {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink);
+}
+
+.findingTitle {
+  margin-bottom: var(--space-4);
+  font-size: var(--text-xl);
+  line-height: var(--leading-snug);
+}
+
+.findingDetail {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+@media (min-width: 60rem) {
+  .findingDetail {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-5);
+  }
+}
+
+/*
+ * Already an uppercase micro-label, so it takes the brand kicker outright. The colour is
+ * the AA-safe ember: Ember Deep is a fill value and only 4.3:1 as text on these light
+ * bands, where this clears 4.5:1 on cream and on the muted band both.
+ */
+.findingLabel {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+}
+
+.findingValue {
+  margin: 0;
+  color: var(--color-ink-muted);
+  line-height: var(--leading-relaxed);
+}
+
+.findingPrinciple {
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+/* ----------------------------------------------------------------- limits */
+
+.limits {
+  max-width: 46rem;
+  margin-top: var(--space-8);
+  padding-inline-start: var(--space-5);
+  border-inline-start: 3px solid var(--color-border-strong);
+}
+
+.limitsHeading {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-lg);
+}
+
+.limitsBody {
+  color: var(--color-ink-muted);
+  line-height: var(--leading-relaxed);
+}
+
+/* --------------------------------------------------------- sample review */
+
+.sampleDisclaimer {
+  max-width: 46rem;
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.sample {
+  display: grid;
+  gap: var(--space-5);
+  padding: 0;
+  margin: var(--space-6) 0 0;
+  list-style: none;
+}
+
+@media (min-width: 48rem) {
+  .sample {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+  }
+}
+
+.sampleSection {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Same reasoning as `.findingOrder`: a numeral is a label, so it is ink. */
+.sampleIndex {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink);
+}
+
+.sampleHeading {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-lg);
+  line-height: var(--leading-snug);
+}
+
+.sampleBody {
+  color: var(--color-ink-muted);
+  line-height: var(--leading-relaxed);
+}
+
+.sampleNote {
+  max-width: 46rem;
+  margin-top: var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.sampleActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}

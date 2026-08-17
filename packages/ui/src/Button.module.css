@@ -1,0 +1,172 @@
+.base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  min-height: 3rem; /* Comfortable tap target on a phone. */
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.base:disabled,
+.base[aria-disabled='true'] {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/*
+ * The press.
+ *
+ * The button had a hover state and no active state, so on a touch screen — where there is
+ * no hover at all — nothing whatsoever acknowledged the tap until the next screen arrived.
+ * One pixel of travel is the whole effect, and it is deliberately not in the `transition`
+ * list above: a press should register at the moment of the press, not 150ms after it.
+ */
+.base:not(:disabled):not([aria-disabled='true']):active {
+  transform: translateY(1px);
+}
+
+/* ------------------------------------------------------------------ variants */
+
+/*
+ * The primary button is Ember *Deep*, not Ember.
+ *
+ * Ember Orange with a white label is 3.5:1, which fails AA for a control this size, and
+ * a call-to-action nobody can read is not a call to action. `--color-accent-strong` is
+ * the value the brand board carries for exactly this — one step down, still unmistakably
+ * the brand, and 4.9:1 with white. Pure Ember stays where it can be seen: rules, marks,
+ * icons and text on charcoal.
+ */
+.primary {
+  color: var(--color-on-accent);
+  background-color: var(--color-accent-strong);
+  border-color: var(--color-accent-strong);
+}
+
+.primary:hover:not(:disabled):not([aria-disabled='true']) {
+  color: var(--color-on-accent);
+  background-color: var(--color-accent-deep);
+  border-color: var(--color-accent-deep);
+}
+
+.secondary {
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+.secondary:hover:not(:disabled):not([aria-disabled='true']) {
+  color: var(--color-accent-text);
+  background-color: var(--color-tint-accent);
+  border-color: var(--color-accent);
+}
+
+/*
+ * The button for a charcoal band. Cream rather than white: it is the same warm value the
+ * text on those bands uses, so the button reads as cut out of the band rather than
+ * pasted onto it.
+ */
+.inverse {
+  color: var(--color-ink);
+  background-color: var(--color-page);
+  border-color: var(--color-page);
+}
+
+.inverse:hover:not(:disabled):not([aria-disabled='true']) {
+  color: var(--color-accent-text);
+  background-color: var(--color-surface);
+  border-color: var(--color-surface);
+}
+
+.ghost {
+  color: var(--color-accent-text);
+  background-color: transparent;
+  border-color: transparent;
+  padding-inline: var(--space-2);
+}
+
+.ghost:hover:not(:disabled):not([aria-disabled='true']) {
+  color: var(--color-accent-deep);
+  background-color: var(--color-tint-accent);
+}
+
+/* ------------------------------------------------------------------ sizes */
+
+.lg {
+  padding: var(--space-4) var(--space-6);
+  min-height: 3.375rem;
+  font-size: var(--text-lg);
+}
+
+/* ------------------------------------------------------------------ layout */
+
+.block {
+  display: flex;
+  width: 100%;
+}
+
+/*
+ * Below the `sm` step, stacked full-width buttons are easier to hit.
+ *
+ * `29.999rem` rather than `29.99rem`: the paired `min-width` rule starts at 30rem, and the
+ * 0.01rem version left a 0.16px band matching neither. The convention across the codebase
+ * is step-minus-0.001rem — see the breakpoint note in `styles/tokens.css`.
+ */
+@media (max-width: 29.999rem) {
+  .base {
+    width: 100%;
+  }
+}
+
+/*
+ * ============================================================================
+ * WINDOWS HIGH CONTRAST
+ * ============================================================================
+ *
+ * `forced-colors: active` does not adjust a palette — it discards it. Every
+ * `background-color`, `border-color` and `box-shadow` on the page is replaced with a value
+ * from the reader's own system, and the four variants above become one grey rectangle each,
+ * identical to the other three. On a page whose entire discipline is that ember marks the
+ * primary action and nothing else competes for it, that is the whole hierarchy gone.
+ *
+ * `Highlight` / `HighlightText` is the system's own "this one is the emphasised one", which
+ * is exactly what `--color-accent-strong` means here. Everything else takes the button
+ * surface plus an explicit edge, because a border is the one thing forced colours keeps.
+ *
+ * `GrayText` on the unavailable state is not decoration either: it is the only signal left
+ * once opacity and fill are gone, and `Button` distinguishes *unavailable* from *busy* — see
+ * the note at the top of Button.tsx.
+ */
+@media (forced-colors: active) {
+  .base {
+    border: 1px solid ButtonText;
+  }
+
+  .primary {
+    background-color: Highlight;
+    color: HighlightText;
+    border-color: Highlight;
+  }
+
+  .base:disabled,
+  .base[aria-disabled='true'] {
+    color: GrayText;
+    border-color: GrayText;
+  }
+
+  /* Busy, not unavailable. It is still operable, so it must not read as GrayText. */
+  .base[aria-busy='true'] {
+    color: ButtonText;
+    border-color: ButtonText;
+  }
+}

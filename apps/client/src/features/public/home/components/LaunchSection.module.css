@@ -1,0 +1,325 @@
+/* Styles owned by LaunchSection and AfterLaunchSection. Shared offer vocabulary lives in Offer.module.css. */
+
+/* ------------------------------------------------------------------ launch */
+.launchTarget {
+  margin-bottom: var(--space-5);
+}
+
+.launchList {
+  display: grid;
+  gap: 0;
+  grid-template-columns: 1fr;
+  max-width: 44rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.launchStep {
+  position: relative;
+  padding-inline-start: 3.25rem;
+  padding-bottom: var(--space-6);
+}
+
+/* The rail that makes five separate steps read as one run of work. */
+.launchStep:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 2.5rem;
+  bottom: 0;
+  inset-inline-start: 1.09rem;
+  width: 2px;
+  background-color: var(--color-border);
+}
+
+.launchStep:last-child {
+  padding-bottom: 0;
+}
+
+.launchNumber {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--color-ink-inverse);
+  background-color: var(--color-surface-dark);
+  border-radius: var(--radius-full);
+}
+
+/* The step that ships. Same reasoning as the payoff marker: a fill, so Ember Deep. */
+.launchStep:last-child .launchNumber {
+  color: var(--color-on-accent);
+  background-color: var(--color-accent-strong);
+}
+
+.launchBody {
+  padding-top: var(--space-1);
+}
+
+.launchTitle {
+  margin-bottom: var(--space-2);
+}
+
+.launchDetail {
+  color: var(--color-ink-muted);
+}
+
+/* The dependency, directly under the four weeks it qualifies. */
+.launchTargetNote {
+  max-width: 44rem;
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * ---------------------------------------------- the after-launch sequence
+ *
+ * Reuses the rail above wholesale — `.launchList`, `.launchStep`, `.launchNumber`,
+ * `.launchBody`, `.launchTitle`, `.launchDetail`. What is added here is only the part the
+ * build timeline has no need for: the line where the build's obligation ends and the
+ * optional monthly service begins.
+ *
+ * The distinction is drawn with a dashed rail and a muted numeral rather than with colour,
+ * for the reason `ConversionSection` draws the same boundary the same way: "this stretch is
+ * not ours / not included" is a structural statement, and structure reads as structure
+ * whether or not a reader can distinguish two warm hues.
+ */
+.afterLaunchWhen {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/*
+ * The divider that opens the optional stretch. Sits inside the first `<li>` of the group so
+ * the `<ol>` stays a list of list items and the numbering keeps deriving from position.
+ */
+
+/*
+ * The boundary between what the build includes and what the plan adds.
+ *
+ * A sibling *between* the two lists rather than a child of the first partner step, and that
+ * is a correctness fix rather than a preference: `.launchNumber` is absolutely positioned at
+ * `top: 0` of its own step, so height added above it inside the same item pushed the heading
+ * down and left the numeral sitting on this rule. The boundary is between two things; it is
+ * now markup between two things.
+ *
+ * No negative margin any more either — it is no longer inside a `padding-inline-start: 3.25rem` item,
+ * so it spans the container on its own.
+ */
+.afterLaunchDivider {
+  max-width: 44rem;
+  margin-bottom: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px dashed var(--color-border-strong);
+}
+
+/*
+ * The conditional stage's numeral: outlined rather than filled.
+ *
+ * Two things about this selector are deliberate. It is written as a compound
+ * (`.launchStep.launchStepPartner`) rather than as `.launchStepPartner` alone because it has
+ * to beat `.launchStep:last-child .launchNumber` above, which paints the final numeral ember
+ * — and the conditional stage *is* the last one, so at lower specificity it would come out
+ * as the most emphasised step on a diagram whose whole point is that it is the optional one.
+ *
+ * And the cue is a fill-versus-outline difference, not a hue difference. "This stretch is
+ * conditional" is structural information, and structure has to survive a reader who cannot
+ * tell two warm colours apart.
+ */
+.launchStep.launchStepPartner .launchNumber {
+  color: var(--color-ink);
+  /* White rather than muted: `AfterLaunchSection` has to read on either band, and a muted
+     disc on the muted band is not a disc. Same lesson as `.respColumn` above. */
+  background-color: var(--color-surface);
+  box-shadow: inset 0 0 0 2px var(--color-border-strong);
+}
+
+.afterLaunchNote {
+  max-width: 44rem;
+  margin-top: var(--space-5);
+  padding-inline-start: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+  border-inline-start: 3px solid var(--color-accent);
+}
+
+/* ------------------------------------------------- before the project starts */
+.launchBefore {
+  margin-bottom: var(--space-7);
+}
+
+.launchBeforeList {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  list-style: none;
+}
+
+.launchBeforeItem {
+  padding-inline-start: var(--space-4);
+  border-inline-start: 3px solid var(--color-border-strong);
+}
+
+.launchBeforeTitle {
+  font-size: var(--text-base);
+}
+
+.launchBeforeBody {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The five ".first30*" classes were deleted here.
+ *
+ * They styled the first-30-days card grid that used to render inside "LaunchSection". That
+ * content moved into "afterLaunch" — the launch → baseline → day-30 → monthly sequence —
+ * which reuses the four-week rail above rather than a grid of cards, so nothing renders any
+ * of them any more.
+ *
+ * The dead-CSS guard in "content.test.ts" caught all five, which is the whole reason it
+ * exists: a stylesheet that keeps the rules for a section somebody removed ships them to
+ * every visitor and reads as load-bearing to the next person who looks at it.
+ */
+
+/* ------------------------------------------------------------- who does what */
+
+/*
+ * The four-week rail and the division of labour, in one row from the desktop step.
+ * See the note in `LaunchSection.tsx`.
+ */
+.launchTwoUp {
+  display: grid;
+  gap: var(--space-7);
+  grid-template-columns: 1fr;
+  align-items: start;
+  margin-top: var(--space-7);
+}
+
+@media (min-width: 64rem) {
+  .launchTwoUp {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-8);
+  }
+}
+
+/*
+ * `.resp` and `.respGrid` also need a desktop-step override — they are declared below and
+ * again in the 48rem block at the foot of this file, so theirs live in the trailing 64rem
+ * block rather than here. A narrower query written above a wider one of equal specificity
+ * never applies, and `content.test.ts` fails the build on it.
+ */
+.resp {
+  margin-top: var(--space-7);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.respGrid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+  margin-top: var(--space-5);
+}
+
+/*
+ * White with a hairline rather than a muted fill.
+ *
+ * It was `--color-surface-muted`, which worked only because `LaunchSection` happened to sit
+ * on the default band. The homepage reordering moved that section onto the muted band, where
+ * a muted panel on a muted ground is an invisible panel — the exact failure the tone-
+ * alternation comments in `HomePage.tsx` warn about, arriving through the panel rather than
+ * through the section.
+ *
+ * A white panel with a border reads on cream and on muted, so this pair of columns is now
+ * surface-agnostic and the section can be reordered again without a CSS change.
+ */
+.respColumn {
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.respLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.respList {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-3) 0 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.respItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.respMarker {
+  flex-shrink: 0;
+  margin-top: 0.2em;
+  color: var(--color-success);
+}
+
+.respNote {
+  max-width: 46rem;
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ responsive */
+@media (min-width: 48rem) {
+  /* The before-the-project steps read as one row once there is room. */
+  .launchBeforeList {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 64rem) {
+  /*
+   * -------------------------------------------------------------------------------
+   * Blocks that go from stacked to paired at this step, and so have to give back the
+   * two-column arrangement they were granted at 48rem.
+   * -------------------------------------------------------------------------------
+   *
+   * Both of these live here rather than beside the layout that causes them, because the
+   * 48rem block above declares the same properties. A narrower query written earlier in
+   * the file never wins over a wider one written later, whatever the order of the
+   * breakpoints — `content.test.ts` fails the build on exactly that mistake.
+   */
+
+  /* Beside the four-week rail now, so the rule that separated two stacked blocks goes. */
+  .resp {
+    padding-top: 0;
+    margin-top: 0;
+    border-top: 0;
+  }
+
+  .respGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,104 @@
+/*
+ * The workspace's one message shape.
+ *
+ * A left rule rather than a full border, because these sit above and between panels that
+ * already have borders — a boxed message among boxed panels reads as another panel. The
+ * rule carries the tone at a glance; the tint carries it up close.
+ *
+ * Every foreground/background pair is stated in one rule on purpose, so `tokens.test.ts`
+ * measures the contrast rather than trusting it. That is the check that catches somebody
+ * reaching for `--color-accent` (3.0:1 on cream) where `--color-accent-text` belongs.
+ */
+
+.notice {
+  align-items: start;
+  border-radius: var(--radius-sm);
+  display: flex;
+  font-size: var(--text-sm);
+  gap: var(--space-2);
+  line-height: var(--leading-normal);
+  margin: 0;
+  padding: var(--space-4);
+}
+
+.problem {
+  background-color: var(--color-tint-danger);
+  border-inline-start: 3px solid var(--color-danger);
+  color: var(--color-danger);
+}
+
+.success {
+  background-color: var(--color-tint-success);
+  border-inline-start: 3px solid var(--color-success);
+  color: var(--color-success);
+}
+
+/*
+ * Ember, and it is the one place in the workspace that spends it on something other than a
+ * primary action. That is deliberate and it is the treatment the billing banner already had:
+ * a returning-from-Stripe message is the single most consequential thing on the page at the
+ * moment it appears, and the accent is what makes it the first thing read.
+ *
+ * Ink on the tint rather than the accent as text — `--color-accent` is 3.0:1 on a light
+ * ground and is never body copy. See the accent note in tokens.css.
+ */
+.info {
+  background-color: var(--color-tint-accent);
+  border-inline-start: 3px solid var(--color-accent);
+  color: var(--color-ink);
+}
+
+/*
+ * Nudged by a fraction of the line beside it. `em` rather than a rhythm step, and the token
+ * guard allows it for exactly this reason: an optical alignment against text has to scale
+ * with the text, and a rem value is correct at one size only.
+ */
+.icon {
+  flex-shrink: 0;
+  margin-top: 0.1em;
+}
+
+.body {
+  margin: 0;
+}
+
+.body > p {
+  margin: 0;
+}
+
+/*
+ * The one inline control a notice carries — "Check again" on the post-checkout banner.
+ * A button rather than a link because it re-reads the page's own data rather than going
+ * anywhere, which is the distinction `Button` versus `ButtonLink` exists to protect.
+ */
+.action {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent-text);
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/*
+ * Tone here is a tint plus a 3px rule on the inline start. The rule survives forced colours
+ * as a border; the tint does not, so a success notice and a problem notice arrive looking
+ * identical apart from their icons.
+ *
+ * The icons are the reason this is a border and not a colour mapping. `Notice` already
+ * states its tone twice — the icon and the role (`alert` for a problem, `status` otherwise)
+ * — so what is missing in forced colours is not *which* tone, it is that the notice is a
+ * panel at all rather than a stray paragraph.
+ */
+@media (forced-colors: active) {
+  .notice {
+    border: 1px solid CanvasText;
+  }
+}

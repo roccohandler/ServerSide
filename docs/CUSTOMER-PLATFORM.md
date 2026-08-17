@@ -23,7 +23,7 @@ open, and none is triggered by a redirect landing on a success page.
 ## 2. Where things are
 
 ```
-server/src/
+apps/server/src/
   features/
     auth/            sessions, passwords, Google, capabilities, the ownership helper
       providers/     google.verifier.ts — the only file that trusts a Google token
@@ -37,6 +37,7 @@ server/src/
     activity/        the event spine every other feature writes to
     dashboard/       the composed private landing page, and the current-action rule
     admin/           the staff surface — its own boundary, not a flag
+    conversations/   the console inbox: a read model over leads + feedback, no collection
     leads/           ─┐
     subscribers/      ├─ the public marketing endpoints, unchanged
     onboarding/      ─┘
@@ -44,18 +45,31 @@ server/src/
   middleware/        request context, rate limits, CSRF, errors
   app/               composition root and the route table
 
-client/src/
+apps/client/src/
   app/
     router/          RequireAuth — the one route guard
-    App.tsx          the whole route table, public and private
+    routes/          one module per audience: marketing, auth, private, demo
   components/
     layout/          SiteLayout (public) · AppLayout (private) · WorkspaceBar (the bridge)
-    ui/              the design-system primitives, shared by both surfaces
+    patterns/        AppState · ScoreScale · DeviceFrame
   features/
     auth/            context, credential pages, the Google button
     assessment/      the draft, and the audit → assessment mapping
     public/          the marketing site — one folder per page
     private/         the customer workspace — one folder per capability
+
+apps/admin/src/       a second bundle on a second origin — DECISION 027
+  app/               App root, ConsoleLayout
+  features/
+    inbox/           everybody waiting on a reply, prospects and clients in one list
+    projects/        the list, and one project's four operations
+    accounts/        who has an account
+    signIn/          the whole console when nobody is signed in
+  session/           the same identity, gated on one capability
+
+packages/
+  ui/                @jobforge/ui — tokens, primitives, useResource
+  shared/            @jobforge/shared — the API contract both frontends speak
 ```
 
 ### The three surfaces
@@ -263,3 +277,85 @@ Deliberately a table and not an event bus. There is one process, one database an
 out-of-band subscriber; what a bus would buy — decoupling between what happens and what
 reacts — is bought instead by every service depending on the _interface_ rather than on
 each other. Introducing a real bus later means one new implementation of it.
+
+---
+
+## 10. The project portal direction
+
+> **Status: direction and model settled 2026-08-14; not yet built.** DECISIONS 021–025 in
+> `docs/owner-decisions-required.md` are all answered, and this section records the shape they
+> chose. Nothing here is implemented yet.
+>
+> The five answers, because they constrain everything below:
+>
+> - **021 — one application, two boundaries.** No `apps/` split. `admin` is a first-class boundary
+>   with its own public API; `admin ↔ private` imports are forbidden by ESLint.
+> - **022 — one lifecycle, extended.** Same product. No `Project.kind`. The eight-stage website
+>   lifecycle gains a specification stage before `building`; requests sit ahead of it.
+> - **023 — `ProjectRequest` is its own entity.** `Project` keeps meaning "work we are doing".
+> - **024 — approval is per-artefact.** One `Approval` record with `subjectType` and `subjectVersion`.
+> - **025 — development substages are `internal` only.** The estimate carries the timing.
+
+The application is becoming a customer project portal: the customer should be able to see where
+their project is, what is happening, whose move it is, when it will be done, and talk to the owner
+without digging through a thread. The owner gets an operational console over every customer at once.
+
+### 10.1 What already exists, and is the foundation
+
+This direction is mostly an **extension of the existing domain**, not a new one. Before adding
+anything, know what is already here:
+
+| Requirement                         | Already implemented as                                                                 |
+| ----------------------------------- | -------------------------------------------------------------------------------------- |
+| Lifecycle owned by the domain       | `PROJECT_MILESTONES` — ordered, server-owned, `milestoneIndex` drives the progress bar |
+| Domain state → customer language    | `MILESTONE_PRESENTATION` — a label and a sentence per stage                            |
+| "Whose move is it?"                 | `waitingOnCustomer` on the presentation _and_ on `CurrentAction`                       |
+| "What do I do now?"                 | `chooseCurrentAction` — one ordered walk, exactly one answer, priority written down    |
+| Lifecycle transitions centralised   | `ProjectService.setMilestone / approve / requestChanges / markReadyForReview`          |
+| Approval names what was approved    | `approvedAt` + `approvedDeploymentId`                                                  |
+| Activity separate from conversation | `activity/` (the spine) vs `feedback/` (project-scoped threads)                        |
+| Customer vs operational detail      | `ACTIVITY_AUDIENCES = ['customer', 'internal']`                                        |
+| Leak-proof customer projection      | `CustomerProjectView`, built field by field, never by subtraction                      |
+| Permissions                         | `CAPABILITIES` — `resource:action:scope`, with `:own` and `:any` scopes                |
+
+**Do not build a parallel system for any row above.** Extend it.
+
+### 10.2 What is genuinely missing
+
+| Gap                        | Extends                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------- |
+| Read receipts (`readAt`)   | `feedback/` comments                                                            |
+| Estimates                  | `projects/` — `estimatedCompletionAt`, `estimateUpdatedAt`, `estimateUpdatedBy` |
+| Stage history + durations  | `activity/` records the change; nothing records the _duration_                  |
+| Specification + versioning | new — no equivalent exists                                                      |
+| Development substages      | `projects/` — a second axis under `building`                                    |
+| System / welcome messages  | `feedback/` — needs a `messageType` and a non-human author                      |
+| Customer-created requests  | new — see DECISION 023                                                          |
+
+### 10.3 The two rules that must not be broken
+
+**Lifecycle state changes only through a domain operation.** Never `project.milestone = x` from a
+route handler or a component. `ProjectService` is the chokepoint and the reason transitions are
+testable and auditable; every new operation (`submitSpecificationForApproval`, `approveSpecification`,
+`startDevelopment`, …) belongs on it, beside the ones already there.
+
+**The customer never sees a domain identifier.** `SPEC_APPROVAL_PENDING` is not a thing a customer
+reads. Every customer-visible stage goes through a presentation map, the same way
+`MILESTONE_PRESENTATION` already does it. This is why `CustomerProjectView` exists and why it is
+assembled explicitly.
+
+### 10.4 Client and admin
+
+**Answered.** They are two deployed applications — DECISION 026 split the workspaces and
+DECISION 027 moved the console's screens into `apps/admin`, superseding DECISION 021's "one
+application, two boundaries".
+
+The bet 021 made is worth recording because it paid: it required `features/admin` and
+`features/private` to be isolated from each other in a way ESLint enforced, on the argument that
+this would make an eventual split "a move rather than an untangling". **Not one import had to be
+broken.** What the move actually cost was porting three screens onto the console's own request
+layer and its own state components — mechanical work, none of it archaeology.
+
+The rule that replaces it is stronger and enforced the same way: **the two frontends never import
+each other.** Two browser bundles cannot trust one another, so anything shared goes in
+`packages/`, and anything that needs authorising goes behind an API route.

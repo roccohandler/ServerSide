@@ -1,0 +1,34 @@
+/* The foot of a list. Centred, because it is about the list rather than about a row in it. */
+.more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.count {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The complete case. Quieter than the button it replaces — it is a confirmation, not an
+ * invitation — but it is still there, because a list that stops without saying so leaves the
+ * reader unsure whether they have seen everybody.
+ */
+.complete {
+  margin: var(--space-5) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+  text-align: center;
+}
+
+/* Neither belongs on paper: one is a control and the other describes a screen. */
+@media print {
+  .more,
+  .complete {
+    display: none;
+  }
+}

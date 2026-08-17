@@ -101,7 +101,7 @@ Each demo's three pages do the job that trade's own industry page says it must:
 ## 5. Architecture
 
 ```
-client/src/
+apps/client/src/
   config/
     demos.ts                  slugs, paths, palette tokens, route helpers
   content/demos/              OUTSIDE content/index.ts. Never re-export.

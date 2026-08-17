@@ -1,0 +1,29 @@
+.prose {
+  max-width: var(--container-narrow);
+}
+
+.notice {
+  margin-bottom: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--text-sm);
+  background-color: var(--color-tint-accent);
+  border-inline-start: 4px solid var(--color-accent);
+  border-radius: var(--radius-md);
+}
+
+.section {
+  margin-top: var(--space-6);
+}
+
+.sectionHeading {
+  margin-bottom: var(--space-2);
+}
+
+.body {
+  color: var(--color-ink-muted);
+}
+
+.contact {
+  margin-top: var(--space-7);
+  color: var(--color-ink-muted);
+}

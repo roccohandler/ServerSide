@@ -1,0 +1,143 @@
+/*
+ * The one table in the design system.
+ *
+ * Moved out of the owner console's `Projects.module.css`, where both of its consumers shared
+ * it — see the note in `Table.tsx` about why the behaviour was worth extracting at two
+ * consumers when the stylesheet alone was not.
+ */
+
+/*
+ * Focusable scroll container with an accessible name — required rather than optional: a
+ * keyboard user on a narrow window can otherwise see a cut-off table with no way to move it.
+ * See WCAG 2.1.1 and the `jsx-a11y/no-noninteractive-tabindex` allowance in `eslint.config.js`.
+ */
+.scroll {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  width: 100%;
+}
+
+.table {
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  width: 100%;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3);
+  text-align: start;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.table thead th {
+  background: var(--color-surface-muted);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.table tbody th {
+  font-weight: var(--weight-semibold);
+}
+
+/*
+ * ============================================================================
+ * BELOW THE TABLET STEP, A TABLE STOPS BEING A TABLE
+ * ============================================================================
+ *
+ * The console's projects table has seven columns and its accounts table has ten. On a 320px
+ * screen that is roughly three viewports of horizontal scrolling inside a container the
+ * reader has to find first — and at 400% zoom, which is the same problem wearing different
+ * clothes, a desktop window behaves exactly like the phone.
+ *
+ * So below `md` each row becomes a labelled block. The column name moves into the cell as a
+ * `::before` from `data-label`, which is why `TableCell` requires that prop: a stacked cell
+ * reading "Linked" with no indication that the column was "Account" is worse than the
+ * scrolling it replaced.
+ *
+ * ## What is deliberately kept
+ *
+ * The scroll container keeps its `tabIndex` and its `role="region"` at every width. The
+ * scroll it exists for is gone here, so the tab stop is redundant rather than required — but
+ * it is *labelled*, so what a keyboard user lands on is a named region rather than a stray
+ * stop, and removing it would mean a prop, a media query in JavaScript, and a component that
+ * disagrees with its own stylesheet at one width.
+ *
+ * The markup stays a real `<table>` with real `<th scope>`. Only the presentation changes, so
+ * a screen reader still gets the row and column relationships either way.
+ * ============================================================================
+ */
+@media (max-width: 47.999rem) {
+  .scroll {
+    border: 0;
+    overflow-x: visible;
+  }
+
+  /* Hidden from sight, not from the accessibility tree — the headers still name the cells. */
+  .table thead {
+    clip-path: inset(50%);
+    position: absolute;
+    height: 1px;
+    width: 1px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .table tbody tr {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    display: block;
+    margin-bottom: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .table th,
+  .table td {
+    border-bottom: 0;
+    padding: var(--space-1) 0;
+    white-space: normal;
+  }
+
+  /* The row header is the card's title, so it takes the full width and no label. */
+  .table tbody th {
+    border-bottom: 1px solid var(--color-border);
+    display: block;
+    font-size: var(--text-base);
+    padding-bottom: var(--space-2);
+    margin-bottom: var(--space-1);
+  }
+
+  .table td {
+    display: grid;
+    gap: var(--space-3);
+    grid-template-columns: 8rem 1fr;
+  }
+
+  .table td::before {
+    color: var(--color-ink-muted);
+    content: attr(data-label);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+  }
+}
+
+/*
+ * The header row is distinguished by a fill and the stacked-card layout below 48rem is held
+ * together by one — both vanish. Cell borders survive, so the grid does; this puts the head
+ * back by weight and edge instead of by colour.
+ */
+@media (forced-colors: active) {
+  .table thead th {
+    border-bottom: 2px solid CanvasText;
+  }
+
+  .scroll {
+    border: 1px solid CanvasText;
+  }
+}

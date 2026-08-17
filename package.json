@@ -8,25 +8,29 @@
     "node": ">=22.0.0"
   },
   "workspaces": [
-    "client",
-    "server"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -k -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:client": "npm run dev --workspace client",
-    "dev:server": "npm run dev --workspace server",
-    "build": "npm run build --workspace server && npm run build --workspace client",
-    "build:client": "npm run build --workspace client",
-    "build:server": "npm run build --workspace server",
-    "start": "npm run start --workspace server",
+    "dev": "concurrently -k -n server,client,admin -c blue,green,magenta \"npm:dev:server\" \"npm:dev:client\" \"npm:dev:admin\"",
+    "dev:client": "npm run dev --workspace @jobforge/client",
+    "dev:admin": "npm run dev --workspace @jobforge/admin",
+    "dev:server": "npm run dev --workspace @jobforge/server",
+    "build": "npm run build --workspace @jobforge/server && npm run build --workspace @jobforge/client && npm run build --workspace @jobforge/admin",
+    "build:client": "npm run build --workspace @jobforge/client",
+    "build:admin": "npm run build --workspace @jobforge/admin",
+    "build:server": "npm run build --workspace @jobforge/server",
+    "start": "npm run start --workspace @jobforge/server",
     "test": "vitest",
     "test:run": "vitest run",
-    "typecheck": "npm run typecheck --workspace server && npm run typecheck --workspace client && tsc -p tsconfig.json --noEmit",
+    "typecheck": "npm run typecheck --workspace @jobforge/server && npm run typecheck --workspace @jobforge/client && npm run typecheck --workspace @jobforge/admin && tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:run && npm run build"
+    "check:csp": "tsx scripts/check-csp.ts",
+    "preflight": "npm run preflight --workspace @jobforge/server",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:run && npm run build && npm run check:csp"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

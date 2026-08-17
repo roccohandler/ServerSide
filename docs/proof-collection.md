@@ -41,7 +41,7 @@ Capture and file (one folder per client):
 
 ## Publishing rules
 
-- A testimonial goes into `client/src/content/testimonials.ts` only with quote, author,
+- A testimonial goes into `apps/client/src/content/testimonials.ts` only with quote, author,
   business and location all real — the existing test enforces full attribution.
 - A case study replaces a demonstration in the portfolio (`isDemo: false`); the trust
   disclosure ("this is a new business…") comes down only when real work is on the page.

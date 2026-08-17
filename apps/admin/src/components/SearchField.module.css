@@ -1,0 +1,30 @@
+/*
+ * The field and its clear button on one line, bottom-aligned.
+ *
+ * `flex-end` rather than `center`, because the field is a label stacked over an input stacked
+ * over a hint: centring would float the button in the middle of that column instead of sitting
+ * it on the input it belongs to.
+ */
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.row > :first-child {
+  /* The field takes the room; the button takes what it needs. */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/*
+ * No attempt to lift the button onto the input's line. The field is a label, an input and a
+ * hint in a column, so aligning to the input would mean a bottom margin equal to the hint's
+ * rendered height — a magic number measured from another element's typography, which is
+ * exactly the kind of value `tokens.test.ts` makes you write an exception for. Bottom-aligned
+ * to the field as a whole is correct and needs nothing.
+ */
+.row > :last-child {
+  flex: none;
+}

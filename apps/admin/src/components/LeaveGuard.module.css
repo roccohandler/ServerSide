@@ -1,0 +1,13 @@
+.body {
+  margin: 0;
+  color: var(--color-ink-muted);
+  line-height: var(--leading-normal);
+}
+
+/* The safe action first and emphasised. See the note in LeaveGuard.tsx. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}

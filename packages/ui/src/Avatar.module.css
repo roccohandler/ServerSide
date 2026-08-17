@@ -1,0 +1,48 @@
+/*
+ * Initials on the brand wash, which is the default rather than the fallback — this product
+ * has no avatar upload, so a name and nothing else is the case that actually happens.
+ *
+ * Ink on `--color-tint-brand` is stated in one rule so `tokens.test.ts` measures it.
+ */
+
+.avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background-color: var(--color-tint-brand);
+  color: var(--color-ink);
+  font-weight: var(--weight-semibold);
+  /* Never inherits the surrounding line height — an avatar in a paragraph must stay round. */
+  line-height: 1;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.sm {
+  width: 2rem;
+  height: 2rem;
+  font-size: var(--text-xs);
+}
+
+.md {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: var(--text-sm);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Initials on a tinted circle. Without the tint they are two letters loose in a row of
+   names, and the circle is the only thing that says whose they are. */
+@media (forced-colors: active) {
+  .avatar {
+    border: 1px solid CanvasText;
+  }
+}

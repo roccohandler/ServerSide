@@ -1,0 +1,16 @@
+/*
+ * A field in a footer, which is the one place on the site a form control appears without a
+ * form around it. The width cap is what keeps it from reading as one.
+ */
+.control {
+  max-width: 14rem;
+}
+
+/*
+ * The label inherits the footer's colour, and the footer is a charcoal band — so the field's
+ * own `--color-ink` label would be charcoal on charcoal there. Set from the band's text
+ * colour instead, which is the same token every other label in that footer uses.
+ */
+.control label {
+  color: inherit;
+}

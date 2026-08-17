@@ -1,0 +1,312 @@
+/* Styles owned by GuaranteeSection. Shared offer vocabulary lives in Offer.module.css. */
+
+/* ------------------------------------------------- the launch standard */
+.launchStandard {
+  padding-top: var(--space-6);
+  margin-top: var(--space-7);
+  border-top: 1px solid var(--color-border);
+}
+
+.launchStandardHeading {
+  font-size: var(--text-2xl);
+}
+
+.launchStandardLede {
+  max-width: 46rem;
+  margin-top: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+.launchStandardList {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin-top: var(--space-5);
+  list-style: none;
+}
+
+@media (min-width: 48rem) {
+  .launchStandardList {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.launchStandardItem {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.launchStandardMarker {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--color-ink);
+}
+
+.launchStandardTitle {
+  font-size: var(--text-base);
+}
+
+.launchStandardDetail {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.launchStandardPromise {
+  max-width: 46rem;
+  margin-top: var(--space-6);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink);
+}
+
+/* The limit sits with the promise, at the same weight as the rest of the prose. */
+.launchStandardLimit {
+  max-width: 46rem;
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ guarantee */
+.guaranteeList {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.guaranteeItem {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.guaranteeMarker {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--color-success);
+  background-color: var(--color-tint-success);
+  border-radius: var(--radius-md);
+}
+
+.guaranteeTitle {
+  margin-bottom: var(--space-2);
+}
+
+.guaranteeBody {
+  color: var(--color-ink-muted);
+}
+
+.guaranteeNote {
+  max-width: 46rem;
+  margin-top: var(--space-6);
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ response terms */
+
+/*
+ * The one promise on the page with money behind it, so it is the one block allowed to
+ * raise its voice. Everything else in this section is a card on a muted surface; this is
+ * a panel with a border you notice.
+ */
+.response {
+  margin-top: var(--space-8);
+  padding: var(--space-6);
+  background-color: var(--color-surface);
+  border: 2px solid var(--color-success);
+  border-radius: var(--radius-lg);
+}
+
+.responseEyebrow {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+  color: var(--color-success);
+}
+
+.responseHeading {
+  max-width: 30ch;
+  margin-top: var(--space-2);
+  font-size: var(--text-2xl);
+  letter-spacing: var(--tracking-tight);
+}
+
+.responseLede {
+  max-width: 46rem;
+  margin-top: var(--space-3);
+  color: var(--color-ink-muted);
+}
+
+.responsePromise {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  max-width: 46rem;
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  background-color: var(--color-tint-success);
+  border-radius: var(--radius-md);
+}
+
+.responseIcon {
+  flex-shrink: 0;
+  margin-top: 0.2em;
+  color: var(--color-success);
+}
+
+/* The remedy. Set apart because it is what turns a promise into a term. */
+.responseRemedy {
+  max-width: 46rem;
+  margin-top: var(--space-4);
+  padding-inline-start: var(--space-4);
+  font-weight: var(--weight-medium);
+  border-inline-start: 3px solid var(--color-success);
+}
+
+/* The line that keeps this a response commitment rather than an accidental SLA. */
+.responseDistinction {
+  max-width: 46rem;
+  margin-top: var(--space-4);
+  color: var(--color-ink-muted);
+}
+
+.responseGrid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.responseColumnHeading {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.responseList {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-3) 0 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+/* Rendered from `site.contact.hours`, never typed twice. */
+.responseWindow {
+  margin-top: var(--space-3);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.responseColumnNote {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* What the guarantee is not. Immediately under the promise, not in a footnote. */
+.responseDisclosure {
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.responseDisclosureHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-lg);
+}
+
+.responseDisclosureIcon {
+  flex-shrink: 0;
+  color: var(--color-ink-muted);
+}
+
+.responseDisclosureBody {
+  margin-top: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+/*
+ * The exclusions, in a native <details>. Collapsed because nobody reads nine bullet
+ * points before they have decided they care — and present, in full, on the same page as
+ * the promise, because a term somebody first meets when they try to use it is worse than
+ * no term at all.
+ */
+.exclusions {
+  margin-top: var(--space-5);
+}
+
+.exclusionsSummary {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+}
+
+.exclusionsSummary:hover {
+  color: var(--color-ink);
+}
+
+.exclusionsList {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 1fr;
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.exclusionsItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--color-ink-muted);
+}
+
+.exclusionsMarker {
+  flex-shrink: 0;
+  margin-top: 0.2em;
+  color: var(--color-ink-muted);
+}
+
+/* ------------------------------------------------------------------ responsive */
+@media (min-width: 48rem) {
+  .guaranteeList {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .exclusionsList {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 64rem) {
+  .responseGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+}
