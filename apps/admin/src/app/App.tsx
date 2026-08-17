@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { routePatterns } from '../config/routes';
+import { CONSOLE_BASENAME, routePatterns } from '../config/routes';
 import { AnnouncerProvider } from '../components/Announcer';
 import { ConsoleFallback } from '../components/ConsoleFallback';
 import { AdminSessionProvider } from '../session/AdminSession';
@@ -100,11 +100,11 @@ export function App() {
      * this rewrites the route URLs, and both are needed — with only the first, every internal
      * link would point at `/inbox` on the customer origin, which is a marketing 404.
      *
-     * `import.meta.env.BASE_URL` rather than the literal `/admin`, so the two cannot disagree:
-     * it is the same value Vite was configured with, resolved at build time. React Router
-     * ignores a trailing slash on a basename, so the value passes through as it is.
+     * `CONSOLE_BASENAME` rather than `import.meta.env.BASE_URL` directly, and the difference is
+     * one trailing slash that rendered the entire console blank at `/admin`. The whole account
+     * of it is on that constant.
      */
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <BrowserRouter basename={CONSOLE_BASENAME}>
       {/*
        * Above the session, so the live region exists in both of the console's two states.
        * A sign-in failure and a reply-sent confirmation then travel the same way; see the

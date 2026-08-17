@@ -253,9 +253,19 @@ than responsibility. Judge by whether the file has one reason to change.
   silently, on a green deploy. See `apps/admin/DEPLOY.md` and DECISION 034.
 - **The console's `base` is `/admin/` in every environment, including development.** Its dev URL
   is therefore `http://localhost:5174/admin/`, not the bare port. `BrowserRouter` takes the same
-  value through `import.meta.env.BASE_URL`, because Vite's `base` fixes the asset URLs and the
-  router's `basename` fixes the route URLs and **both are needed** — with only the first, every
-  internal link points at the marketing site's 404.
+  value, because Vite's `base` fixes the asset URLs and the router's `basename` fixes the route
+  URLs and **both are needed** — with only the first, every internal link points at the
+  marketing site's 404.
+- **`import.meta.env.BASE_URL` is `/admin/` and a router basename must be `/admin`.** Vite always
+  appends the slash; React Router's `stripBasename` runs `pathname.startsWith(basename)` before
+  normalising anything, and `'/admin'.startsWith('/admin/')` is false — so the router matches
+  nothing and **renders nothing**. `/admin/` works, so every link inside the console is fine and
+  the only broken URL is the bare one a person types: a blank page, one warning in a console
+  nobody has open, every test and every build green. `normaliseBasename` in
+  `apps/admin/src/config/routes.ts` is the fix. Its guard has to pass `'/admin/'` in **by hand**
+  — under Vitest `BASE_URL` is `'/'`, which never had the bug, so a test that reads the derived
+  constant passes against the broken code. That near miss is why the normalisation is an
+  exported function rather than an inline `.replace`.
 - **A conversation is a read model, not a collection.** `features/conversations` owns no
   storage: it merges leads and feedback and dispatches replies on a qualified `lead:`/`comment:`
   id. Never give it a model — a second definition of "unanswered" is the failure it avoids.
