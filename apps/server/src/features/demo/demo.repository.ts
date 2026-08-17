@@ -138,6 +138,14 @@ export function createMongoDemoRepository(
         AssessmentModel.deleteMany({ userId }).exec(),
         ReportModel.deleteMany({ userId }).exec(),
         LeadModel.deleteMany({ userId }).exec(),
+        /*
+         * The other half of the comment collection, and it is unconditional because it does
+         * not need a project to exist. A tester who writes on the Messages screen and then
+         * presses Reset would otherwise find their message still there — and, worse, still in
+         * the owner's inbox, which is the one list the demonstration is not allowed to add
+         * permanent rows to. See `scopeOf` in `features/feedback`.
+         */
+        CommentModel.deleteMany({ accountUserId: userId }).exec(),
         ...(projectIds.length > 0
           ? [
               CommentModel.deleteMany({ projectId: { $in: projectIds } }).exec(),

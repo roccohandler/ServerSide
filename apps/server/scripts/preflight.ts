@@ -551,6 +551,35 @@ function checkAuthAndOrigins(env: NodeJS.ProcessEnv, isProduction: boolean): voi
   );
 
   /*
+   * Follow-up nudges. Reported, never printed.
+   *
+   * A `pass` either way, like Demo Mode below and unlike the digest above — because unset is
+   * not a degraded state here, it is the *conservative* one. This is the only feature that
+   * emails somebody who did not ask, so a warning saying "you are not doing this yet" would be
+   * pressure to switch on a thing whose whole design assumes a deliberate decision.
+   *
+   * The dependency is stated because it is the one way to configure this and still send
+   * nothing: with no CRON_SECRET the routes exist and nothing ever invokes them.
+   */
+  record(
+    env.UNSUBSCRIBE_SECRET
+      ? {
+          area: 'Scheduled',
+          check: 'Follow-up nudges',
+          level: 'pass',
+          detail: env.CRON_SECRET
+            ? 'On. At most two reminders per account, and none after they buy.'
+            : 'Secret set, but CRON_SECRET is not — nothing invokes the run, so nobody is emailed.',
+        }
+      : {
+          area: 'Scheduled',
+          check: 'Follow-up nudges',
+          level: 'pass',
+          detail: 'Off. UNSUBSCRIBE_SECRET is not set, so no follow-up routes exist.',
+        },
+  );
+
+  /*
    * Demo Mode. Reported, never printed.
    *
    * A `pass` either way, and that is the point: unset is not a degraded state here, it is the

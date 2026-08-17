@@ -89,6 +89,27 @@ function quietStartupRace(proxy: { on(event: 'error', handler: () => void): void
 export default defineConfig({
   plugins: [react()],
 
+  /*
+   * ==========================================================================
+   * THE CONSOLE IS SERVED UNDER `/admin`, AND EVERY ASSET URL DEPENDS ON IT
+   * ==========================================================================
+   *
+   * DECISION 034. The console's files are copied into the customer project's output at
+   * `dist/admin/`, so its own document loads `/admin/assets/index-….js` — and without this
+   * `base`, Vite would emit `/assets/index-….js`, which on that origin resolves to the
+   * *customer* bundle's directory. The page would load, request the wrong file, and render
+   * nothing, with a 200 on every request.
+   *
+   * The trailing slash is required. Vite joins `base` to the asset path without inserting
+   * one, so `/admin` produces `/adminassets/…`.
+   *
+   * This moves the dev URL too: `http://localhost:5174/admin/`, not `:5174/`. That is the
+   * cost of the two environments agreeing, and the alternative — a base that is only set in
+   * production — is a path that is correct everywhere except the one place it is served.
+   * ==========================================================================
+   */
+  base: '/admin/',
+
   /* `.env` lives at the repository root, two levels up, and is shared with the server. */
   envDir: '../..',
 

@@ -16,6 +16,7 @@ import type {
   ProjectMilestone,
   TaskView,
   UploadTicket,
+  WorklistGroup,
 } from '@jobforge/shared';
 import { get, patch, post, put, remove } from './api';
 
@@ -458,4 +459,21 @@ export function attachOnboarding(
   projectId: string,
 ): Promise<ApiResult<{ readonly submission: OnboardingView }>> {
   return post(`/admin/onboarding/${encodeURIComponent(onboardingId)}/project`, { projectId });
+}
+
+/* ----------------------------------------------------------------- worklist */
+
+/**
+ * What is going stale — a different question from the inbox's "who is waiting on a reply".
+ *
+ * One request rather than five, because the question is "what should I do today" and five
+ * responses arriving separately produce a screen that assembles itself in front of somebody
+ * trying to decide. The grouping and the thresholds are the server's; this end renders what
+ * it is given and computes nothing, which is what stops the console growing a second opinion
+ * about what "overdue" means. See `worklist.ts` on the server.
+ */
+export function fetchWorklist(
+  signal?: AbortSignal,
+): Promise<ApiResult<{ readonly groups: readonly WorklistGroup[] }>> {
+  return get('/admin/worklist', signal);
 }

@@ -204,6 +204,15 @@ export const routes = {
    * behind two projects, one of which they have to remember exists.
    */
   appReports: '/app/reports',
+  /**
+   * How somebody reaches a human when no website is being built.
+   *
+   * Account-scoped for a stronger reason than the reports above are: a message *about* a
+   * project belongs on that project's feedback tab, and this exists for everybody who has no
+   * project open. Before it, their only route to the owner was the public contact form, which
+   * files an existing client in a list of prospects.
+   */
+  appMessages: '/app/messages',
   appBilling: '/app/billing',
   appAccount: '/app/account',
   /*

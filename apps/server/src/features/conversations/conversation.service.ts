@@ -2,7 +2,7 @@ import { AppError } from '../../lib/appError.js';
 import { describeError, redactEmail, type Logger } from '../../lib/logger.js';
 import type { EmailService } from '../../infrastructure/email/email.service.js';
 import type { StoredUser } from '../auth/index.js';
-import type { FeedbackService, StoredComment } from '../feedback/index.js';
+import { scopeOf, type FeedbackService, type StoredComment } from '../feedback/index.js';
 import { describeInquiryType, type LeadRepository, type StoredLead } from '../leads/index.js';
 import type { ProjectService, StoredProject } from '../projects/index.js';
 import { buildProspectReplyEmail } from './conversation.email.js';
@@ -14,6 +14,12 @@ import {
   type ConversationSummary,
   type ConversationPage,
 } from './conversation.types.js';
+
+/** The two fields an account-scoped reply needs in order to reach a person. */
+export interface AccountContact {
+  readonly email: string;
+  readonly name: string;
+}
 
 export interface ConversationService {
   /**
@@ -55,6 +61,21 @@ export interface ConversationServiceDependencies {
   readonly leads: LeadRepository;
   readonly feedback: FeedbackService;
   readonly projects: ProjectService;
+  /**
+   * Who an account-scoped message belongs to, by id.
+   *
+   * A closure rather than `AuthRepository`, for the reason the `leads` field above gives about
+   * `LeadService`: this feature needs one address and one name, and handing it the credential
+   * repository would put password and role operations one autocomplete away from the console's
+   * reply path.
+   *
+   * **Required, not optional.** Every other port in this file defaults to a no-op and the last
+   * one that did cost an afternoon: the test harness had never wired a notifier, so "we emailed
+   * them" was the largest untested claim in the application and every assertion about it passed
+   * by describing the gap. A missing lookup here would mean a customer with no project open is
+   * answered into a screen nobody told them to look at.
+   */
+  readonly findAccount: (userId: string) => Promise<AccountContact | null>;
   readonly emailService: EmailService;
   /**
    * Where a prospect's reply is sent from, in effect: it is the `Reply-To` on the
@@ -77,7 +98,8 @@ export interface ConversationServiceDependencies {
 export function createConversationService(
   dependencies: ConversationServiceDependencies,
 ): ConversationService {
-  const { leads, feedback, projects, emailService, ownerAddress, logger } = dependencies;
+  const { leads, feedback, projects, findAccount, emailService, ownerAddress, logger } =
+    dependencies;
   const findDemoOwnerId = dependencies.findDemoOwnerId ?? (async () => undefined);
 
   return {
@@ -204,47 +226,67 @@ export function createConversationService(
      */
     if (!comment || comment.parentId) throw notFound();
 
+    const scope = scopeOf(comment);
+    if (!scope) throw notFound();
+
     /*
      * Straight through to the feature that owns comments. It writes the reply, records
      * the activity entry the customer's timeline shows, and enforces the threading rule
      * a second time. Nothing about a reply is re-implemented here.
-     */
-
-    /*
-     * The project, loaded for one purpose: so the customer is emailed that they were answered.
      *
-     * This is the call site that most needed it. The inbox is where the owner answers somebody
-     * who is *waiting*, and until now a reply sent from here reached the customer's portal
-     * silently — the one surface in the system where the whole point is that a person on the
-     * other end is expecting to hear something.
+     * The subject is loaded for one purpose: so the customer is emailed that they were
+     * answered. This is the call site that most needed it — the inbox is where the owner
+     * answers somebody who is *waiting*, and a reply sent from here used to reach the
+     * customer's portal silently, on the one surface whose whole point is that a person on
+     * the other end is expecting to hear something.
      *
-     * A missing project is not an error. `withBusinessNames` already handles a comment whose
-     * project has gone by falling back to the person's own name; the same tolerance applies
-     * here, and the reply is still written. What is lost is the email, which is the right thing
-     * to lose when there is no project to name in it.
+     * A subject that cannot be resolved is not an error. `withBusinessNames` already handles
+     * a comment whose project has gone by falling back to the person's own name; the same
+     * tolerance applies here, and the reply is still written. What is lost is the email, which
+     * is the right thing to lose when there is nobody left to name in it.
      */
-    const project = await projects.findById(comment.projectId);
+    const subject = await subjectFor(scope);
 
     await feedback.addComment({
-      projectId: comment.projectId,
+      scope,
       author: params.author,
       body: params.body,
       parentId: comment.id,
-      ...(project
-        ? {
-            subject: {
-              businessName: project.businessName,
-              email: project.email,
-              contactName: project.contactName,
-            },
-          }
-        : {}),
+      ...(subject ? { subject } : {}),
     });
 
     logger.info('conversation.customer_replied', {
-      projectId: comment.projectId,
+      scope: scope.kind,
       commentId: comment.id,
     });
+  }
+
+  /**
+   * Where a reply goes, for either kind of thread.
+   *
+   * The two branches resolve different records and produce the same three fields, which is
+   * what lets `replyToCustomer` above have one code path. An account thread has no business
+   * name — that is the definition of the scope — so the person's own name is used, exactly as
+   * a project thread does when its project has been deleted.
+   */
+  async function subjectFor(
+    scope: NonNullable<ReturnType<typeof scopeOf>>,
+  ): Promise<{ businessName: string; email: string; contactName: string } | null> {
+    if (scope.kind === 'account') {
+      const account = await findAccount(scope.userId);
+      return account
+        ? { businessName: account.name, email: account.email, contactName: account.name }
+        : null;
+    }
+
+    const project = await projects.findById(scope.projectId);
+    return project
+      ? {
+          businessName: project.businessName,
+          email: project.email,
+          contactName: project.contactName,
+        }
+      : null;
   }
 }
 
@@ -280,7 +322,18 @@ async function withBusinessNames(
 ): Promise<readonly ConversationSummary[]> {
   if (comments.length === 0) return [];
 
-  const found = await projects.listByIds([...new Set(comments.map((c) => c.projectId))]);
+  /*
+   * Only the project-scoped rows need a lookup. An account-scoped message already carries the
+   * two things a summary needs — who wrote it and what they said — because there is no third
+   * record to join to. That is the scope, not a gap in it.
+   */
+  const projectIds = comments
+    .map((comment) => scopeOf(comment))
+    .filter((scope) => scope?.kind === 'project')
+    .map((scope) => scope.projectId);
+
+  const found =
+    projectIds.length > 0 ? await projects.listByIds([...new Set(projectIds)]) : ([] as const);
   const byId = new Map<string, StoredProject>(found.map((project) => [project.id, project]));
 
   return (
@@ -293,22 +346,31 @@ async function withBusinessNames(
        * in, the demo would put permanent rows at the top of the oldest-first list — which is
        * the position reserved for the customer who has been waiting longest.
        *
+       * Both scopes are excluded, and the account scope is the cheaper of the two to check:
+       * the message names its own account, so there is no project to resolve first.
+       *
        * A comment whose project has gone is still kept, exactly as before: `byId.get` returning
        * nothing means the row survives with the person's own name, because dropping somebody
        * who is genuinely waiting is the failure this list must not have.
        */
       .filter((comment) => {
-        const project = byId.get(comment.projectId);
-        return !(demoOwnerId && project?.ownerUserId === demoOwnerId);
+        if (!demoOwnerId) return true;
+        const scope = scopeOf(comment);
+        if (scope?.kind === 'account') return scope.userId !== demoOwnerId;
+        return byId.get(scope?.projectId ?? '')?.ownerUserId !== demoOwnerId;
       })
-      .map((comment) => ({
-        id: formatConversationId({ source: 'comment', recordId: comment.id }),
-        personName: comment.authorName,
-        businessName: byId.get(comment.projectId)?.businessName ?? comment.authorName,
-        kind: 'customer' as const,
-        lastMessage: toPreview(comment.body),
-        receivedAt: comment.createdAt.toISOString(),
-        awaitingReply: true,
-      }))
+      .map((comment) => {
+        const scope = scopeOf(comment);
+        const project = scope?.kind === 'project' ? byId.get(scope.projectId) : undefined;
+        return {
+          id: formatConversationId({ source: 'comment', recordId: comment.id }),
+          personName: comment.authorName,
+          businessName: project?.businessName ?? comment.authorName,
+          kind: 'customer' as const,
+          lastMessage: toPreview(comment.body),
+          receivedAt: comment.createdAt.toISOString(),
+          awaitingReply: true,
+        };
+      })
   );
 }

@@ -73,6 +73,17 @@ export interface AuthRepository {
    * capability that guards it is `customer:read:any`, and the route is behind `requireAdmin`.
    */
   listUsers(limit: number, search?: string | undefined): Promise<readonly StoredUser[]>;
+  /**
+   * Everybody who signed up on or after a date. Oldest first, so a bounded run works through
+   * the people who have been waiting longest rather than the ones who arrived this morning.
+   *
+   * Customers only, and never the demonstration account. Both exclusions are here rather than
+   * left to the caller because the one caller is a scheduled job that emails people, and the
+   * failure it must not have is a marketing nudge sent to the owner's own staff account or to
+   * `dana@example.test` — the second of which would be a real message about a fictional
+   * business, from a system nobody was watching, at four in the morning.
+   */
+  listCustomersCreatedSince(since: Date, limit: number): Promise<readonly StoredUser[]>;
   /** Adds a provider identity. No-op when that provider is already linked. */
   linkIdentity(id: string, identity: ProviderIdentity): Promise<StoredUser | null>;
 
@@ -246,6 +257,23 @@ export function createMongoAuthRepository(
         term ? { $or: [{ email: term }, { name: term }, { businessName: term }] } : {},
       )
         .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean()
+        .exec();
+
+      return documents.map(toStoredUser);
+    },
+
+    async listCustomersCreatedSince(since, limit) {
+      await connect();
+
+      const documents = await UserModel.find({
+        createdAt: { $gte: since },
+        role: 'customer',
+        /* Matches a missing field as well as an explicit `false`. */
+        demo: { $ne: true },
+      })
+        .sort({ createdAt: 1 })
         .limit(limit)
         .lean()
         .exec();

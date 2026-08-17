@@ -140,6 +140,11 @@ export interface ServerConfig {
     readonly secret: string | undefined;
     readonly enabled: boolean;
   };
+  /** Follow-up nudges. Unset leaves the feature unwired and nobody is emailed. */
+  readonly followUp: {
+    readonly unsubscribeSecret: string | undefined;
+    readonly enabled: boolean;
+  };
   /**
    * File storage — Vercel Blob.
    *
@@ -313,6 +318,26 @@ const envSchema = z.object({
    * credential, and Vite inlines that prefix into the public bundle.
    */
   CRON_SECRET: optionalString,
+
+  /*
+   * Signs the unsubscribe link on a follow-up email.
+   *
+   * Optional, and unset means `features/followup` is not wired at all — the `/api/cron/followup`
+   * route is absent and nobody is ever nudged. That is the `DEMO_PASSCODE` pattern and it is
+   * the right one here for a sharper reason than usual: this is the only feature in the
+   * application that emails somebody who did not ask to hear from us, so it should take a
+   * deliberate act to switch on, not a default.
+   *
+   * **Deliberately not `CRON_SECRET`**, which would have saved a variable. That value is held
+   * by a third party, is rotated on somebody else's schedule, and rotating it would silently
+   * invalidate every unsubscribe link already sitting in somebody's inbox — the one link in
+   * the system that must keep working months after the message it arrived in.
+   *
+   * Never `VITE_`-prefixed: it is a credential, and Vite inlines that prefix into the public
+   * bundle. `followup.test.ts` sweeps the client source for the attempt, as `demo.api.test.ts`
+   * does for the passcode.
+   */
+  UNSUBSCRIBE_SECRET: optionalString,
 
   /*
    * The Vercel Blob store's read-write token. Vercel injects it automatically once a store is
@@ -609,6 +634,10 @@ export function loadServerConfig(source: NodeJS.ProcessEnv = process.env): Serve
     cron: {
       secret: raw.CRON_SECRET,
       enabled: Boolean(raw.CRON_SECRET),
+    },
+    followUp: {
+      unsubscribeSecret: raw.UNSUBSCRIBE_SECRET,
+      enabled: Boolean(raw.UNSUBSCRIBE_SECRET),
     },
     files: {
       blobToken: raw.BLOB_READ_WRITE_TOKEN,

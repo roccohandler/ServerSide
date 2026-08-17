@@ -46,6 +46,8 @@ import type {
   VerifiedIdentity,
 } from '../features/auth/providers/identity.provider.js';
 import { IdentityVerificationError } from '../features/auth/providers/identity.provider.js';
+import type { FollowUpRepository } from '../features/followup/followup.repository.js';
+import type { FollowUpSend, SuppressionReason } from '../features/followup/followup.types.js';
 
 /*
  * In-memory doubles for the platform features, matching the style of `fakes.ts`.
@@ -188,6 +190,14 @@ export function createInMemoryAuthRepository(
             ),
         )
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, limit);
+    },
+
+    async listCustomersCreatedSince(since: Date, limit: number) {
+      /* Oldest first here, unlike `listUsers` — and customers only, never the demo account. */
+      return users
+        .filter((user) => user.createdAt >= since && user.role === 'customer' && user.demo !== true)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
         .slice(0, limit);
     },
 
@@ -437,7 +447,12 @@ export function createInMemoryDemoRepository(stores: {
         drop(stores.activity.entries, (entry) => entry.userId === userId) +
         drop(stores.assessments.assessments, (assessment) => assessment.userId === userId) +
         drop(stores.reports.reports, (report) => report.userId === userId) +
-        drop(stores.feedback.comments, (comment) => projectIds.has(comment.projectId))
+        drop(
+          stores.feedback.comments,
+          (comment) =>
+            comment.accountUserId === userId ||
+            (comment.projectId !== undefined && projectIds.has(comment.projectId)),
+        )
       );
     },
 
@@ -644,6 +659,16 @@ export function createInMemoryProjectRepository(
     async countForOwner(userId: string) {
       return projects.filter((project) => project.ownerUserId === userId).length;
     },
+
+    async findOwnerIdsWithProjects(userIds: readonly string[]) {
+      const wanted = new Set(userIds);
+      const found = new Set<string>();
+      for (const project of projects) {
+        /* An unclaimed project has no owner. `distinct` skips those; so does this. */
+        if (project.ownerUserId && wanted.has(project.ownerUserId)) found.add(project.ownerUserId);
+      }
+      return found;
+    },
   };
 }
 
@@ -756,6 +781,12 @@ export function createInMemoryFeedbackRepository(
 
     async findById(id: string) {
       return comments.find((comment) => comment.id === id) ?? null;
+    },
+
+    async listForAccount(userId: string) {
+      return comments
+        .filter((comment) => comment.accountUserId === userId)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
     },
 
     async listForProject(projectId: string) {
@@ -1006,6 +1037,63 @@ export function createInMemoryOnboardingRepository(
       };
       records.splice(index, 1, updated);
       return updated;
+    },
+  };
+}
+
+/* ------------------------------------------------------------------ followup */
+
+/**
+ * The two collections `features/followup` owns, in memory.
+ *
+ * `claimSend` reproduces the unique index rather than approximating it, because that index
+ * *is* the feature's correctness property — a fake that let a duplicate through would make
+ * every idempotency assertion pass against nothing.
+ */
+export function createInMemoryFollowUpRepository(): FollowUpRepository & {
+  readonly sends: FollowUpSend[];
+  readonly suppressions: Map<string, SuppressionReason>;
+} {
+  const sends: FollowUpSend[] = [];
+  const suppressions = new Map<string, SuppressionReason>();
+
+  return {
+    sends,
+    suppressions,
+
+    async sentRulesFor(userIds: readonly string[]) {
+      const wanted = new Set(userIds);
+      const byUser = new Map<string, Set<string>>();
+      for (const send of sends) {
+        if (!wanted.has(send.userId)) continue;
+        const set = byUser.get(send.userId) ?? new Set<string>();
+        set.add(send.ruleKey);
+        byUser.set(send.userId, set);
+      }
+      return byUser;
+    },
+
+    async claimSend(userId: string, ruleKey: string, sentAt: Date) {
+      if (sends.some((send) => send.userId === userId && send.ruleKey === ruleKey)) return false;
+      sends.push({ userId, ruleKey, sentAt });
+      return true;
+    },
+
+    async releaseSend(userId: string, ruleKey: string) {
+      const index = sends.findIndex((send) => send.userId === userId && send.ruleKey === ruleKey);
+      if (index !== -1) sends.splice(index, 1);
+    },
+
+    async suppressed(emails: readonly string[]) {
+      return new Set(emails.filter((email) => suppressions.has(email)));
+    },
+
+    async isSuppressed(email: string) {
+      return suppressions.has(email);
+    },
+
+    async suppress(email: string, reason: SuppressionReason) {
+      if (!suppressions.has(email)) suppressions.set(email, reason);
     },
   };
 }

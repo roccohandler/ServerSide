@@ -14,6 +14,7 @@ import { createLeadService } from '../features/leads/index.js';
 import { createOnboardingService } from '../features/onboarding/index.js';
 import { createNotifier } from '../features/notifications/index.js';
 import { createDemoService } from '../features/demo/index.js';
+import { createFollowUpService } from '../features/followup/index.js';
 import { createProjectService } from '../features/projects/index.js';
 import { createReportService } from '../features/reports/index.js';
 import { createTaskService } from '../features/tasks/index.js';
@@ -23,6 +24,7 @@ import {
   createInMemoryAuthRepository,
   createInMemoryDeploymentRepository,
   createInMemoryFeedbackRepository,
+  createInMemoryFollowUpRepository,
   createInMemoryOnboardingRepository,
   createInMemoryDemoRepository,
   createInMemoryProjectRepository,
@@ -101,6 +103,8 @@ export interface PlatformHarness {
      * and the panel on a project page that finally shows the brief the site is built from.
      */
     readonly onboarding: ReturnType<typeof createInMemoryOnboardingRepository>;
+    /** The send log and the suppression list — the two things follow-up correctness is about. */
+    readonly followUp: ReturnType<typeof createInMemoryFollowUpRepository>;
   };
 }
 
@@ -164,6 +168,7 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
   });
   const leads = createInMemoryLeadRepository();
   const onboarding = createInMemoryOnboardingRepository();
+  const followUp = createInMemoryFollowUpRepository();
 
   const activityService = createActivityService({ repository: activity, logger: silentLogger });
 
@@ -312,6 +317,11 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
     leads,
     feedback: feedbackService,
     projects: projectService,
+    /* Wired, deliberately. See the field's note on why it is not optional. */
+    findAccount: async (userId) => {
+      const user = await authRepository.findUserById(userId);
+      return user ? { email: user.email, name: user.name } : null;
+    },
     emailService: email,
     ownerAddress: 'owner@example.com',
     logger: silentLogger,
@@ -325,6 +335,43 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
    * against a deployment shape that is not the default, and would hide the property the
    * unmounted case exists to give — a genuine 404.
    */
+  /*
+   * Follow-up, and only when a test asked for it — the same shape as Demo Mode below and for
+   * the same reason. A harness that always built one would run every existing test against a
+   * deployment shape that is not the default, and would hide the property the unwired case
+   * exists to give: no route, and nobody emailed.
+   */
+  const followUpService = config.followUp.unsubscribeSecret
+    ? createFollowUpService({
+        repository: followUp,
+        emailService: email,
+        siteUrl: config.billing.siteUrl,
+        unsubscribeSecret: config.followUp.unsubscribeSecret,
+        ownerAddress: 'owner@example.com',
+        /* The same composition `app.ts` performs, against the same in-memory stores. */
+        findCandidates: async (since) => {
+          const users = await authRepository.listCustomersCreatedSince(since, 500);
+          if (users.length === 0) return [];
+
+          const ids = users.map((user) => user.id);
+          const [requested, purchased] = await Promise.all([
+            leads.findUserIdsWithLeads(ids),
+            projects.findOwnerIdsWithProjects(ids),
+          ]);
+
+          return users.map((user) => ({
+            userId: user.id,
+            email: user.email,
+            name: user.name,
+            createdAt: user.createdAt,
+            hasRequested: requested.has(user.id),
+            hasPurchased: purchased.has(user.id),
+          }));
+        },
+        logger: silentLogger,
+      })
+    : undefined;
+
   const demoService = config.demo.passcode
     ? createDemoService({
         repository: demo,
@@ -360,6 +407,7 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
     assessmentService,
     reportService,
     demoService,
+    followUpService,
     projectService,
     taskService,
     feedbackService,
@@ -397,6 +445,7 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
       demo,
       leads,
       onboarding,
+      followUp,
     },
   };
 }

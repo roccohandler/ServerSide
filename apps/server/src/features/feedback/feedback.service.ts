@@ -4,7 +4,13 @@ import type { ActivityRecorder } from '../activity/index.js';
 import type { StoredUser } from '../auth/index.js';
 import { noopNotifier, type Notifier } from '../notifications/index.js';
 import type { FeedbackRepository } from './feedback.repository.js';
-import type { CommentAuthorRole, StoredComment } from './feedback.types.js';
+import {
+  isInScope,
+  scopeFields,
+  type CommentAuthorRole,
+  type CommentScope,
+  type StoredComment,
+} from './feedback.types.js';
 
 export interface FeedbackService {
   /**
@@ -14,18 +20,21 @@ export interface FeedbackService {
    * the session, never from the body — a request cannot say who wrote it.
    */
   addComment(params: {
-    readonly projectId: string;
+    /** A website, or a person with no website open. See `CommentScope`. */
+    readonly scope: CommentScope;
     readonly author: StoredUser;
     readonly body: string;
     readonly parentId?: string | undefined;
     /**
-     * Enough about the project to notify the other side. Optional, and its absence means the
+     * Enough about the other side to write to them. Optional, and its absence means the
      * comment is written and nobody is told — which is the correct behaviour for a caller that
-     * genuinely has no project in hand, and is never the case for the two real ones.
+     * genuinely has no subject in hand, and is never the case for the real ones.
      */
     readonly subject?: FeedbackSubject | undefined;
   }): Promise<StoredComment>;
   listForProject(projectId: string): Promise<readonly StoredComment[]>;
+  /** One person's account-scoped messages, oldest first. */
+  listForAccount(userId: string): Promise<readonly StoredComment[]>;
   /**
    * Every customer request still waiting on an answer, across every project, oldest
    * first. Staff only — see `listAwaitingTeamReply` on the repository for the bound.
@@ -86,18 +95,19 @@ export function createFeedbackService(dependencies: FeedbackServiceDependencies)
   const now = dependencies.now ?? (() => new Date());
 
   return {
-    async addComment({ projectId, author, body, parentId, subject }) {
+    async addComment({ scope, author, body, parentId, subject }) {
       if (parentId) {
         const parent = await repository.findById(parentId);
 
         /*
-         * The parent has to exist, has to be on this project, and has to be a root.
+         * The parent has to exist, has to be in this scope, and has to be a root.
          *
-         * The project check is the security-relevant one: without it, somebody could
-         * reply to a comment on *another customer's* project by quoting its id, and the
-         * reply would be readable there. The two-deep check is what keeps threading flat.
+         * The scope check is the security-relevant one: without it, somebody could reply to a
+         * comment on *another customer's* project — or in another customer's account thread —
+         * by quoting its id, and the reply would be readable there. The two-deep check is what
+         * keeps threading flat.
          */
-        if (!parent || parent.projectId !== projectId) {
+        if (!parent || !isInScope(parent, scope)) {
           throw new AppError('NOT_FOUND', 'There is no comment to reply to.');
         }
         if (parent.parentId) {
@@ -106,7 +116,7 @@ export function createFeedbackService(dependencies: FeedbackServiceDependencies)
       }
 
       const comment = await repository.create({
-        projectId,
+        ...scopeFields(scope),
         parentId,
         authorUserId: author.id,
         authorName: author.name,
@@ -115,7 +125,8 @@ export function createFeedbackService(dependencies: FeedbackServiceDependencies)
       });
 
       logger.info('feedback.comment_added', {
-        projectId,
+        scope: scope.kind,
+        ...(scope.kind === 'project' ? { projectId: scope.projectId } : {}),
         commentId: comment.id,
         isReply: Boolean(parentId),
       });
@@ -126,14 +137,28 @@ export function createFeedbackService(dependencies: FeedbackServiceDependencies)
           ? `${comment.authorName} replied to a comment.`
           : `${comment.authorName} left a comment.`,
         audience: 'customer',
-        projectId,
         /*
-         * The stream belongs to the project's customer, not to whoever wrote the
-         * comment — a reply from the team has to appear in the customer's activity.
-         * The project's owner is filled in by the caller when it differs; here the
-         * author is used only when they are the customer.
+         * Absent on an account-scoped message, which `NewActivityRecord` has always allowed —
+         * "absent for account-level events that predate a project" is the comment on the field,
+         * written before there was one. The entry still lands in the person's own stream via
+         * `userId` below, which is what the dashboard reads.
          */
-        userId: comment.authorRole === 'customer' ? author.id : undefined,
+        ...(scope.kind === 'project' ? { projectId: scope.projectId } : {}),
+        /*
+         * The stream belongs to the customer, not to whoever wrote the comment — a reply
+         * from the team has to appear in the customer's activity.
+         *
+         * On a project scope the project's owner is filled in by the caller when it differs,
+         * so the author is used only when they are the customer. On an account scope there is
+         * nothing to fill in later: the scope *is* the account, so a team reply lands in the
+         * right stream here and does not depend on a caller remembering to say so.
+         */
+        userId:
+          scope.kind === 'account'
+            ? scope.userId
+            : comment.authorRole === 'customer'
+              ? author.id
+              : undefined,
       });
 
       /*
@@ -164,16 +189,36 @@ export function createFeedbackService(dependencies: FeedbackServiceDependencies)
           await notifier.feedbackReplied({
             to: { email: subject.email, name: subject.contactName },
             businessName: subject.businessName,
-            projectId,
+            ...(scope.kind === 'project' ? { projectId: scope.projectId } : {}),
             authorName: comment.authorName,
             body: comment.body,
           });
-        } else {
+        } else if (scope.kind === 'project') {
           await notifier.owner({
             kind: 'owner.comment_received',
             subject: `New comment — ${subject.businessName}`,
             heading: 'A client left a comment',
             lines: [`${comment.authorName} wrote about ${subject.businessName}:`, comment.body],
+            replyTo: subject.email,
+          });
+        } else {
+          /*
+           * Same kind, different sentence, and deliberately not a new `NotificationKind`.
+           *
+           * A message with no project attached is still "a client wrote something", which is
+           * what that name means and what the digest groups by. Adding `owner.message_received`
+           * would buy one more row in the table for the owner to read past, and the two would
+           * always be listed together anyway.
+           *
+           * What does change is the wording. "wrote about Cascade Heating" would be a lie here
+           * — the whole point of this scope is that there is no website being discussed — so
+           * the line names the person and says so.
+           */
+          await notifier.owner({
+            kind: 'owner.comment_received',
+            subject: `New message — ${subject.businessName}`,
+            heading: 'A client sent a message',
+            lines: [`${comment.authorName} wrote, with no project open:`, comment.body],
             replyTo: subject.email,
           });
         }
@@ -183,6 +228,7 @@ export function createFeedbackService(dependencies: FeedbackServiceDependencies)
     },
 
     listForProject: (projectId) => repository.listForProject(projectId),
+    listForAccount: (userId) => repository.listForAccount(userId),
     listAwaitingReply: (limit) => repository.listAwaitingTeamReply(limit),
     findById: (id) => repository.findById(id),
 

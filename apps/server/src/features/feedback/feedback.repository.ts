@@ -7,6 +7,8 @@ export interface FeedbackRepository {
   findById(id: string): Promise<StoredComment | null>;
   /** One project's comments and replies, oldest first. */
   listForProject(projectId: string): Promise<readonly StoredComment[]>;
+  /** One person's account-scoped messages and replies, oldest first. */
+  listForAccount(userId: string): Promise<readonly StoredComment[]>;
   /**
    * Resolves a root comment, and only one that is not already resolved. Null on a
    * second attempt, which keeps the activity entry written exactly once.
@@ -16,12 +18,19 @@ export interface FeedbackRepository {
   /** Outstanding requests on a project — the number the portal shows. */
   countUnresolvedRoots(projectId: string): Promise<number>;
   /**
-   * Across every project: change requests a customer has made that nobody has answered
-   * and nobody has marked done. Oldest first.
+   * Across every project *and every account*: anything a customer has written that nobody
+   * has answered and nobody has marked done. Oldest first.
    *
-   * The only query in this interface with no `projectId`, and deliberately the only one —
-   * it exists for the owner console, which is the one caller whose job is to cross
-   * customer boundaries. See `features/conversations`.
+   * The only query in this interface with no scope, and deliberately the only one — it
+   * exists for the owner console, which is the one caller whose job is to cross customer
+   * boundaries. See `features/conversations`.
+   *
+   * Account-scoped messages joined this list by **not being excluded from it**. The filter
+   * names `parentId`, `resolvedAt` and `authorRole` and has never named a scope, so widening
+   * what a comment can be attached to put account messages in the inbox without a line
+   * changing here. That is the whole argument for having refused a second collection: the
+   * alternative was a second query, merged, with a second opinion about what "unanswered"
+   * means.
    *
    * Returns *at most* `limit`. The bound is applied to the candidate roots and the
    * already-answered ones are then removed, so a full page of answered threads yields a
@@ -59,6 +68,15 @@ export function createMongoFeedbackRepository(
     async listForProject(projectId) {
       await connect();
       const documents = await CommentModel.find({ projectId }).sort({ createdAt: 1 }).lean().exec();
+      return documents.map(toStoredComment);
+    },
+
+    async listForAccount(userId) {
+      await connect();
+      const documents = await CommentModel.find({ accountUserId: userId })
+        .sort({ createdAt: 1 })
+        .lean()
+        .exec();
       return documents.map(toStoredComment);
     },
 

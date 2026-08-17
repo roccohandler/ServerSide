@@ -82,6 +82,12 @@ const ReportsPage = lazy(() =>
   })),
 );
 
+const MessagesPage = lazy(() =>
+  import('../../features/private/messages/MessagesPage').then((module) => ({
+    default: module.MessagesPage,
+  })),
+);
+
 const BillingPage = lazy(() =>
   import('../../features/private/billing/BillingPage').then((module) => ({
     default: module.BillingPage,
@@ -140,6 +146,7 @@ export const privateRoutes = (
       </Route>
 
       <Route path="reports" element={<ReportsPage />} />
+      <Route path="messages" element={<MessagesPage />} />
       <Route path="billing" element={<BillingPage />} />
       <Route path="account" element={<AccountPage />} />
 

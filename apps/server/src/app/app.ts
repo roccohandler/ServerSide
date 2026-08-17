@@ -60,6 +60,12 @@ import {
   type DigestService,
 } from '../features/notifications/index.js';
 import {
+  createFollowUpService,
+  createMongoFollowUpRepository,
+  FOLLOWUP_BATCH,
+  type FollowUpService,
+} from '../features/followup/index.js';
+import {
   createFileService,
   createMongoFileRepository,
   createVercelBlobStore,
@@ -150,6 +156,15 @@ export interface PlatformServices {
    * they mean.
    */
   readonly digestService: DigestService;
+  /**
+   * Follow-up nudges, or undefined when `UNSUBSCRIBE_SECRET` is unset.
+   *
+   * The second service here that can legitimately be absent, and unlike `fileService` its
+   * absence removes routes rather than making them answer 503. That is the right shape for a
+   * feature whose only observable behaviour is emailing somebody who did not ask: a
+   * deployment that has not switched it on should not have an endpoint that could.
+   */
+  readonly followUpService: FollowUpService | undefined;
   /**
    * Undefined when no blob store is configured, and that is a supported state.
    *
@@ -315,11 +330,73 @@ function createDefaultServices(config: ServerConfig, logger: Logger): PlatformSe
    * from "where it is read" across two implementations is how the two stop agreeing about which
    * collection they mean.
    */
+  /*
+   * Built before the digest, because the digest asks it whether the owner's address has been
+   * suppressed. One suppression list, checked by everything that is not transactional — see
+   * the note on `isSuppressed` in `notification.digest.ts`.
+   */
+  const followUpRepository = createMongoFollowUpRepository({ connect });
+
+  /*
+   * Built only when `UNSUBSCRIBE_SECRET` is set. Unset means no follow-up service, no
+   * `/api/cron/followup` route, no `/api/unsubscribe` route, and nobody nudged — the
+   * `DEMO_PASSCODE` shape, chosen for a sharper reason: this is the only feature that emails
+   * somebody who did not ask to hear from us.
+   *
+   * The *suppression list* is still readable without it, which is why the repository above is
+   * unconditional: an address that unsubscribed while the feature was on must stay suppressed
+   * after it is switched off.
+   */
+  const followUpService = config.followUp.unsubscribeSecret
+    ? createFollowUpService({
+        repository: followUpRepository,
+        emailService,
+        siteUrl: config.billing.siteUrl,
+        unsubscribeSecret: config.followUp.unsubscribeSecret,
+        ownerAddress: notificationRecipient,
+        /*
+         * The candidate query, composed here rather than inside the feature.
+         *
+         * `findUserIdsWithLeads` is the same query `/admin/accounts` reaches for its
+         * `hasRequested` column — reused rather than rewritten, which is what stops "has this
+         * person asked us for anything" having two definitions that disagree the first time
+         * either is changed.
+         */
+        findCandidates: async (since) => {
+          const users = await authRepository.listCustomersCreatedSince(since, FOLLOWUP_BATCH);
+          if (users.length === 0) return [];
+
+          const ids = users.map((user) => user.id);
+          const [requested, purchased] = await Promise.all([
+            leadRepository.findUserIdsWithLeads(ids),
+            projectRepository.findOwnerIdsWithProjects(ids),
+          ]);
+
+          return users.map((user) => ({
+            userId: user.id,
+            email: user.email,
+            name: user.name,
+            createdAt: user.createdAt,
+            hasRequested: requested.has(user.id),
+            hasPurchased: purchased.has(user.id),
+          }));
+        },
+        logger,
+      })
+    : undefined;
+
   const digestService = createDigestService({
     connect,
     emailService,
     ownerAddress: notificationRecipient,
     siteUrl: config.billing.siteUrl,
+    /*
+     * Straight to the repository rather than through the service, so the owner's digest
+     * honours a suppression even on a deployment where follow-ups are switched off. An
+     * address that said stop while the feature was on has not changed its mind because a
+     * variable was unset.
+     */
+    isSuppressed: (email) => followUpRepository.isSuppressed(email.trim().toLowerCase()),
     logger,
   });
 
@@ -513,6 +590,14 @@ function createDefaultServices(config: ServerConfig, logger: Logger): PlatformSe
       leads: leadRepository,
       feedback: feedbackService,
       projects: projectService,
+      /*
+       * One lookup, narrowed to two fields at the boundary rather than handing the console's
+       * reply path a repository that can also change a password or grant a role.
+       */
+      findAccount: async (userId) => {
+        const user = await authRepository.findUserById(userId);
+        return user ? { email: user.email, name: user.name } : null;
+      },
       emailService,
       ownerAddress: notificationRecipient,
       /*
@@ -532,6 +617,7 @@ function createDefaultServices(config: ServerConfig, logger: Logger): PlatformSe
       logger,
     }),
     digestService,
+    followUpService,
     subscriberService: createSubscriberService({
       repository: createMongoSubscriberRepository({ connect }),
       emailService,
@@ -638,6 +724,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
   const activityService = options.activityService ?? resolveDefaults().activityService;
   const conversationService = options.conversationService ?? resolveDefaults().conversationService;
   const digestService = options.digestService ?? resolveDefaults().digestService;
+  const followUpService = options.followUpService ?? resolveDefaults().followUpService;
   /*
    * `??` and not `?? undefined`, which reads the same and is not: the default is legitimately
    * `undefined`, so this resolves the defaults exactly when a test did not inject one — the
@@ -808,6 +895,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
       activityService,
       conversationService,
       digestService,
+      followUpService,
       fileService,
       cronSecret: config.cron.secret,
       logger,

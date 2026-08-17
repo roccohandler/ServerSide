@@ -1,8 +1,7 @@
-import { timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
 import { success } from '../../lib/apiResponse.js';
-import { AppError } from '../../lib/appError.js';
 import type { Logger } from '../../lib/logger.js';
+import { requireCronSecret } from '../../middleware/cronSecret.js';
 import type { DigestService } from './notification.digest.js';
 
 export interface DigestRoutesDependencies {
@@ -54,21 +53,18 @@ export interface DigestRoutesDependencies {
  * once a day, and a timing attack against it is not a realistic threat — but the alternative is
  * a credential comparison written the fast way in a file that somebody will copy the next time
  * a shared secret is needed. The cost is four lines.
+ *
+ * That prediction came true within the week: `features/followup` needed the same guard for the
+ * same reason. It is `middleware/cronSecret.ts` now, used by both, and the reasoning above is
+ * still the canonical statement of it — the middleware's own header points back here rather
+ * than restating it, so there is one copy to keep right.
  * ============================================================================
  */
 export function createDigestRouter(dependencies: DigestRoutesDependencies): Router {
   const { digestService, cronSecret, logger } = dependencies;
   const router = Router();
 
-  router.post('/digest', async (request, response) => {
-    if (!cronSecret || !presentedSecretMatches(request.headers.authorization, cronSecret)) {
-      /*
-       * The same answer for "not configured" and "wrong secret". An attacker learning that the
-       * scheduler is switched off is an attacker who knows to come back after the next deploy.
-       */
-      throw new AppError('NOT_FOUND', 'No such route.');
-    }
-
+  router.post('/digest', requireCronSecret(cronSecret), async (_request, response) => {
     const count = await digestService.sendPending();
 
     logger.info('digest.run_completed', { count });
@@ -82,22 +78,4 @@ export function createDigestRouter(dependencies: DigestRoutesDependencies): Rout
   });
 
   return router;
-}
-
-/**
- * Constant-time comparison of the presented bearer token against the configured secret.
- *
- * Length is checked first and separately, because `timingSafeEqual` throws on a length mismatch
- * rather than returning false — so a caller sending a one-character token would produce a 500
- * instead of a 404, which is itself an oracle.
- */
-function presentedSecretMatches(header: string | undefined, secret: string): boolean {
-  if (!header?.startsWith('Bearer ')) return false;
-
-  const presented = Buffer.from(header.slice('Bearer '.length));
-  const expected = Buffer.from(secret);
-
-  if (presented.length !== expected.length) return false;
-
-  return timingSafeEqual(presented, expected);
 }

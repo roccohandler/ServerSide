@@ -61,16 +61,28 @@ function build(options: { ownerAddress?: string | undefined } = {}) {
     logger: silentLogger,
   });
 
+  /*
+   * A real store rather than `async () => null`.
+   *
+   * The last port in this service that a test rig quietly did not wire was the notifier, and
+   * the cost was a test named "does not email a customer whose reply is already in their
+   * portal" that was asserting the harness gap rather than the behaviour — it passed for
+   * months and had to be rewritten to say the opposite. A stub returning nothing here would
+   * make every account-scoped assertion below agree with a missing lookup.
+   */
+  const accounts = new Map<string, { email: string; name: string }>();
+
   const service = createConversationService({
     leads,
     feedback,
     projects,
+    findAccount: async (userId) => accounts.get(userId) ?? null,
     emailService: email,
     ownerAddress: 'ownerAddress' in options ? options.ownerAddress : 'owner@example.com',
     logger: silentLogger,
   });
 
-  return { service, leads, feedback, feedbackRepository, projectRepository, email };
+  return { service, leads, feedback, feedbackRepository, projectRepository, email, accounts };
 }
 
 function giveLead(leads: ReturnType<typeof createInMemoryLeadRepository>) {

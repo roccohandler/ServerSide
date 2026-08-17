@@ -102,11 +102,25 @@ export interface DigestServiceDependencies {
   /** Undefined switches the digest off entirely rather than composing mail for nobody. */
   readonly ownerAddress: string | undefined;
   readonly siteUrl: string;
+  /**
+   * Whether an address has said stop. Optional, defaulting to "nobody has".
+   *
+   * The digest is the *other* non-transactional message this system sends — a summary
+   * somebody asked for, which is exactly the kind a person is entitled to end. Wiring the
+   * same suppression list `features/followup` owns is what makes "one unsubscribe, honoured
+   * everywhere" true rather than a sentence in a document; a second list would be a second
+   * answer to whether we may write to somebody.
+   *
+   * A closure rather than the repository, so this feature gains no knowledge of how
+   * suppression is stored, and optional so the existing digest tests keep their shape.
+   */
+  readonly isSuppressed?: ((email: string) => Promise<boolean>) | undefined;
   readonly logger: Logger;
 }
 
 export function createDigestService(dependencies: DigestServiceDependencies): DigestService {
   const { connect, emailService, ownerAddress, siteUrl, logger } = dependencies;
+  const isSuppressed = dependencies.isSuppressed ?? (async () => false);
 
   return {
     async enqueue(entry) {
@@ -122,6 +136,16 @@ export function createDigestService(dependencies: DigestServiceDependencies): Di
     async sendPending() {
       if (!ownerAddress) {
         logger.info('digest.skipped_no_address');
+        return 0;
+      }
+
+      /*
+       * Checked before the queue is read, not after. Draining rows for somebody who has said
+       * stop would delete a day of entries into an email nobody sends — the same "read, send,
+       * then delete" argument below, arriving one step earlier.
+       */
+      if (await isSuppressed(ownerAddress)) {
+        logger.info('digest.skipped_suppressed');
         return 0;
       }
 

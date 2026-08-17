@@ -37,6 +37,7 @@ import {
   parseUpdateProjectDetails,
 } from '../projects/index.js';
 import { toTaskView, type TaskService } from '../tasks/index.js';
+import { buildWorklist } from './worklist.js';
 
 export interface AdminRoutesDependencies {
   readonly projectService: ProjectService;
@@ -587,7 +588,7 @@ export function createAdminRouter(dependencies: AdminRoutesDependencies): Router
     const input = parseBody(addReplySchema, request.body);
 
     await feedbackService.addComment({
-      projectId: project.id,
+      scope: { kind: 'project', projectId: project.id },
       author: auth.user,
       body: input.body,
       parentId: input.parentId,
@@ -818,6 +819,32 @@ export function createAdminRouter(dependencies: AdminRoutesDependencies): Router
    * only the ones with no delivered review, because a list that also contained finished work
    * would be an archive rather than a queue. It is empty when nobody is waiting.
    */
+  /* ------------------------------------------------------------- worklist */
+
+  /*
+   * `GET /admin/worklist` — what is going stale.
+   *
+   * A different question from the inbox's "who is waiting on a reply", which is why it is a
+   * different endpoint and a different screen. Every group in it is a call to a method that
+   * already existed for another surface; see the header of `worklist.ts` for why not one of
+   * them may grow an opinion of its own.
+   */
+  router.get('/worklist', requireCapability('customer:read:any'), async (_request, response) => {
+    const groups = await buildWorklist({
+      assessmentService,
+      reportService,
+      onboardingService,
+      projectService,
+      leadService,
+      authRepository,
+      demoOwnerId,
+    });
+
+    response.json(success({ groups }));
+  });
+
+  /* ---------------------------------------------------------- assessments */
+
   router.get('/assessments', requireCapability('customer:read:any'), async (request, response) => {
     const { limit } = parseQuery(listQuerySchema, request.query);
     const { rows, hasMore } = await page(limit, (bound) =>

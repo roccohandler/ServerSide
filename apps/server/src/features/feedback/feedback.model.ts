@@ -7,7 +7,15 @@ import {
 } from './feedback.types.js';
 
 export interface CommentDocument {
-  projectId: string;
+  /** Set when the comment is about a website. Exactly one of this and `accountUserId`. */
+  projectId?: string;
+  /**
+   * Set when the comment is about nothing in particular — a customer with no project open
+   * writing to the owner. Denormalised onto every row in the thread, replies included, which
+   * is exactly what `projectId` does for the other scope: it is what makes "this person's
+   * messages" one indexed query rather than a root lookup followed by an `$in`.
+   */
+  accountUserId?: string;
   parentId?: string;
   authorUserId: string;
   authorName: string;
@@ -21,7 +29,13 @@ export interface CommentDocument {
 
 const commentSchema = new Schema<CommentDocument>(
   {
-    projectId: { type: String, required: true, maxlength: 64 },
+    /*
+     * Neither is `required`, because exactly one of them is — a condition Mongoose cannot
+     * state and the service enforces instead by writing both through `scopeFields`, which
+     * cannot produce a row with neither. A `required` on either would reject the other scope.
+     */
+    projectId: { type: String, maxlength: 64 },
+    accountUserId: { type: String, maxlength: 64 },
     parentId: { type: String, maxlength: 64 },
     authorUserId: { type: String, required: true, maxlength: 64 },
     /*
@@ -45,6 +59,8 @@ const commentSchema = new Schema<CommentDocument>(
 
 /* The portal's query: one project's comments, oldest first, assembled into threads in memory. */
 commentSchema.index({ projectId: 1, createdAt: 1 });
+/* The same query for the other scope: one person's messages, oldest first. */
+commentSchema.index({ accountUserId: 1, createdAt: 1 });
 /*
  * The console's query: unanswered customer requests across every project, oldest first.
  * Equality fields first and the sort field last, so one index both selects and orders.
@@ -59,6 +75,7 @@ export function toStoredComment(document: CommentDocument & { _id: unknown }): S
   return {
     id: String(document._id),
     projectId: document.projectId,
+    accountUserId: document.accountUserId,
     parentId: document.parentId,
     authorUserId: document.authorUserId,
     authorName: document.authorName,

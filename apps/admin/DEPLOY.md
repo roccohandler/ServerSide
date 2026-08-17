@@ -1,30 +1,80 @@
 # Deploying the owner console
 
-The console is a **second Vercel project** against the same repository. It is not a second
-domain pointed at the same build — it is a different bundle, and a customer's browser must
-never download it.
+**The console is served by the customer project, at `/admin`.** One Vercel project, two
+bundles. DECISION 034.
 
-| Project        | Root directory | Serves                                     |
-| -------------- | -------------- | ------------------------------------------ |
-| jobforge       | repo root      | the marketing site, the portal, and `/api` |
-| jobforge-admin | `apps/admin`   | this console                               |
+That is not a merge. `apps/admin` is still its own application with its own document, its own
+JavaScript and its own CSS — a visitor to the homepage downloads none of it — and the two
+frontends still import nothing from each other, in either direction, enforced by ESLint. What
+changed is which origin serves the files.
 
-Create the second project in Vercel, set **Root Directory** to `apps/admin`, and turn on
-**Include source files outside of the Root Directory** — the build runs `npm run build:admin`
-from the repository root so the workspace links resolve. `apps/admin/vercel.json` supplies the
-rest.
+## What it takes to deploy: nothing
 
-## The three values that have to agree
+There is no second project to create and no setting to remember. The customer project's build
+command runs `build:web`, which builds both apps and then copies `apps/admin/dist` into
+`apps/client/dist/admin`. `scripts/place-console.ts` is that copy, and its header is the long
+version of everything below.
 
-This is the whole deployment, and getting one of the three wrong is the only way it fails.
-They are listed together because they are one decision — _which origin is the console on_ —
-written in three places.
+Two things in the root `vercel.json` finish it:
+
+| Rule                                 | Why                                                            |
+| ------------------------------------ | -------------------------------------------------------------- |
+| `/admin/(.*)` → `/admin`             | Deep links. `/admin/inbox` is a client-side route, not a file. |
+| `/admin(/.*)?` → `private, no-store` | Every page here is one operator looking at every customer.     |
+
+The console's documents also carry `X-Robots-Tag: noindex, nofollow` and
+`Referrer-Policy: no-referrer`, which is what `apps/admin/vercel.json` gave them when this was
+its own project.
+
+## Why one origin, when separating them was the whole point of DECISION 027
+
+Because the session cookie is `SameSite=Lax`, and `SameSite` is evaluated on the **site** — the
+registrable domain — not the origin. `vercel.app` is on the Public Suffix List, so this:
+
+```
+https://jobforge-admin.vercel.app  →  https://jobforge.vercel.app/api        ❌ two sites
+```
+
+is two sites, and the browser sends no cookie at all. **Sign-in appears to succeed and the
+console immediately shows the sign-in form again** — no error, no failed request, a perfectly
+healthy server. The documented fix was "attach a real domain to both projects", which is
+correct, and which put a domain purchase between the owner and their own console.
+
+**What DECISION 027 actually bought was two bundles, not two origins.** That is the property
+the customer's payload budget cares about, and it survives this untouched.
+
+What is given up is that `/admin` is guessable on the public origin again. That is obscurity,
+not security: `requireAdmin` answers `NOT_FOUND` to every non-admin, `apps/server` is the only
+security boundary, and no bundle contains a secret. It is written down rather than hoped about.
+
+This is reversible. The day a real domain exists, `admin.example.com` is a better home for the
+console, and getting back there is: a second Vercel project rooted at `apps/admin`, `base` back
+to `/`, and the `/admin` rewrite deleted. The rest of this file is what that would need.
+
+## Locally
+
+`npm run dev` starts all three. The console is at **`http://localhost:5174/admin/`** — the
+trailing path, not the bare port, because `base` is `/admin/` in every environment. Both apps
+proxy `/api` to the same Express server, so development is same-origin and always was.
+
+## If it ever goes back to its own project
+
+Set **Root Directory** to `apps/admin` and turn on **Include source files outside of the Root
+Directory** — the build runs `npm run build:admin` from the repository root so the workspace
+links resolve. `apps/admin/vercel.json` is still here and still correct for that shape.
+
+Then three values have to agree. They are one decision — _which origin is the console on_ —
+written in three places:
 
 | Where                                     | Set to                                                |
 | ----------------------------------------- | ----------------------------------------------------- |
 | `VITE_API_BASE_URL` on **this** project   | the API's origin, e.g. `https://www.jobforge.example` |
 | `connect-src` in `apps/admin/vercel.json` | the same origin, added after `'self'`                 |
 | `CLIENT_ORIGIN` on the **API** project    | the customer origin **and** this one, comma-separated |
+
+`VITE_API_BASE_URL` is deliberately **unset** in the single-project shape: unset means the
+empty string, which makes every request relative and therefore same-origin. That is why the
+console needs no environment variable at all today.
 
 `CLIENT_ORIGIN` is a comma-separated allowlist and **never `*`** — these requests carry the
 session cookie, so a wildcard would let any page on the internet make authenticated calls on
@@ -35,9 +85,8 @@ the owner's behalf. See the long note in `apps/server/src/config/env.ts`.
 Worth knowing, because two of the three fail in the browser rather than in a build log:
 
 - **`VITE_API_BASE_URL` unset** — the console fetches `admin.example.com/api/…`, which is
-  itself. Every request 404s and the inbox shows "The server could not be reached." It is the
-  same variable name the customer application reads, holding a different value here, because
-  two spellings of one question is how this gets set on the wrong project and still looks set.
+  itself. Every request 404s and the inbox shows "The server could not be reached." (In the
+  single-project shape this is the _correct_ configuration, because itself is the right answer.)
 - **`connect-src` not updated** — the browser blocks the request before it is sent. The console
   shows the same network error and the reason is only in the dev-tools console.
 - **`CLIENT_ORIGIN` missing this origin** — the server answers, the browser discards the
@@ -46,13 +95,11 @@ Worth knowing, because two of the three fail in the browser rather than in a bui
 All three produce "it does not work" with a perfectly healthy server, which is why they are
 one table rather than three scattered notes.
 
-### The fourth thing the CSP governs, found the same way
+## The fourth thing the CSP governs, found the same way
 
-`index.html` loads Archivo from Google Fonts, and the policy above did not allow it — so
-`style-src` blocked the stylesheet and the console rendered in the system fallback, with the
-reason visible only in the dev-tools console. The customer application had the same gap and
-the same symptom: the brand typeface named first in `--font-sans` never arrived in
-production, on both origins, and nothing said so.
+`index.html` loads Archivo from Google Fonts, and the policy did not allow it — so `style-src`
+blocked the stylesheet and the console rendered in the system fallback, with the reason visible
+only in the dev-tools console. The customer application had the same gap and the same symptom.
 
 Both policies now carry the two entries a webfont needs, and they are two rather than one
 because the CSS and the font file come from different hosts:
@@ -65,36 +112,10 @@ because the CSS and the font file come from different hosts:
 Adding only the first is the trap: the stylesheet loads, the browser then blocks every font
 file it references, and the page still renders in the fallback with nothing obviously wrong.
 
-## The console must be a subdomain of the API's domain
-
-Not a preference — the console does not work otherwise, and it fails silently.
-
-The session cookie is `SameSite=Lax`, and `SameSite` is evaluated on the **site** (the
-registrable domain), not the origin. So this is fine:
-
-```
-https://admin.jobforge.example   →   https://www.jobforge.example/api      ✅ same site
-```
-
-and this is not:
-
-```
-https://jobforge-admin.vercel.app →  https://jobforge.vercel.app/api       ❌ two sites
-```
-
-`vercel.app` is on the Public Suffix List, so two `*.vercel.app` names are two different
-sites and the browser sends no cookie at all. **Sign-in appears to succeed and the console
-immediately shows the sign-in form again** — no error, no failed request, a perfectly healthy
-server. Do not try to debug that as an auth bug; it is this.
-
-Which means: attach a real domain to both projects before using the console, or test it
-locally where both apps proxy `/api` to the same Express server and everything is
-same-origin. The reasoning behind refusing `SameSite=None` instead is in
-`apps/server/src/features/auth/auth.cookies.ts`.
-
-Nothing in this project touches the cookie. `credentials: 'include'` in `src/lib/api.ts` is
-the only thing that has to be true here, and the cookie is `HttpOnly`, so this bundle cannot
-read it either way.
+In the single-project shape the console is covered by the **root** `vercel.json` policy, which
+already carries both. `scripts/check-csp.ts` proves the inline theme bootstrap is allowed by
+each policy on every `npm run verify`, and it asserts the two documents ship the identical
+script — which is what lets one hash serve both.
 
 ## What is deliberately not deployed here
 

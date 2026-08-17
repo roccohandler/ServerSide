@@ -44,6 +44,15 @@ export interface ProjectRepository {
   /** Whether this account already has a project, so activation stays idempotent. */
   countForOwner(userId: string): Promise<number>;
   /**
+   * Which of these accounts own a project. One query for the batch.
+   *
+   * The shape `findUserIdsWithRequests` already has on the lead side, and deliberately the
+   * same one: both answer "which of these people got as far as X", both are asked by a
+   * scheduled job about a whole cohort, and a per-row version of either is fifty round trips
+   * to decide whether to send fifty emails.
+   */
+  findOwnerIdsWithProjects(userIds: readonly string[]): Promise<ReadonlySet<string>>;
+  /**
    * The newest project whose contact address is this one.
    *
    * One caller: matching an onboarding submission to the project it is the material for. The
@@ -171,6 +180,21 @@ export function createMongoProjectRepository(
     async countForOwner(userId) {
       await connect();
       return ProjectModel.countDocuments({ ownerUserId: userId }).exec();
+    },
+
+    async findOwnerIdsWithProjects(userIds) {
+      await connect();
+      if (userIds.length === 0) return new Set();
+
+      /*
+       * `distinct` rather than a find: the answer is a set of ids, and pulling whole project
+       * documents to derive it would be the entire project list's worth of bytes for a
+       * question that is a boolean per row.
+       */
+      const found = await ProjectModel.distinct('ownerUserId', {
+        ownerUserId: { $in: [...userIds] },
+      }).exec();
+      return new Set(found);
     },
 
     async findByEmail(email) {

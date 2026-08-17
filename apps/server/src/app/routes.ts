@@ -25,12 +25,17 @@ import { createDemoRouter, type DemoService } from '../features/demo/index.js';
 import { createDashboardRouter } from '../features/dashboard/index.js';
 import { createAdminRouter } from '../features/admin/admin.routes.js';
 import type { TaskService } from '../features/tasks/index.js';
-import type { FeedbackService } from '../features/feedback/index.js';
+import { createMessageRouter, type FeedbackService } from '../features/feedback/index.js';
 import type { DeploymentService } from '../features/deployments/index.js';
 import { createActivityRouter, type ActivityService } from '../features/activity/index.js';
 import type { ConversationService } from '../features/conversations/index.js';
 import type { FileService } from '../features/files/index.js';
 import { createDigestRouter, type DigestService } from '../features/notifications/index.js';
+import {
+  createFollowUpCronRouter,
+  createUnsubscribeRouter,
+  type FollowUpService,
+} from '../features/followup/index.js';
 
 export interface ApiRouterDependencies {
   readonly leadService: LeadService;
@@ -61,6 +66,11 @@ export interface ApiRouterDependencies {
   readonly fileService: FileService | undefined;
   /** Vercel Cron's shared secret. Undefined leaves the scheduled route unmounted. */
   readonly cronSecret: string | undefined;
+  /**
+   * Follow-up nudges. Undefined leaves both `/api/unsubscribe` and `/api/cron/followup`
+   * unmounted, which is what an unset `UNSUBSCRIBE_SECRET` produces.
+   */
+  readonly followUpService: FollowUpService | undefined;
   /**
    * Demo Mode. Undefined leaves every `/api/demo` route unmounted, which is what an unset
    * `DEMO_PASSCODE` produces — a genuine 404 rather than an open door.
@@ -264,6 +274,15 @@ export function createApiRouter(dependencies: ApiRouterDependencies): Router {
    */
   app.use('/reports', createReportRouter({ reportService: dependencies.reportService }));
 
+  /*
+   * Account-scoped for a stronger reason than reports are: a message with a project attached
+   * is a change request and belongs on that project's feedback tab. What this route is for is
+   * everybody who has no project open — signed up and not yet bought, or finished and thinking
+   * about the next one — who until now could only reach the owner through the public contact
+   * form, which files an existing client in a list of strangers.
+   */
+  app.use('/messages', createMessageRouter({ feedbackService: dependencies.feedbackService }));
+
   app.use(
     '/billing',
     createCustomerBillingRouter({
@@ -368,6 +387,46 @@ export function createApiRouter(dependencies: ApiRouterDependencies): Router {
         cronSecret: dependencies.cronSecret,
         logger: dependencies.logger,
       }),
+    );
+
+    /*
+     * A second router at the same mount rather than a second route on the one above, so the
+     * two features import nothing from each other and each owns its own path. They share the
+     * guard — `middleware/cronSecret.ts` — because a second copy of a credential comparison is
+     * the copy that is still using `===` in two years.
+     *
+     * Both conditions have to hold: no scheduler secret means nothing invokes it, and no
+     * unsubscribe secret means no service to invoke.
+     */
+    if (dependencies.followUpService) {
+      router.use(
+        '/cron',
+        createFollowUpCronRouter({
+          followUpService: dependencies.followUpService,
+          cronSecret: dependencies.cronSecret,
+          logger: dependencies.logger,
+        }),
+      );
+    }
+  }
+
+  /* --------------------------------------------------------------- opting out */
+
+  /*
+   * The one public route that answers HTML, and the one state change reachable by GET.
+   *
+   * Outside `/app` and outside `/cron` because it is neither: the caller is a person who
+   * clicked a link in an email, holds no session, and is authorised entirely by a signature in
+   * the URL. `followup.routes.ts` argues both of those at length.
+   *
+   * Mounted only when the feature is configured, which is consistent rather than awkward: with
+   * no follow-up service nothing has ever sent an unsubscribe link, so there is nothing for
+   * this route to honour.
+   */
+  if (dependencies.followUpService) {
+    router.use(
+      '/unsubscribe',
+      createUnsubscribeRouter({ followUpService: dependencies.followUpService }),
     );
   }
 

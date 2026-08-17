@@ -91,10 +91,14 @@ boundary — it is a capability all three share. The fourth boundary, `features/
 separate application; see below.
 
 `features/admin` **is gone from `apps/client`** — DECISION 027 moved it to `apps/admin`, so the
-customer bundle no longer contains the console at all and there is no `/admin` route to guess
-at. DECISION 021's `admin ↔ private` ESLint isolation is what made that a move rather than an
-untangling: not one import had to be broken. The rule that replaces it is rule 1 above, and it
-is enforced the same way.
+customer bundle no longer contains the console at all. DECISION 021's `admin ↔ private` ESLint
+isolation is what made that a move rather than an untangling: not one import had to be broken.
+The rule that replaces it is rule 1 above, and it is enforced the same way.
+
+**`/admin` is a reachable URL again, and that is not a reversal of the above.** DECISION 034
+serves the console's own bundle from the customer project's origin, because a cookie cannot
+cross two `*.vercel.app` names. The customer bundle still contains none of it and the budget
+guard still cannot see it — what changed is the origin, not the separation.
 
 ### The feature entry point is a public API
 
@@ -237,13 +241,47 @@ than responsibility. Judge by whether the file has one reason to change.
   deleting fields from the stored shape.
 - **Two admin auth mechanisms exist side by side** — a session cookie and a bearer token. See
   DECISION 019.
-- **The console only holds a session if it is a subdomain of the API's domain.** `SameSite=Lax`
-  is evaluated on the registrable domain, so two `*.vercel.app` names are two _sites_ and the
+- **The console only holds a session if it is same-site with the API.** `SameSite=Lax` is
+  evaluated on the registrable domain, so two `*.vercel.app` names are two _sites_ and the
   cookie is never sent — sign-in succeeds and loops back to the form, with no error anywhere.
-  See `apps/admin/DEPLOY.md` and DECISION 027.4.
+  **DECISION 034 answers this by serving both applications from one origin**: the console is
+  built separately and copied to `apps/client/dist/admin`, and one Vercel project serves it at
+  `/admin`. Two bundles, one origin — which is what DECISION 027 was actually for, since the
+  customer bundle still contains no console and the budget guard still cannot see it. The
+  ordering in `scripts/place-console.ts` is load-bearing: `build:client` empties
+  `apps/client/dist`, so a console placed before it is deleted by the build that follows,
+  silently, on a green deploy. See `apps/admin/DEPLOY.md` and DECISION 034.
+- **The console's `base` is `/admin/` in every environment, including development.** Its dev URL
+  is therefore `http://localhost:5174/admin/`, not the bare port. `BrowserRouter` takes the same
+  value through `import.meta.env.BASE_URL`, because Vite's `base` fixes the asset URLs and the
+  router's `basename` fixes the route URLs and **both are needed** — with only the first, every
+  internal link points at the marketing site's 404.
 - **A conversation is a read model, not a collection.** `features/conversations` owns no
   storage: it merges leads and feedback and dispatches replies on a qualified `lead:`/`comment:`
   id. Never give it a model — a second definition of "unanswered" is the failure it avoids.
+- **A comment has a scope, and exactly one of two fields carries it.** `projectId` for a change
+  request about a website, `accountUserId` for a message from somebody with no project open.
+  `scopeOf` is the only reader of either and `scopeFields` the only writer — two nullable
+  columns that must agree are two columns that eventually will not, unless nothing else can see
+  them. Account messages joined the console inbox **without a line changing in it**, because
+  `listAwaitingTeamReply` names `parentId`, `resolvedAt` and `authorRole` and has never named a
+  scope. That is the whole argument for having refused a `messages` collection.
+- **`features/followup` is the only thing that emails somebody who did not ask.** Four rules in
+  one table in `followup.types.ts`, at most **two** per account ever, and never after they buy.
+  Three things are load-bearing and each fails silently if broken: the unique
+  `(userId, ruleKey)` index (claim **before** sending — a check-then-write is correct until two
+  runs overlap), the signed unsubscribe link (an unsigned one lets anybody unsubscribe anybody,
+  and the victim's only symptom is a supplier who stopped writing), and the suppression list,
+  which the **digest checks too** so there is one answer to "may we write to this person".
+- **`UNSUBSCRIBE_SECRET` unset leaves follow-up entirely unwired** — no `/api/cron/followup`, no
+  `/api/unsubscribe`, nobody emailed. Deliberately **not** `CRON_SECRET`: that is rotated by
+  Vercel on their schedule, and rotating it would invalidate every unsubscribe link already
+  sitting in an inbox. Both secrets are needed for anything to send.
+- **`GET /api/admin/worklist` decides nothing.** Every group in `worklist.ts` is a call to a
+  method that already existed for another screen — the assessment queue, `findOverdue`, the
+  unmatched panel, `hasRequested`, the project list. It owns one constant, `STALE_AFTER_DAYS`.
+  The console's Today screen renders what it is given and computes no thresholds, because a
+  worklist is exactly the surface that grows a second opinion about what "overdue" means.
 - **A console reply sends before it marks, and lead intake stores before it notifies.** The two
   orders are opposite on purpose; each has a comment saying which asset it is protecting.
 - **The primary call to action creates an account before it takes a request.** "Get my free
@@ -331,7 +369,7 @@ than responsibility. Judge by whether the file has one reason to change.
 - **A moved workspace needs `npm install`.** The `node_modules/@jobforge/*` symlinks point at the
   old path until you re-run it, and the failure looks like a missing module rather than a stale link.
 - **Vercel's Root Directory is a dashboard setting and a directory move cannot update it.** The
-  customer project's root is the **repository root** (empty); the console's is `apps/admin`.
+  one project's root is the **repository root** (empty).
   DECISION 026 moved the code into `apps/*` and the customer project kept pointing at `client/`,
   so every deploy failed in under two seconds with `The specified Root Directory "client" does
 not exist` — before a file was compiled, with nothing in the repository able to catch it. See

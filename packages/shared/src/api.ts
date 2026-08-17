@@ -711,6 +711,33 @@ export interface AdminProjectView {
   readonly updatedAt: string;
 }
 
+/* ------------------------------------------------------------- the worklist */
+
+/**
+ * One thing that has gone quiet, already written as a sentence.
+ *
+ * `detail` arrives composed rather than as the numbers behind it, and `waitingDays` arrives
+ * counted. Both are the server's job here for the same reason `monthLabel` is on a report:
+ * two frontends deriving "9 days at review" from a timestamp is two chances to disagree
+ * about what a day is, on a screen whose entire content is a claim about elapsed time.
+ */
+export interface WorklistItem {
+  readonly id: string;
+  readonly title: string;
+  readonly detail: string;
+  /** Relative to the console's own router. Absent when there is nowhere specific to go. */
+  readonly href?: string;
+  readonly waitingDays: number;
+}
+
+/** A named group of them, carrying what to say when it is empty — which is the good case. */
+export interface WorklistGroup {
+  readonly key: string;
+  readonly title: string;
+  readonly emptyLabel: string;
+  readonly items: readonly WorklistItem[];
+}
+
 /* ---------------------------------------------- the console's own report shape */
 
 /** A month as the console holds it: everything the customer sees, plus whether it is out. */

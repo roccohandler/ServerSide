@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "npm run build:server && npm run build:client",
+  "buildCommand": "npm run build:server && npm run build:web",
   "outputDirectory": "apps/client/dist",
 
   "cleanUrls": true,
@@ -9,10 +9,14 @@
 
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/app/(.*)", "destination": "/app" }
+    { "source": "/app/(.*)", "destination": "/app" },
+    { "source": "/admin/(.*)", "destination": "/admin" }
   ],
 
-  "crons": [{ "path": "/api/cron/digest", "schedule": "0 16 * * *" }],
+  "crons": [
+    { "path": "/api/cron/digest", "schedule": "0 16 * * *" },
+    { "path": "/api/cron/followup", "schedule": "0 15 * * *" }
+  ],
 
   "headers": [
     {
@@ -38,6 +42,23 @@
     {
       "source": "/app/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "private, no-store" }]
+    },
+    {
+      "source": "/admin(/.*)?",
+      "headers": [
+        { "key": "Cache-Control", "value": "private, no-store" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+        { "key": "Referrer-Policy", "value": "no-referrer" }
+      ]
+    },
+    {
+      "source": "/admin/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     },
     {
       "source": "/assets/(.*)",

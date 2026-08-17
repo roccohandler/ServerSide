@@ -80,7 +80,8 @@ export interface Notifier {
   feedbackReplied(params: {
     readonly to: NotificationRecipient;
     readonly businessName: string;
-    readonly projectId: string;
+    /** Absent for an account-scoped message, which is about no website in particular. */
+    readonly projectId?: string | undefined;
     readonly authorName: string;
     readonly body: string;
   }): Promise<void>;
@@ -220,6 +221,7 @@ const paths = {
     `${siteUrl}/app/projects/${encodeURIComponent(projectId)}/preview`,
   assessment: (siteUrl: string) => `${siteUrl}/app/assessment`,
   reports: (siteUrl: string) => `${siteUrl}/app/reports`,
+  messages: (siteUrl: string) => `${siteUrl}/app/messages`,
 };
 
 /**
@@ -326,7 +328,14 @@ export function createNotifier(dependencies: NotifierDependencies): Notifier {
           businessName,
           authorName,
           body,
-          feedbackUrl: paths.projectFeedback(siteUrl, projectId),
+          /*
+           * Two scopes, two destinations. An answer about a website belongs on that website's
+           * feedback tab; an answer to somebody with no project open belongs on Messages, and
+           * sending them to a project id they do not have would be a link to a 404.
+           */
+          feedbackUrl: projectId
+            ? paths.projectFeedback(siteUrl, projectId)
+            : paths.messages(siteUrl),
         }),
       ),
 

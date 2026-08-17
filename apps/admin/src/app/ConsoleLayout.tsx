@@ -54,6 +54,13 @@ export const CONSOLE_MAIN_ID = 'console-main';
 
 const DESTINATIONS = [
   { to: routes.inbox, label: 'Inbox', end: true },
+  /*
+   * Second, immediately after the Inbox, because the two are the pair somebody opens in the
+   * morning: the Inbox is who is waiting on an answer, this is what has stopped moving with
+   * nobody waiting on it. Putting it last beside Onboarding would file it as an exception
+   * screen, and it is the opposite — it is the one that is meant to be read every day.
+   */
+  { to: routes.today, label: 'Today', end: false },
   { to: routes.projects, label: 'Projects', end: false },
   { to: routes.accounts, label: 'Accounts', end: false },
   { to: routes.assessments, label: 'Assessments', end: false },

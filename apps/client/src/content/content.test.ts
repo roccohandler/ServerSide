@@ -381,6 +381,7 @@ describe('page metadata', () => {
       ],
       [routes.appProjects, 'private: linked from the workspace navigation'],
       [routes.appReports, 'private: linked from the workspace navigation'],
+      [routes.appMessages, 'private: linked from the workspace navigation'],
       [routes.appBilling, 'private: linked from the workspace navigation'],
       [routes.appAccount, 'private: linked from the workspace navigation'],
     ]);

@@ -196,7 +196,7 @@ export function createProjectRouter(dependencies: ProjectRoutesDependencies): Ro
     const input = parseAddComment(request.body);
 
     await feedbackService.addComment({
-      projectId: project.id,
+      scope: { kind: 'project', projectId: project.id },
       author: auth.user,
       body: input.body,
       parentId: input.parentId,

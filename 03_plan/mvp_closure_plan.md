@@ -728,35 +728,35 @@ thing the CTA promises — does not exist as data.
 one, has no way to reach the owner except the public contact form — which produces a `lead`, in a
 list of prospects, for somebody who is already a client.
 
-- [ ] **6.1.1** Extend `features/conversations` with an account-scoped thread. **A read model over an extended `feedback`, not a new collection** — the feature's own rule
-- [ ] **6.1.2** Make `projectId` optional on a comment, or introduce an account-scoped subject. Whichever is chosen, it stays one definition of "a message"
-- [ ] **6.1.3** `GET`/`POST /api/app/messages`
-- [ ] **6.1.4** Customer: a Messages screen in `/app`
-- [ ] **6.1.5** These threads join the console inbox, kind `customer`, with no second definition of "awaiting reply"
-- [ ] **6.1.6** Notify both directions
+- [x] **6.1.1** Extend `features/conversations` with an account-scoped thread. **A read model over an extended `feedback`, not a new collection** — the feature's own rule
+- [x] **6.1.2** Make `projectId` optional on a comment, or introduce an account-scoped subject. Whichever is chosen, it stays one definition of "a message"
+- [x] **6.1.3** `GET`/`POST /api/app/messages`
+- [x] **6.1.4** Customer: a Messages screen in `/app`
+- [x] **6.1.5** These threads join the console inbox, kind `customer`, with no second definition of "awaiting reply"
+- [x] **6.1.6** Notify both directions
 
 ### 10.2 Nudges
 
-- [ ] **6.2.1** `features/followup` — rules, not a campaign engine. Signed up + no request → day 1, day 4. Requested + no purchase → day 3, day 10
-- [ ] **6.2.2** Record every send so nobody is nudged twice. Idempotency is the whole correctness property
-- [ ] **6.2.3** Stop on any progress — a request, an assessment, a payment, a reply
-- [ ] **6.2.4** `api/cron/followup.ts` + `vercel.json`
-- [ ] **6.2.5** **Marketing mail, not transactional.** A one-click unsubscribe and a stored suppression, honoured by the digest too
-- [ ] **6.2.6** Cap the total. Two emails and then a human, or it is spam with a schedule
+- [x] **6.2.1** `features/followup` — rules, not a campaign engine. Signed up + no request → day 1, day 4. Requested + no purchase → day 3, day 10
+- [x] **6.2.2** Record every send so nobody is nudged twice. Idempotency is the whole correctness property
+- [x] **6.2.3** Stop on any progress — a request, an assessment, a payment, a reply
+- [x] **6.2.4** `api/cron/followup.ts` + `vercel.json`
+- [x] **6.2.5** **Marketing mail, not transactional.** A one-click unsubscribe and a stored suppression, honoured by the digest too
+- [x] **6.2.6** Cap the total. Two emails and then a human, or it is spam with a schedule
 
 ### 10.3 The worklist
 
-- [ ] **6.3.1** `GET /api/admin/worklist` — quiet accounts, undelivered assessments, overdue reports, unattached submissions, projects with no movement in N days
-- [ ] **6.3.2** Console: a Today screen. The console's front page is the inbox, which answers "who is waiting"; this answers "what is going stale", and they are different questions
-- [ ] **6.3.3** Reuse the `hasRequested` composition from `/admin/accounts` — do not write a second one
+- [x] **6.3.1** `GET /api/admin/worklist` — quiet accounts, undelivered assessments, overdue reports, unattached submissions, projects with no movement in N days
+- [x] **6.3.2** Console: a Today screen. The console's front page is the inbox, which answers "who is waiting"; this answers "what is going stale", and they are different questions
+- [x] **6.3.3** Reuse the `hasRequested` composition from `/admin/accounts` — do not write a second one
 
 ### 10.4 Phase 6 exit criteria
 
-- [ ] A client sends a message with no project open; it reaches the inbox and is answerable
-- [ ] A quiet lead receives exactly one nudge, and none after they act
-- [ ] Unsubscribe works and is honoured everywhere
-- [ ] The worklist names real work
-- [ ] `npm run verify`
+- [x] A client sends a message with no project open; it reaches the inbox and is answerable
+- [x] A quiet lead receives exactly one nudge, and none after they act
+- [x] Unsubscribe works and is honoured everywhere
+- [x] The worklist names real work
+- [x] `npm run verify`
 
 ---
 
@@ -1370,18 +1370,46 @@ a page that renders fully without it, and a "Loading" bar there would draw the e
 at the one moment somebody is meant to be looking at what is inside it. The exception list is
 checked in both directions.
 
-### 17.3 What is left — Phase 6
+### 17.3 Phase 6 — done, 2026-08-17
 
-Not started. Fifteen items, in §10:
+All fifteen items in §10. `npm run verify` green: 95 files, 1,440 tests, eager JS 163.6 kB
+gzipped against a 164.0 kB budget, CSS 19.1 against 20.0.
 
-- **6.1 Account-level messages.** A customer between projects, or before one, still has no way
-  to reach the owner except the public contact form — which files them as a _prospect_. The
-  design is settled: a read model over an extended `feedback`, never a second collection.
-- **6.2 Follow-up nudges.** `features/followup`, idempotent send records, stop-on-progress, a
-  one-click unsubscribe with a stored suppression, and a two-email cap.
-- **6.3 The worklist.** `GET /api/admin/worklist` and a console Today screen — "what is going
-  stale", which is a different question from the inbox's "who is waiting".
+**Every part of it was built by owning no new definitions**, which was not the plan's
+instruction so much as its constraint, and it held three times:
 
-Nothing shipped depends on any of it. The assessment queue built in Phase 5 covers the most
-urgent case 6.3 was for — the primary offer now has an operational surface — and the digest
-still covers the owner's daily summary.
+- **6.1 Account messages** widened a comment's scope rather than adding a collection. Account
+  threads reached the console inbox **without a line changing in it** — `listAwaitingTeamReply`
+  names `parentId`, `resolvedAt` and `authorRole` and has never named a scope. The one
+  invariant added is "exactly one of `projectId` and `accountUserId`", and it is safe because
+  `scopeOf` and `scopeFields` are the only reader and the only writer.
+- **6.2 Follow-up** put its rules in a table in one file and its correctness in a unique index.
+  The claim is written **before** the send, because a check-then-write is correct until two runs
+  overlap — which happens on the busiest morning rather than the quietest.
+- **6.3 The worklist** calls five methods that already existed for five other screens and owns
+  exactly one constant, `STALE_AFTER_DAYS`.
+
+**Where the build contradicted the plan.**
+
+§10.2 said follow-up should measure the second track from the assessment request. It anchors
+on the **signup date** instead, both tracks, because two clocks means two answers to "how long
+had this person been waiting" on the day a rule misfires. The tracks stay honest because the
+rule is chosen from the account's _current_ state at evaluation time: somebody who requests on
+day two is in the second track by day three.
+
+§10.2 also implied one `api/cron/followup.ts` file. There is no such file — the route is a
+router in the feature, mounted at the existing `/cron` behind a guard that moved to
+`middleware/cronSecret.ts`. `notification.routes.ts` had predicted exactly this ("a file that
+somebody will copy the next time a shared secret is needed") and the prediction came true
+within the same phase.
+
+§10.1's `6.1.2` offered "make `projectId` optional, **or** introduce an account-scoped
+subject". Both, in effect: `projectId` became optional and a second column carries the other
+scope. The alternative — one qualified `project:`/`account:` string, matching the
+`ConversationId` idiom — was refused because it needs a migration of live rows to buy a
+tidier shape, and the two-column version is invisible above `scopeOf`.
+
+**One thing 6.2.5 asked for turned out to be about the owner.** "Honoured by the digest too"
+reads as though the digest goes to customers; it goes to the owner. It was wired anyway, and
+straight to the repository rather than through the service, so an address that unsubscribed
+while follow-up was on stays suppressed on a deployment where it is off.

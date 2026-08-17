@@ -17,6 +17,14 @@ export const routes = {
   assessments: '/assessments',
   /** The submissions that matched no project. A worklist — empty when all is well. */
   onboarding: '/onboarding',
+  /**
+   * What has gone quiet — a different question from the Inbox's "who is waiting on a reply".
+   *
+   * Its own screen rather than a panel on the Inbox, because the two answer different
+   * questions and a reader who has to work out which half of a page applies to which question
+   * ends up trusting neither.
+   */
+  today: '/today',
   signIn: '/sign-in',
 } as const;
 
@@ -27,6 +35,7 @@ export const routePatterns = {
   accounts: 'accounts',
   assessments: 'assessments',
   onboarding: 'onboarding',
+  today: 'today',
 } as const;
 
 export function projectPath(projectId: string): string {

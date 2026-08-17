@@ -94,6 +94,7 @@ describe('the customer workspace', () => {
       ['Assessment', routes.appAssessment],
       ['Website', routes.appProjects],
       ['Reports', routes.appReports],
+      ['Messages', routes.appMessages],
       ['Billing', routes.appBilling],
       ['Account', routes.appAccount],
     ] as const) {
@@ -102,7 +103,7 @@ describe('the customer workspace', () => {
   });
 
   /*
-   * Six items, and the count is pinned because the reason for it is not minimalism for its
+   * Seven items, and the count is pinned because the reason for it is not minimalism for its
    * own sake: it is progressive disclosure. Feedback, Tasks and Preview live inside the
    * project they belong to, and a customer with one website does not need a nine-item
    * sidebar to find it.
@@ -110,16 +111,24 @@ describe('the customer workspace', () => {
    * It was five until the monthly report shipped. The sixth earned its place by being a
    * *purchase* rather than a feature — DECISION 015 sells the Website Performance Report as
    * Growth Partner's headline deliverable, and a deliverable with no home in the product is
-   * one the customer cancels the first quiet month. This number going up again should cost
-   * the same argument.
+   * one the customer cancels the first quiet month.
+   *
+   * The seventh, Messages, earned its place by being the **only** one that works when nothing
+   * else on this list applies. Dashboard, Website, Reports and Billing all assume a project;
+   * somebody who has signed up and not yet bought, or whose site launched a year ago, has a
+   * sidebar of screens about a thing they do not currently have — and their one route to a
+   * human was the public contact form, which files an existing client as a prospect. A nav
+   * item that is useful precisely when the other six are not is not a seventh feature.
+   *
+   * This number going up again should cost the same argument.
    */
-  it('keeps the navigation to six items', () => {
+  it('keeps the navigation to seven items', () => {
     renderLayout();
 
     const nav = screen.getByRole('navigation', { name: /your account/i });
     const items = within(nav).getAllByRole('listitem');
 
-    expect(items).toHaveLength(6);
+    expect(items).toHaveLength(7);
   });
 
   it('marks the current page for a screen reader, not just visually', () => {
@@ -168,7 +177,7 @@ describe('the customer workspace', () => {
 
     const nav = screen.getByRole('navigation', { name: /your account/i });
 
-    expect(within(nav).getAllByRole('listitem')).toHaveLength(6);
+    expect(within(nav).getAllByRole('listitem')).toHaveLength(7);
     expect(within(nav).queryByRole('link', { name: /customers/i })).toBeNull();
     expect(within(nav).queryByRole('link', { name: /admin/i })).toBeNull();
   });

@@ -69,6 +69,7 @@ const NAV_ITEMS = [
   { to: routes.appAssessment, label: 'Assessment' },
   { to: routes.appProjects, label: 'Website' },
   { to: routes.appReports, label: 'Reports' },
+  { to: routes.appMessages, label: 'Messages' },
   { to: routes.appBilling, label: 'Billing' },
   { to: routes.appAccount, label: 'Account' },
 ] as const;

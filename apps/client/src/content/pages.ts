@@ -272,6 +272,13 @@ export const pages: readonly PageMeta[] = [
     noIndex: true,
   },
   {
+    path: routes.appMessages,
+    title: 'Messages',
+    description:
+      'Ask us anything, whether or not a website is being built right now. It reaches the person who builds them.',
+    noIndex: true,
+  },
+  {
     path: routes.appBilling,
     title: 'Your billing',
     description:

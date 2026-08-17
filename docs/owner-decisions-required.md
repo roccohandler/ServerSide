@@ -1343,3 +1343,111 @@ authorises against a name, and the tour navigates rather than intercepts — it 
 disables nothing, and a tester who ignores it finds it still on the step they left it on.
 
 Owner decision: [x] Built — 2026-08-16
+
+---
+
+## DECISION 034 — Where the owner console is served from — ANSWERED: one origin, two bundles
+
+**Supersedes DECISION 027.4.** That decision put the console on its own Vercel project and its
+own origin, and recorded — correctly, at length, in `apps/admin/DEPLOY.md` — that the console
+would only hold a session if its origin were a subdomain of the API's domain. The recorded fix
+was to attach a real domain to both projects.
+
+The recorded fix is right and it is a **purchase standing between the owner and their own
+console**. On `*.vercel.app` names the console cannot work at all: `SameSite=Lax` is evaluated
+on the registrable domain, `vercel.app` is on the Public Suffix List, so two `*.vercel.app`
+names are two _sites_ and the browser sends no cookie between them. Sign-in succeeds and the
+console immediately shows the sign-in form again — no error, no failed request, a healthy
+server, nothing in any log.
+
+**The decision: serve both applications from the customer project, the console at `/admin`.**
+
+The reason this is not a retreat is that **DECISION 027 bought two bundles, not two origins**,
+and two bundles is the property that mattered:
+
+- `apps/client` still contains no console. A visitor to the homepage downloads none of it —
+  separate document, separate JavaScript, separate CSS, reached only by asking for `/admin`.
+- The two frontends still import nothing from each other, in either direction, and ESLint still
+  fails the build on an attempt. Not one import changed.
+- The customer payload budget is unaffected, because `check-budget.ts` follows what
+  `dist/index.html` references and the console is not referenced by it.
+
+`scripts/place-console.ts` is the whole mechanism: build both, copy `apps/admin/dist` into
+`apps/client/dist/admin`. The order is load-bearing and the script says so — `build:client`
+empties `apps/client/dist`, so a console placed before it is deleted by the build that follows,
+silently, on a deploy whose log is entirely green.
+
+**What is given up, stated rather than hoped about.** `/admin` is guessable on the public origin
+again, which is what DECISION 027 removed. That is obscurity, not security: `requireAdmin`
+answers `NOT_FOUND` to every non-admin, `apps/server` is the only security boundary and re-checks
+every capability against the session, and no bundle contains a secret. The console's documents
+carry `noindex, nofollow` and `Referrer-Policy: no-referrer` so nothing indexes or leaks a URL.
+
+**What was rejected:**
+
+| Rejected                              | Why                                                                                                                |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Buy a domain first                    | Correct eventually, and it blocks the owner from using the console they have built today                           |
+| `SameSite=None` on the session cookie | `auth.cookies.ts` refused it with reasons that have not changed. Weakening a cookie to fix a hostname is backwards |
+| Merge the console into `apps/client`  | Gives up the thing DECISION 027 actually bought, and puts the console in the customer's payload budget             |
+| A proxy route on the customer origin  | A second place requests are authorised, which is the failure `apps/admin` having no `api/` exists to prevent       |
+
+**Reversible, and the path is written down.** The day a real domain exists,
+`admin.example.com` is a better home: a second Vercel project rooted at `apps/admin`, `base`
+back to `/`, and the `/admin` rewrite deleted. `apps/admin/vercel.json` is kept for exactly that
+shape and `apps/admin/DEPLOY.md` documents both.
+
+Owner decision: [x] Built — 2026-08-17
+
+---
+
+## DECISION 035 — Following up on somebody who went quiet — ANSWERED: two emails, then a person
+
+DECISION 028 made the account the lead capture: somebody who stops after the credential form
+has still left a name and an address. **Nothing had ever used the address.** That was the
+largest hole in the funnel, and it was invisible because the capture worked perfectly — the
+records were there and nobody was written to.
+
+**The decision: four rules, at most two emails per account, and never after they buy.**
+
+The rules are a table in `apps/server/src/features/followup/followup.types.ts` — one screen,
+meant to be argued with. Day 1 and day 4 for an account that asked for nothing; day 3 and day
+10 for one that asked and did not buy. Everything is measured from the signup date, because two
+clocks means two answers to "how long had this person been waiting" on the day a rule misfires.
+
+**Two is the cap and it is enforced separately from the table.** Four rules exist and no
+account can receive more than two of them — the mixed case (nudged on day 1, requests on day 2,
+now in the other track) would otherwise collect three. A third automated email to somebody who
+has ignored two is not persistence; it is spam with a schedule, and the address it burns is one
+the business paid to acquire.
+
+**This is marketing mail, and it is treated as such.** Every message carries a one-click
+unsubscribe, the suppression is stored against the **address** rather than the account so
+signing up again does not reset it, and the **digest honours the same list** — one answer to
+"may we write to this person", not two.
+
+Three mechanisms are load-bearing, and each fails silently if it is broken:
+
+| Mechanism                                              | What it prevents                                                                                          |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| Unique `(userId, ruleKey)`, claimed **before** sending | The same sentence every morning. A check-then-write is correct until two runs overlap                     |
+| An HMAC on the unsubscribe link                        | Anybody unsubscribing anybody. The victim never finds out; they experience a supplier who stopped writing |
+| The suppression check before rule selection            | Emailing somebody who has said stop, which is the one failure that is also a legal one                    |
+
+**`UNSUBSCRIBE_SECRET` unset leaves the whole feature unwired** — no cron route, no unsubscribe
+route, nobody emailed. The `DEMO_PASSCODE` pattern, chosen for a sharper reason: this is the
+only feature in the application that writes to somebody who did not ask to hear from us, so
+switching it on should be an act rather than a default. Deliberately not `CRON_SECRET`, which
+Vercel rotates on its own schedule — rotating that would invalidate every unsubscribe link
+already sitting in an inbox.
+
+**Also in this phase, and both following the same rule — own no definitions:**
+
+- **Account messages.** A customer between projects can now write to the owner without being
+  filed as a prospect. It is a comment with a second scope, not a `messages` collection, so it
+  reached the console inbox without a line changing there.
+- **The worklist.** `GET /api/admin/worklist` and the console's Today screen answer "what is
+  going stale", which is a different question from the inbox's "who is waiting". Every group is
+  a call to a method that already existed for another screen.
+
+Owner decision: [x] Built — 2026-08-17
