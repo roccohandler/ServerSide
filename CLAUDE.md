@@ -330,6 +330,12 @@ than responsibility. Judge by whether the file has one reason to change.
 - **`git mv` is blocked** by a local hook. Use plain `mv`; git detects the rename.
 - **A moved workspace needs `npm install`.** The `node_modules/@jobforge/*` symlinks point at the
   old path until you re-run it, and the failure looks like a missing module rather than a stale link.
+- **Vercel's Root Directory is a dashboard setting and a directory move cannot update it.** The
+  customer project's root is the **repository root** (empty); the console's is `apps/admin`.
+  DECISION 026 moved the code into `apps/*` and the customer project kept pointing at `client/`,
+  so every deploy failed in under two seconds with `The specified Root Directory "client" does
+not exist` — before a file was compiled, with nothing in the repository able to catch it. See
+  `docs/deployment.md`.
 - **Never add a source-shaped name to a directory skip-list.** `tokens.test.ts` once skipped
   `public` to avoid static assets and silently stopped checking `features/public` — thirty-two
   stylesheets, the whole marketing site, unenforced and still green.

@@ -27,10 +27,36 @@ Note that the error names only the _first_ offending property. There were five `
 removing the one Vercel printed would simply have produced the same failure on the next. If you
 are tempted to annotate a rule in `vercel.json`, annotate it here instead.
 
+## The Root Directory is the repository root, and it is a dashboard setting
+
+**Set Root Directory to the repository root — leave it empty.** Not `client`, not `apps/client`.
+
+This is the one deployment setting that lives only in Vercel's project settings and cannot be
+expressed in `vercel.json`, which is exactly why it is the one that goes stale. Everything in
+that file assumes the repository root: `outputDirectory` is `apps/client/dist`, the serverless
+function is `api/index.ts`, and the build command reaches two workspaces. Point the root
+anywhere below the top of the repository and none of those paths resolve.
+
+It bit once, on 2026-08-17, and the failure is worth recognising because it is not a code error:
+
+```
+The specified Root Directory "client" does not exist. Please update your Project Settings.
+```
+
+`client/` was the root before DECISION 026 moved the codebase into `apps/*`. A directory move
+is a commit; a Vercel project setting is not, so the setting kept pointing at a path that had
+stopped existing and every build failed in under two seconds, before a single file was
+compiled. Nothing in the repository could have caught it — which is why it is written down here
+rather than guarded by a script.
+
+The console project is the opposite case and is set to `apps/admin`; see
+[`apps/admin/DEPLOY.md`](../apps/admin/DEPLOY.md).
+
 ## Build
 
 | Setting           | Value              | Why                                                                                         |
 | ----------------- | ------------------ | ------------------------------------------------------------------------------------------- |
+| Root Directory    | _(empty)_          | The repository root. A dashboard setting, not in this file. See above.                      |
 | `framework`       | `null`             | Auto-detection picked the wrong preset and overrode the build command. Explicitly disabled. |
 | `buildCommand`    | see below          | Server build, then client build. **Not** the root `npm run build`.                          |
 | `outputDirectory` | `apps/client/dist` | Vite's output. The API is a serverless function under `api/`, not part of this directory.   |
