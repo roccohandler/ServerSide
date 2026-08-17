@@ -17,6 +17,8 @@ import { useAnnounce } from '../../components/useAnnounce';
 import { useTitle } from '../../hooks/useTitle';
 import { LeaveGuard } from '../../components/LeaveGuard';
 import { CheckoutLinkPanel } from './CheckoutLinkPanel';
+import { EstimatePanel } from './EstimatePanel';
+import { ReportsPanel } from './ReportsPanel';
 import { DetailsForm } from './DetailsForm';
 import { FilesPanel } from './FilesPanel';
 import { OnboardingPanel } from './OnboardingPanel';
@@ -251,6 +253,22 @@ export function ProjectPage() {
        * should have to hunt up the page for the thing they just generated.
        */}
       <CheckoutLinkPanel project={project} />
+
+      {/* ----------------------------------------------------------- schedule */}
+
+      {/*
+       * The date the client keeps asking for. Below the money because that is the order of the
+       * conversation — what is this, who is it for, is it paid, when is it done.
+       *
+       * It owns its own notices for the same reason `CheckoutLinkPanel` does: the message that
+       * matters here is *whether saving sent an email*, and that has to be read beside the
+       * button rather than in the shared slot below.
+       */}
+      <EstimatePanel project={project} onChanged={reload} />
+
+      {/* ------------------------------------------------------------ reports */}
+
+      <ReportsPanel project={project} />
 
       {/*
        * One place for every rejected operation, at the top of the operations column rather than

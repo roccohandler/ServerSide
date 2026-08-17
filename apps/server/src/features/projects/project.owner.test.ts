@@ -42,6 +42,8 @@ function build() {
     paymentDue: vi.fn(),
     paymentFailed: vi.fn(),
     estimateChanged: vi.fn(),
+    assessmentDelivered: vi.fn(),
+    reportPublished: vi.fn(),
     fileDelivered: vi.fn(),
     owner: vi.fn(),
   };

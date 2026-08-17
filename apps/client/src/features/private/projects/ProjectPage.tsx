@@ -7,7 +7,7 @@ import {
   appProjectTasksPath,
 } from '../../../config/routes';
 import { useDocumentMeta } from '../../../hooks/useDocumentMeta';
-import type { ApiFailure, ApiResult } from '@jobforge/shared';
+import type { ApiFailure, ApiResult, ProjectView } from '@jobforge/shared';
 import { addComment, approveProject, completeTask, requestChanges } from '../services/appApi';
 import { AppError, AppLoading } from '../../../components/patterns/AppState';
 import { Tabs } from '@jobforge/ui';
@@ -51,6 +51,38 @@ import styles from './Project.module.css';
  */
 
 type Tab = 'overview' | 'preview' | 'feedback' | 'tasks';
+
+/**
+ * The launch estimate, as a sentence rather than a labelled field.
+ *
+ * "We are aiming to have this live by 4 September" is a person speaking. A `<dt>Estimated
+ * completion</dt>` beside a date is a database column, and the difference matters here more
+ * than anywhere else on the page: this is the number a customer repeats to their own
+ * customers, and the words around it are what say how firm it is.
+ *
+ * The locale is the reader's — this runs in their browser, which is exactly the case
+ * `packages/ui/src/intl.test.ts` exists to protect, and the opposite of the server-side
+ * formatter in `notification.service.ts` where there is no reader to ask. `month: 'long'`
+ * regardless, because `04/09` is two different days on two sides of an ocean.
+ */
+function estimateSentence(project: ProjectView): string {
+  const target = new Date(project.estimatedCompletionAt ?? '');
+  if (Number.isNaN(target.getTime())) return '';
+
+  const date = target.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const said = project.estimateUpdatedAt ? new Date(project.estimateUpdatedAt) : null;
+  const age =
+    said && !Number.isNaN(said.getTime())
+      ? ` We last updated this on ${said.toLocaleDateString(undefined, { day: 'numeric', month: 'long' })}.`
+      : '';
+
+  return `We are aiming to have your website live by ${date}.${age}`;
+}
 
 export interface ProjectPageProps {
   readonly tab?: Tab;
@@ -100,6 +132,19 @@ export function ProjectPage({ tab = 'overview' }: ProjectPageProps) {
 
         <p className={styles['status']}>{project.milestoneLabel}</p>
         <p className={styles['statusDetail']}>{project.milestoneDetail}</p>
+
+        {/*
+         * The launch date, when there is one.
+         *
+         * Absent renders nothing at all — not "date to be confirmed", not a placeholder, not
+         * a dash. Early in a build there genuinely is no answer, and a line of furniture where
+         * a date will eventually go trains the reader to stop looking at that spot. When one
+         * arrives it appears, and it arrives with the day it was last said beside it, because
+         * a date whose age is unknowable is one they stop believing after the first slip.
+         */}
+        {project.estimatedCompletionAt ? (
+          <p className={styles['statusDetail']}>{estimateSentence(project)}</p>
+        ) : null}
 
         <ProgressBar
           step={project.progress.step}

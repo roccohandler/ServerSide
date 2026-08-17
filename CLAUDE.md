@@ -24,14 +24,14 @@ applications that talk to each other. See DECISION 026.
                     MongoDB
 ```
 
-| Workspace          | Stack                                                                    |
-| ------------------ | ------------------------------------------------------------------------ |
-| `apps/client/`     | React 19 · Vite 8 · react-router-dom 7 · **CSS Modules** (not Tailwind)  |
-| `apps/admin/`      | The owner console: inbox, projects, accounts. Its own bundle and origin. |
-| `apps/server/`     | Express 5 · Mongoose 9 · Zod 4 · Stripe · Resend                         |
-| `packages/ui/`     | `@jobforge/ui` — tokens and primitives both apps render                  |
-| `packages/shared/` | `@jobforge/shared` — the API contract both apps speak                    |
-| `api/`             | The Vercel adapter. No business logic lives here.                        |
+| Workspace          | Stack                                                                             |
+| ------------------ | --------------------------------------------------------------------------------- |
+| `apps/client/`     | React 19 · Vite 8 · react-router-dom 7 · **CSS Modules** (not Tailwind)           |
+| `apps/admin/`      | The owner console: inbox, projects, accounts, assessments. Own bundle and origin. |
+| `apps/server/`     | Express 5 · Mongoose 9 · Zod 4 · Stripe · Resend                                  |
+| `packages/ui/`     | `@jobforge/ui` — tokens and primitives both apps render                           |
+| `packages/shared/` | `@jobforge/shared` — the API contract both apps speak                             |
+| `api/`             | The Vercel adapter. No business logic lives here.                                 |
 
 ### The three rules that hold this together
 
@@ -294,6 +294,39 @@ than responsibility. Judge by whether the file has one reason to change.
   the data layer arrives whether or not a route uses a loader. The budget guard refused it. The
   in-app unsaved-changes guard is a capture-phase click listener in `useUnsavedChanges` instead —
   read its header before reaching for the router again.
+- **There are two features called demo, and they are unrelated.**
+  `apps/client/src/features/public/demo` is the five _marketing demonstration sites_ — other
+  businesses' brands, exempt from the token rules. `apps/server/src/features/demo` is Demo Mode.
+  The client half of Demo Mode is therefore called **`promo`**, and its route is `/promo`.
+- **Demo Mode is a customer, not a mode.** DECISION 033. One account with `role: 'customer'` and
+  a `demo` flag on the user document; the ownership boundary that already existed does all the
+  isolation. There is deliberately **no `if (isDemo)`** beyond four readers: the banner, the tour
+  inside it, `AppLayout`'s decision to render them, and the server. Anything else branching on it
+  is the demonstration diverging from the product. See `docs/DEMO-MODE.md`.
+- **`DEMO_PASSCODE` unset leaves `/api/demo` unmounted**, exactly as `CRON_SECRET` does for
+  `/api/cron` — a genuine 404 rather than "not configured", so the feature cannot be half-on.
+  The passcode must never gain a `VITE_` prefix; `demo.api.test.ts` sweeps the client source for
+  the attempt.
+- **The demo never reaches Stripe.** `createCustomerCheckoutSession` and
+  `createCustomerPortalSession` refuse a demo customer on their **first line**, before the Price
+  lookup and before the client is touched — which is what makes "no live charge is possible"
+  provable by a test rather than argued from configuration. There is deliberately no Stripe test
+  mode in a process holding live keys.
+- **The CSRF guard accepts a request whose `Origin` equals its own `Host`.** It cost an evening
+  to find out why it had to: the allowlist is built from `PUBLIC_SITE_URL` and `CLIENT_ORIGIN`,
+  so a deployment served from a URL those do not name — a preview, a renamed project, a domain
+  added later — answers **403 to every state-changing request from a signed-in browser** while
+  every read works perfectly. Same-origin is not cross-site and needs no configuration. The
+  rejection log now names both origins, which is the other half of the fix.
+- **Draft and published are different states, and only one is visible.** The assessment review
+  (`report.deliveredAt`) and the monthly report (`publishedAt`) both work this way, and in both
+  the draft is _absent from the customer's payload_ rather than hidden behind a flag the client
+  is asked to respect. Saving and publishing are two buttons for the same reason: the thing on
+  the other side of the second one is an email that cannot be recalled.
+- **An estimated launch date that moves emails the customer; a first one does not.** That rule
+  lives in `ProjectService.setEstimate` and is why the estimate has its own route rather than
+  being a seventh field on `updateDetails`. **Absent is a legitimate state** and must render as
+  "not set yet" — never as a placeholder date.
 - **`git mv` is blocked** by a local hook. Use plain `mv`; git detects the rename.
 - **A moved workspace needs `npm install`.** The `node_modules/@jobforge/*` symlinks point at the
   old path until you re-run it, and the failure looks like a missing module rather than a stale link.
@@ -305,8 +338,11 @@ than responsibility. Judge by whether the file has one reason to change.
 
 ## Where the decisions are
 
-- `docs/owner-decisions-required.md` — the decision register, `DECISION 001`–`031`. Extend it;
+- `docs/owner-decisions-required.md` — the decision register, `DECISION 001`–`033`. Extend it;
   do not start a parallel ADR folder.
+- `docs/DEMO-MODE.md` — what `/promo` is, how to turn it on and off, what is simulated and why,
+  and the seven things that actually protect it. Read it before changing anything under
+  `features/demo`.
 - `docs/CUSTOMER-PLATFORM.md` — the lifecycle, the boundaries, and the project-portal direction.
 - `docs/design-system.md` — tokens, primitives, patterns, and what is enforced.
 - `03_plan/code_design_improvement_plan.md` — the architecture migration and its current status.

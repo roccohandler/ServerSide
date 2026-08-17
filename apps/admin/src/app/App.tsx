@@ -10,6 +10,7 @@ import { InboxPage } from '../features/inbox/InboxPage';
 import { ProjectsPage } from '../features/projects/ProjectsPage';
 import { ProjectPage } from '../features/projects/ProjectPage';
 import { AccountsPage } from '../features/accounts/AccountsPage';
+import { AssessmentsPage } from '../features/assessments/AssessmentsPage';
 import { OnboardingPage } from '../features/onboarding/OnboardingPage';
 
 /*
@@ -80,6 +81,7 @@ function Console() {
         <Route path={routePatterns.projects} element={<ProjectsPage />} />
         <Route path={routePatterns.project} element={<ProjectPage />} />
         <Route path={routePatterns.accounts} element={<AccountsPage />} />
+        <Route path={routePatterns.assessments} element={<AssessmentsPage />} />
         <Route path={routePatterns.onboarding} element={<OnboardingPage />} />
         {/* Signing in again when already signed in is just the console. */}
         <Route path="sign-in" element={<Navigate to="/" replace />} />

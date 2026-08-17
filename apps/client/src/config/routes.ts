@@ -108,6 +108,19 @@ export const routes = {
   demoElectricalServices: demoPath('electrical', 'services'),
   demoElectricalContact: demoPath('electrical', 'contact'),
   contact: '/contact',
+  /**
+   * The private demonstration door.
+   *
+   * `noindex`, absent from the sitemap, and linked from nowhere on the site — it is given out
+   * by hand with the passcode sent separately. It still needs a built HTML file, because
+   * `vercel.json` has no SPA fallback outside `/app` and a hard refresh here would otherwise
+   * 404 on the one page somebody was told to type in.
+   *
+   * "Nobody knows the URL" is not a security mechanism and nothing here relies on it: the
+   * passcode is compared on the server, behind the credential rate limiter, and the routes it
+   * opens are not mounted at all when `DEMO_PASSCODE` is unset. See `docs/DEMO-MODE.md`.
+   */
+  promo: '/promo',
   /*
    * ==========================================================================
    * THE ACCOUNT PAGES
@@ -183,6 +196,14 @@ export const routes = {
    */
   appAssessmentRequest: '/app/assessment/request',
   appProjects: '/app/projects',
+  /**
+   * The monthly Website Performance Reports — what Growth Partner actually buys.
+   *
+   * Account-scoped rather than nested under a project, deliberately: a customer on their
+   * second build wants one list of every report they have ever been sent, not two lists
+   * behind two projects, one of which they have to remember exists.
+   */
+  appReports: '/app/reports',
   appBilling: '/app/billing',
   appAccount: '/app/account',
   /*

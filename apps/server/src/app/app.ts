@@ -39,6 +39,17 @@ import {
   type ProjectService,
 } from '../features/projects/index.js';
 import {
+  createReportService,
+  createMongoReportRepository,
+  type ReportService,
+} from '../features/reports/index.js';
+import {
+  createDemoService,
+  createMongoDemoRepository,
+  DEMO_EMAIL,
+  type DemoService,
+} from '../features/demo/index.js';
+import {
   createActivityService,
   createMongoActivityRepository,
   type ActivityService,
@@ -115,6 +126,15 @@ export interface PlatformServices {
    */
   readonly authRepository: AuthRepository;
   readonly assessmentService: AssessmentService;
+  readonly reportService: ReportService;
+  /**
+   * Demo Mode, or `undefined` when `DEMO_PASSCODE` is unset.
+   *
+   * The second service here that can legitimately be absent in production, and unlike the
+   * file store its absence removes a whole surface rather than degrading one: `routes.ts`
+   * does not mount `/api/demo` at all, so the endpoints answer a genuine 404.
+   */
+  readonly demoService: DemoService | undefined;
   readonly projectService: ProjectService;
   readonly taskService: TaskService;
   readonly feedbackService: FeedbackService;
@@ -263,8 +283,10 @@ function createDefaultServices(config: ServerConfig, logger: Logger): PlatformSe
    *
    * Nothing is circular, which is what makes each feature testable on its own.
    */
+  const activityRepository = createMongoActivityRepository({ connect });
+
   const activityService = createActivityService({
-    repository: createMongoActivityRepository({ connect }),
+    repository: activityRepository,
     logger,
   });
 
@@ -345,24 +367,44 @@ function createDefaultServices(config: ServerConfig, logger: Logger): PlatformSe
     });
   }
 
+  /*
+   * Hoisted, because two things read each of them: the feature that owns it, and the demo
+   * seeder — which writes a whole dataset through repositories rather than services, so that
+   * seeding does not fire the emails and activity entries a real project would. See the
+   * header of `features/demo/demo.seed.ts`.
+   */
+  const taskRepository = createMongoTaskRepository({ connect });
+  const feedbackRepository = createMongoFeedbackRepository({ connect });
+  const assessmentRepository = createMongoAssessmentRepository({ connect });
+  const reportRepository = createMongoReportRepository({ connect });
+
   const taskService = createTaskService({
-    repository: createMongoTaskRepository({ connect }),
+    repository: taskRepository,
     activity: activityService,
     logger,
   });
 
   const feedbackService = createFeedbackService({
-    repository: createMongoFeedbackRepository({ connect }),
+    repository: feedbackRepository,
     activity: activityService,
     notifier,
     logger,
   });
 
   const assessmentService = createAssessmentService({
-    repository: createMongoAssessmentRepository({ connect }),
+    repository: assessmentRepository,
     activity: activityService,
     emailService,
     notificationRecipient,
+    /* How the customer hears their review is ready. Forgetting it loses the email silently. */
+    notifier,
+    logger,
+  });
+
+  const reportService = createReportService({
+    repository: reportRepository,
+    activity: activityService,
+    notifier,
     logger,
   });
 
@@ -413,6 +455,45 @@ function createDefaultServices(config: ServerConfig, logger: Logger): PlatformSe
       })
     : undefined;
 
+  /*
+   * ==========================================================================
+   * DEMO MODE, OR NOTHING AT ALL
+   * ==========================================================================
+   *
+   * No passcode, no service, and `routes.ts` then does not mount `/api/demo` — so the
+   * endpoints answer a genuine 404 rather than "not configured". That ordering is the whole
+   * safety property: the feature cannot be half-on, and a prober cannot learn from a response
+   * that a demonstration exists somewhere behind a secret they have not guessed.
+   *
+   * It takes repositories for the seed and the two services it genuinely needs: `authService`
+   * to mint the session (one method, documented at length on the interface) and
+   * `authRepository` to find or create the one account.
+   */
+  const demoService = config.demo.passcode
+    ? createDemoService({
+        repository: createMongoDemoRepository({ connect }),
+        authRepository,
+        authService,
+        projectRepository,
+        projects: projectRepository,
+        tasks: taskRepository,
+        feedback: feedbackRepository,
+        activity: activityRepository,
+        assessments: assessmentRepository,
+        reports: reportRepository,
+        passcode: config.demo.passcode,
+        sessionTtlMs: config.demo.sessionTtlMs,
+        logger,
+      })
+    : undefined;
+
+  if (!demoService) {
+    logger.info('demo.not_configured', {
+      detail:
+        'Set DEMO_PASSCODE to open /promo. Unset, every /api/demo route is a genuine 404 and the page cannot be entered.',
+    });
+  }
+
   if (!fileService) {
     logger.warn('files.not_configured', {
       detail:
@@ -434,6 +515,20 @@ function createDefaultServices(config: ServerConfig, logger: Logger): PlatformSe
       projects: projectService,
       emailService,
       ownerAddress: notificationRecipient,
+      /*
+       * A closure, and only when Demo Mode is configured. The inbox's promise is "everybody
+       * waiting on a reply", and a tester poking at the demonstration project is not somebody
+       * the owner owes an answer to — but the feature learns nothing about how a demo account
+       * is found, exactly as `onboardingService` takes `findProjectIdByEmail`.
+       */
+      ...(demoService
+        ? {
+            findDemoOwnerId: async () => {
+              const user = await authRepository.findUserByEmail(DEMO_EMAIL);
+              return user?.demo ? user.id : undefined;
+            },
+          }
+        : {}),
       logger,
     }),
     digestService,
@@ -485,6 +580,8 @@ function createDefaultServices(config: ServerConfig, logger: Logger): PlatformSe
     authService,
     authRepository,
     assessmentService,
+    reportService,
+    demoService,
     projectService,
     taskService,
     feedbackService,
@@ -531,6 +628,9 @@ export function createApp(options: CreateAppOptions = {}): Express {
   const authService = options.authService ?? resolveDefaults().authService;
   const authRepository = options.authRepository ?? resolveDefaults().authRepository;
   const assessmentService = options.assessmentService ?? resolveDefaults().assessmentService;
+  const reportService = options.reportService ?? resolveDefaults().reportService;
+  /* `??` and not `?? undefined`: the default is legitimately absent. See `fileService`. */
+  const demoService = options.demoService ?? resolveDefaults().demoService;
   const projectService = options.projectService ?? resolveDefaults().projectService;
   const taskService = options.taskService ?? resolveDefaults().taskService;
   const feedbackService = options.feedbackService ?? resolveDefaults().feedbackService;
@@ -600,8 +700,12 @@ export function createApp(options: CreateAppOptions = {}): Express {
        * that removes anything. Still nothing speculative: the console genuinely deletes a
        * file from a project across origins, and a method no route answers would be a
        * preflight promise nothing keeps.
+       *
+       * PUT joined them for the monthly report, which is the one write in this application
+       * addressed by what it *is* — `{ project, month }` — rather than by an id. Same rule as
+       * the other three: one route answers it, and it is reached from a second origin.
        */
-      methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type'],
       maxAge: 86_400,
     }),
@@ -695,6 +799,8 @@ export function createApp(options: CreateAppOptions = {}): Express {
       /* Read by exactly one route: the admin accounts list. See `ApiRouterDependencies`. */
       authRepository,
       assessmentService,
+      reportService,
+      demoService,
       projectService,
       taskService,
       feedbackService,

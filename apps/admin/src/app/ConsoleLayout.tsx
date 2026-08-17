@@ -56,6 +56,7 @@ const DESTINATIONS = [
   { to: routes.inbox, label: 'Inbox', end: true },
   { to: routes.projects, label: 'Projects', end: false },
   { to: routes.accounts, label: 'Accounts', end: false },
+  { to: routes.assessments, label: 'Assessments', end: false },
   /*
    * Last, because it is the one that should usually be empty. Onboarding submissions match
    * their project by address on arrival; this is where the ones that did not go, and every

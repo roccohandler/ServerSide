@@ -76,6 +76,12 @@ const ProjectPage = lazy(() =>
   })),
 );
 
+const ReportsPage = lazy(() =>
+  import('../../features/private/reports/ReportsPage').then((module) => ({
+    default: module.ReportsPage,
+  })),
+);
+
 const BillingPage = lazy(() =>
   import('../../features/private/billing/BillingPage').then((module) => ({
     default: module.BillingPage,
@@ -133,6 +139,7 @@ export const privateRoutes = (
         <Route path={appProjectRoutePatterns.tasks} element={<ProjectPage tab="tasks" />} />
       </Route>
 
+      <Route path="reports" element={<ReportsPage />} />
       <Route path="billing" element={<BillingPage />} />
       <Route path="account" element={<AccountPage />} />
 

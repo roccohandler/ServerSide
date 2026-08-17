@@ -165,6 +165,36 @@ export interface StoredUser {
    * `createdAt` rather than against the epoch — see `activity.routes.ts`.
    */
   readonly activityReadAt?: Date | undefined;
+  /*
+   * ==========================================================================
+   * THE DEMO ACCOUNT IS A CUSTOMER, AND THIS IS THE ONLY THING THAT SAYS SO
+   * ==========================================================================
+   *
+   * DECISION 033. Demo Mode is not a mode: it is one account, with `role: 'customer'`, whose
+   * records are its own. Everything that keeps a demo visitor away from a real customer is
+   * the ownership boundary that already existed — `authorizeOwnership`, `createProjectAccess`,
+   * the 404-never-403 rule — and none of it needed a line adding. `capabilitiesFor('customer')`
+   * is then the whole authorisation answer, and "no admin access from the demo" is true by
+   * construction rather than by a check somebody has to remember.
+   *
+   * ## On the account, never on the session
+   *
+   * "Which data belongs to the demo" is a property of the identity. Every route already holds
+   * `request.auth.user`, so a flag here is readable everywhere it matters; a flag on the
+   * session would have to be re-derived by anything that loads a user from storage, and the
+   * place that forgot would be the place a demo row leaked into a real list.
+   *
+   * ## No route may set it
+   *
+   * The seeder is its only writer, exactly as nothing but the owner may grant a role. A
+   * source sweep in `demo.api.test.ts` enforces that, in the same shape and for the same
+   * reason as the role sweep in `admin.api.test.ts`.
+   *
+   * (That sweep matches a bare identifier, so naming its function here would fail it. The
+   * indirection is deliberate rather than coy.)
+   * ==========================================================================
+   */
+  readonly demo?: boolean | undefined;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -180,6 +210,15 @@ export interface PublicUser {
   readonly capabilities: readonly Capability[];
   /** Which sign-in methods this account has, so the account page can say so. */
   readonly authProviders: readonly AuthProvider[];
+  /**
+   * True on the demonstration account, so the browser can render the banner.
+   *
+   * Carried here rather than inferred from anything else, so the indicator comes from the
+   * same source of truth the server authorises against. It decides what to *render* and
+   * nothing more — every restriction it hints at is enforced on the server, and a browser
+   * that lied about this would get exactly the same answers to every request.
+   */
+  readonly demo?: boolean | undefined;
 }
 
 export function toPublicUser(user: StoredUser): PublicUser {
@@ -191,6 +230,7 @@ export function toPublicUser(user: StoredUser): PublicUser {
     role: user.role,
     emailVerified: user.emailVerified,
     capabilities: capabilitiesFor(user.role),
+    ...(user.demo ? { demo: true } : {}),
     authProviders: [
       ...(user.passwordHash ? (['password'] as const) : []),
       ...user.identities.map((identity) => identity.provider),

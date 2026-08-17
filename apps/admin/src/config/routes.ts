@@ -10,6 +10,11 @@ export const routes = {
   inbox: '/',
   projects: '/projects',
   accounts: '/accounts',
+  /**
+   * The queue for the primary offer: everybody who asked for a free website assessment and
+   * has not had one. Oldest first, empty when nobody is waiting.
+   */
+  assessments: '/assessments',
   /** The submissions that matched no project. A worklist — empty when all is well. */
   onboarding: '/onboarding',
   signIn: '/sign-in',
@@ -20,6 +25,7 @@ export const routePatterns = {
   projects: 'projects',
   project: 'projects/:projectId',
   accounts: 'accounts',
+  assessments: 'assessments',
   onboarding: 'onboarding',
 } as const;
 

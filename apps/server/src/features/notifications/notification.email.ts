@@ -484,6 +484,96 @@ export function buildFileDeliveredEmail(params: {
   });
 }
 
+/**
+ * The free review, delivered.
+ *
+ * ============================================================================
+ * THE ONE EMAIL THAT KEEPS THE PROMISE ON THE FRONT PAGE
+ * ============================================================================
+ *
+ * "Get my free website assessment" is the primary call to action on every marketing page,
+ * and this is the message that makes it true. Everything else in this file reports on work
+ * somebody has already bought.
+ *
+ * So it is deliberately the least salesy message here. There is no offer, no price and no
+ * "book a call" — the review itself is the argument, and a reader who has just been told
+ * their website has four problems does not need to be sold to in the same breath. The
+ * headline count is the hook: a number in a subject line is a reason to open it, and it is
+ * a number we can say honestly because a person wrote each one.
+ *
+ * `findingCount` of zero is a real outcome and reads as good news rather than as an empty
+ * list, which is why the sentence branches rather than interpolating a `0`.
+ * ============================================================================
+ */
+export function buildAssessmentDeliveredEmail(params: {
+  readonly to: Recipient;
+  readonly businessName: string;
+  readonly findingCount: number;
+  readonly preparedBy: string;
+  readonly assessmentUrl: string;
+}): EmailMessage {
+  const found =
+    params.findingCount === 0
+      ? 'We went through it and did not find anything that needs fixing urgently — the detail is in the review.'
+      : params.findingCount === 1
+        ? 'We found one thing worth fixing, and the review explains what it is and why it matters.'
+        : `We found ${params.findingCount} things worth fixing, and the review explains what each one is and why it matters.`;
+
+  return message({
+    to: params.to.email,
+    subject: `Your website review is ready — ${params.businessName}`,
+    heading: 'Your website review is ready',
+    html: [
+      paragraph(`Hello ${params.to.name},`),
+      paragraph(`${params.preparedBy} has looked through your website. ${found}`),
+      button(params.assessmentUrl, 'Read my review'),
+      paragraph('It stays in your account, so you can come back to it whenever you like.', true),
+    ],
+    text: [
+      `Hello ${params.to.name},`,
+      '',
+      `${params.preparedBy} has looked through your website. ${found}`,
+      '',
+      params.assessmentUrl,
+    ],
+  });
+}
+
+/**
+ * The monthly Website Performance Report.
+ *
+ * The subject line names the month and nothing else about the result. That is the same
+ * discipline `BillingPage` applies to the enquiry figure and for the same reason: a subject
+ * promising the number went up is a promise this side does not get to make, and a month where
+ * it went down is exactly the month the report is most worth reading.
+ */
+export function buildReportPublishedEmail(params: {
+  readonly to: Recipient;
+  readonly businessName: string;
+  readonly monthLabel: string;
+  readonly reportsUrl: string;
+}): EmailMessage {
+  return message({
+    to: params.to.email,
+    subject: `Your ${params.monthLabel} website report — ${params.businessName}`,
+    heading: `Your ${params.monthLabel} website report`,
+    html: [
+      paragraph(`Hello ${params.to.name},`),
+      paragraph(
+        `Your report for ${params.monthLabel} is ready. It covers how many enquiries your website produced, what we changed, and what we are doing next.`,
+      ),
+      button(params.reportsUrl, 'Read the report'),
+    ],
+    text: [
+      `Hello ${params.to.name},`,
+      '',
+      `Your report for ${params.monthLabel} is ready. It covers how many enquiries your website produced, what we changed, and what we are doing next.`,
+      '',
+      params.reportsUrl,
+    ],
+  });
+}
+
 /* ------------------------------------------------------------------- owner */
 
 /*

@@ -146,6 +146,15 @@ export interface PublicUser {
   readonly emailVerified: boolean;
   readonly capabilities: readonly string[];
   readonly authProviders: readonly AuthProvider[];
+  /**
+   * True on the demonstration account.
+   *
+   * Carried so the browser can render the banner from the same source of truth the server
+   * authorises against. It decides what to *render* and nothing else — every restriction it
+   * hints at is enforced on the server, and a bundle that lied about this would get exactly
+   * the same answers to every request it made.
+   */
+  readonly demo?: boolean;
 }
 
 export interface SessionData {
@@ -197,6 +206,37 @@ export interface AssessmentRequest {
   readonly note?: string;
 }
 
+/**
+ * How much a finding in the owner's review matters, worst first.
+ *
+ * Three words rather than a number, because a severity a reader has to interpret is one they
+ * will interpret differently from the person who set it.
+ */
+export const ASSESSMENT_FINDING_SEVERITIES = ['critical', 'important', 'minor'] as const;
+
+export type AssessmentFindingSeverity = (typeof ASSESSMENT_FINDING_SEVERITIES)[number];
+
+export interface AssessmentFinding {
+  readonly title: string;
+  readonly detail: string;
+  readonly severity: AssessmentFindingSeverity;
+}
+
+/**
+ * The owner's written review — the thing "Get my free website assessment" actually promises.
+ *
+ * Distinct from the fields on `AssessmentView` beside it, which are the visitor's own
+ * self-scored answers. `preparedBy` is a byline rather than a user id: it is read by a
+ * customer, not resolved by anything.
+ */
+export interface AssessmentReportView {
+  readonly summary: string;
+  readonly findings: readonly AssessmentFinding[];
+  readonly recommendations: readonly string[];
+  readonly preparedBy: string;
+  readonly deliveredAt: string;
+}
+
 export interface AssessmentView {
   readonly id: string;
   readonly businessName: string;
@@ -206,6 +246,14 @@ export interface AssessmentView {
   readonly weakestCategories: readonly AssessmentCategory[];
   readonly recommendations: readonly string[];
   readonly submittedAt: string;
+  /**
+   * Present only once delivered.
+   *
+   * A draft is deliberately unrepresentable — not hidden behind a flag the client is asked to
+   * respect, but absent from the payload, so the only way a half-written review could reach a
+   * customer is if somebody published it. Absent means "a review is being prepared".
+   */
+  readonly report?: AssessmentReportView;
 }
 
 /* ------------------------------------------------------------------ projects */
@@ -252,8 +300,43 @@ export interface ProjectView {
   readonly previewUrl?: string;
   readonly productionUrl?: string;
   readonly assessmentId?: string;
+  /**
+   * When we currently think this will be finished, and when that was last said.
+   *
+   * Both absent until somebody sets one, and **absent is a legitimate state that must render
+   * as "not set yet", never as a date**. The pair travels together because a date whose age
+   * the reader cannot see is one they stop believing after the first slip.
+   */
+  readonly estimatedCompletionAt?: string;
+  readonly estimateUpdatedAt?: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+/* ------------------------------------------------------------------- reports */
+
+/**
+ * A month of Growth Partner, as the customer reads it.
+ *
+ * Only ever built from a *published* report — the server's router filters drafts out before
+ * mapping, and the type has no way to express one. See `features/reports` for the whole rule,
+ * including the one sentence this feature must never write.
+ */
+export interface ReportView {
+  readonly id: string;
+  readonly projectId: string;
+  /** `2026-08`. */
+  readonly month: string;
+  /** `August 2026`. Built on the server so two frontends cannot disagree about it. */
+  readonly monthLabel: string;
+  readonly enquiries: number;
+  /** Absent means "we do not know", which is a real answer and not a zero. */
+  readonly baseline?: number;
+  readonly changeExplanation: string;
+  readonly whatWeChanged: readonly string[];
+  readonly whatIsNext: readonly string[];
+  readonly preparedBy: string;
+  readonly publishedAt: string;
 }
 
 /* --------------------------------------------------------------------- tasks */
@@ -619,8 +702,47 @@ export interface AdminProjectView {
   readonly depositStatus: AdminPaymentStatus;
   readonly finalStatus: AdminPaymentStatus;
   readonly subscriptionStatus: AdminSubscriptionStatus;
+  /** Absent until somebody sets one, which is a legitimate state. See `ProjectView`. */
+  readonly estimatedCompletionAt?: string;
+  readonly estimateUpdatedAt?: string;
+  /** Staff-only: who last moved the date. The customer is told it moved, not by whom. */
+  readonly estimateUpdatedBy?: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+/* ---------------------------------------------- the console's own report shape */
+
+/** A month as the console holds it: everything the customer sees, plus whether it is out. */
+export interface AdminReportView {
+  readonly id: string;
+  readonly projectId: string;
+  readonly userId: string;
+  readonly month: string;
+  readonly monthLabel: string;
+  readonly enquiries: number;
+  readonly baseline?: number;
+  readonly changeExplanation: string;
+  readonly whatWeChanged: readonly string[];
+  readonly whatIsNext: readonly string[];
+  readonly preparedBy: string;
+  readonly published: boolean;
+  readonly publishedAt?: string;
+}
+
+/**
+ * An assessment as the console holds it.
+ *
+ * `draft` carries the review in whatever state it is in — the customer's `report` field is
+ * present only once delivered, so the console needs the other one or it would be editing a
+ * document it cannot read back.
+ */
+export interface AdminAssessmentView extends AssessmentView {
+  readonly userId: string;
+  readonly trade?: string;
+  readonly note?: string;
+  readonly draft?: AssessmentReportView;
+  readonly delivered: boolean;
 }
 
 /*

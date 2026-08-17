@@ -59,7 +59,83 @@ export const ASSESSMENT_FIELD_LIMITS = {
   note: 2000,
   /** Twenty questions today; the cap is what stops a request storing a thousand. */
   answers: 60,
+  reportSummary: 4000,
+  findingTitle: 200,
+  findingDetail: 2000,
+  reportRecommendation: 1000,
+  preparedBy: 100,
+  /** Enough for a thorough review; not enough to be a document store. */
+  findings: 20,
+  reportRecommendations: 20,
 } as const;
+
+/*
+ * ============================================================================
+ * THE OWNER'S REVIEW
+ * ============================================================================
+ *
+ * Everything above this line is the *self-scored* result: twenty answers, a number, and
+ * the generic advice attached to whichever categories came out weakest. It is honest and
+ * it is automatic, and it is not what the call to action promises.
+ *
+ * What "Get my free website assessment" promises is that somebody looks at the website.
+ * That thing had no representation in this system at all — it happened in an inbox, and
+ * the portal showed the machine's score as though it were the deliverable.
+ *
+ * ## Draft and delivered are different states, and only one is visible
+ *
+ * A half-written review is worse than no review. `deliveredAt` is the whole distinction:
+ * absent means the owner is still working, and the customer's page says a review is being
+ * prepared; present means it has been published, notified and written into the activity
+ * stream, and it never becomes invisible again.
+ *
+ * That is why delivery is a separate operation rather than a field on the save. Saving is
+ * something an operator does eight times; publishing is something they do once and cannot
+ * take back, and the two should not share a button.
+ * ============================================================================
+ */
+
+/**
+ * How much a finding matters, worst first.
+ *
+ * Three values rather than a number, because a severity a reader has to interpret is one
+ * they will interpret differently from the person who set it. These map to three words a
+ * business owner already understands.
+ */
+export const ASSESSMENT_FINDING_SEVERITIES = ['critical', 'important', 'minor'] as const;
+
+export type AssessmentFindingSeverity = (typeof ASSESSMENT_FINDING_SEVERITIES)[number];
+
+export interface AssessmentFinding {
+  readonly title: string;
+  readonly detail: string;
+  readonly severity: AssessmentFindingSeverity;
+}
+
+/**
+ * The review itself.
+ *
+ * `preparedBy` is a name rather than a user id, and deliberately: it is a byline the
+ * customer reads, not a foreign key anything resolves. Storing the id would mean the
+ * review's attribution changes if that account is renamed, which is the wrong behaviour
+ * for a document that was sent on a date.
+ */
+export interface AssessmentReport {
+  readonly summary: string;
+  readonly findings: readonly AssessmentFinding[];
+  readonly recommendations: readonly string[];
+  readonly preparedBy: string;
+  /** Absent while it is a draft. Its presence is the publication. */
+  readonly deliveredAt?: Date | undefined;
+}
+
+/** What the console may save. `deliveredAt` is absent by construction — see `deliver`. */
+export interface AssessmentReportDraft {
+  readonly summary: string;
+  readonly findings: readonly AssessmentFinding[];
+  readonly recommendations: readonly string[];
+  readonly preparedBy: string;
+}
 
 export interface AssessmentAnswer {
   readonly questionId: string;
@@ -102,8 +178,19 @@ export interface NewAssessmentRecord extends AssessmentSubmission {
 
 export interface StoredAssessment extends NewAssessmentRecord {
   readonly id: string;
+  /** The owner's review, once somebody has started writing one. */
+  readonly report?: AssessmentReport | undefined;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+}
+
+/** A delivered review, as the customer receives it. Dates are strings by then. */
+export interface AssessmentReportView {
+  readonly summary: string;
+  readonly findings: readonly AssessmentFinding[];
+  readonly recommendations: readonly string[];
+  readonly preparedBy: string;
+  readonly deliveredAt: string;
 }
 
 export interface AssessmentView {
@@ -115,9 +202,19 @@ export interface AssessmentView {
   readonly weakestCategories: readonly AssessmentCategory[];
   readonly recommendations: readonly string[];
   readonly submittedAt: string;
+  /**
+   * Present only once delivered.
+   *
+   * A draft is deliberately unrepresentable here — not hidden behind a flag the client is
+   * asked to respect, but absent from the payload, so the only way a half-written review
+   * could reach a customer is if somebody published it.
+   */
+  readonly report?: AssessmentReportView | undefined;
 }
 
 export function toAssessmentView(assessment: StoredAssessment): AssessmentView {
+  const delivered = assessment.report?.deliveredAt;
+
   return {
     id: assessment.id,
     businessName: assessment.businessName,
@@ -127,6 +224,56 @@ export function toAssessmentView(assessment: StoredAssessment): AssessmentView {
     weakestCategories: assessment.weakestCategories,
     recommendations: assessment.recommendations,
     submittedAt: assessment.submittedAt.toISOString(),
+    ...(assessment.report && delivered
+      ? {
+          report: {
+            summary: assessment.report.summary,
+            findings: assessment.report.findings,
+            recommendations: assessment.report.recommendations,
+            preparedBy: assessment.report.preparedBy,
+            deliveredAt: delivered.toISOString(),
+          },
+        }
+      : {}),
+  };
+}
+
+/**
+ * What the console sees: everything the customer sees, plus the draft and who it is for.
+ *
+ * A separate function rather than a flag on the one above, for the reason
+ * `toCustomerProjectView` gives about itself — the two audiences are built field by field
+ * so that a field added to storage is invisible to both until somebody decides otherwise.
+ */
+export interface AdminAssessmentView extends AssessmentView {
+  readonly userId: string;
+  readonly trade?: string | undefined;
+  readonly note?: string | undefined;
+  /** The report in whatever state it is in, draft included. */
+  readonly draft?: AssessmentReportView | undefined;
+  readonly delivered: boolean;
+}
+
+export function toAdminAssessmentView(assessment: StoredAssessment): AdminAssessmentView {
+  const { report } = assessment;
+
+  return {
+    ...toAssessmentView(assessment),
+    userId: assessment.userId,
+    trade: assessment.trade,
+    note: assessment.note,
+    ...(report
+      ? {
+          draft: {
+            summary: report.summary,
+            findings: report.findings,
+            recommendations: report.recommendations,
+            preparedBy: report.preparedBy,
+            deliveredAt: report.deliveredAt?.toISOString() ?? '',
+          },
+        }
+      : {}),
+    delivered: report?.deliveredAt !== undefined,
   };
 }
 

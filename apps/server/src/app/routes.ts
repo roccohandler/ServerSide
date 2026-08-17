@@ -20,6 +20,8 @@ import {
 } from '../features/auth/index.js';
 import { createAssessmentRouter, type AssessmentService } from '../features/assessments/index.js';
 import { createProjectRouter, type ProjectService } from '../features/projects/index.js';
+import { createReportRouter, type ReportService } from '../features/reports/index.js';
+import { createDemoRouter, type DemoService } from '../features/demo/index.js';
 import { createDashboardRouter } from '../features/dashboard/index.js';
 import { createAdminRouter } from '../features/admin/admin.routes.js';
 import type { TaskService } from '../features/tasks/index.js';
@@ -42,6 +44,8 @@ export interface ApiRouterDependencies {
    */
   readonly authRepository: AuthRepository;
   readonly assessmentService: AssessmentService;
+  /** Growth Partner's monthly deliverable. Read-only for a customer, composed in the console. */
+  readonly reportService: ReportService;
   readonly projectService: ProjectService;
   readonly taskService: TaskService;
   readonly feedbackService: FeedbackService;
@@ -57,6 +61,11 @@ export interface ApiRouterDependencies {
   readonly fileService: FileService | undefined;
   /** Vercel Cron's shared secret. Undefined leaves the scheduled route unmounted. */
   readonly cronSecret: string | undefined;
+  /**
+   * Demo Mode. Undefined leaves every `/api/demo` route unmounted, which is what an unset
+   * `DEMO_PASSCODE` produces — a genuine 404 rather than an open door.
+   */
+  readonly demoService: DemoService | undefined;
   /**
    * Passed for the scheduled route alone, which is the only one here that reports an outcome
    * nobody is waiting on. Every other route in this table answers a request; a cron run's only
@@ -246,6 +255,15 @@ export function createApiRouter(dependencies: ApiRouterDependencies): Router {
     }),
   );
 
+  /*
+   * Account-scoped rather than project-scoped, deliberately.
+   *
+   * A report is *about* a project, but a customer on their second build wants one list of
+   * every report they have ever been sent — not two lists behind two projects, one of which
+   * they have to remember exists. `listPublishedForUser` is what makes that one query.
+   */
+  app.use('/reports', createReportRouter({ reportService: dependencies.reportService }));
+
   app.use(
     '/billing',
     createCustomerBillingRouter({
@@ -266,6 +284,7 @@ export function createApiRouter(dependencies: ApiRouterDependencies): Router {
       /* One method: the checkout link. See `AdminRoutesDependencies`. */
       billingService: dependencies.billingService,
       assessmentService: dependencies.assessmentService,
+      reportService: dependencies.reportService,
       taskService: dependencies.taskService,
       feedbackService: dependencies.feedbackService,
       deploymentService: dependencies.deploymentService,
@@ -298,6 +317,33 @@ export function createApiRouter(dependencies: ApiRouterDependencies): Router {
       logger: dependencies.logger,
     }),
   );
+
+  /* ------------------------------------------------------------------ demo */
+
+  /*
+   * A fifth surface, and the only one whose caller is a stranger holding a shared secret.
+   *
+   * Mounted only when `DEMO_PASSCODE` is set — the `/api/cron` pattern, for the same reason:
+   * an unconfigured deployment answers a genuine 404 rather than "not configured", so the
+   * feature cannot be half-on and a prober learns nothing from the response.
+   *
+   * `POST /enter` is public because its whole job is to hand a session to somebody with none;
+   * it is behind the credential rate limiter, whose own comment says every endpoint it covers
+   * is an attempt to guess a secret. The other two routes are behind `requireAuth` **and** a
+   * check in the service that the account carries `demo` — see `DemoService.reset`.
+   *
+   * There is no demo-specific signout. A demo session is an ordinary session.
+   */
+  if (dependencies.demoService) {
+    router.use(
+      '/demo',
+      createDemoRouter({
+        demoService: dependencies.demoService,
+        cookieOptions: dependencies.cookieOptions,
+        rateLimiter: dependencies.authRateLimiter,
+      }),
+    );
+  }
 
   /* ------------------------------------------------------------- scheduled */
 

@@ -167,6 +167,17 @@ export const patch = <TData>(path: string, payload: unknown) =>
   request<TData>(path, { method: 'PATCH', body: JSON.stringify(payload) });
 
 /**
+ * For the one write in this console that is addressed by what it *is* rather than by an id.
+ *
+ * A monthly report is identified by `{ project, month }` — saving August twice is one
+ * August, and the server has a unique index saying so. `PUT` is the verb for that; `POST`
+ * would promise a new record each time and the second call would be a lie the database then
+ * refuses.
+ */
+export const put = <TData>(path: string, payload: unknown) =>
+  request<TData>(path, { method: 'PUT', body: JSON.stringify(payload) });
+
+/**
  * The first verb this console has that removes something.
  *
  * No body, so no `Content-Type`, so no preflight beyond the method itself — which is why

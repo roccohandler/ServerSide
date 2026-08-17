@@ -63,6 +63,14 @@ export interface ConversationServiceDependencies {
    * nobody can answer.
    */
   readonly ownerAddress: string | undefined;
+  /**
+   * Resolves the demonstration account, when there is one.
+   *
+   * A closure rather than a repository, and undefined when Demo Mode is off, so this feature
+   * gains no new dependency and no knowledge of how a demo account is found. Its whole
+   * promise is "everybody waiting on a reply", and a tester is not waiting.
+   */
+  readonly findDemoOwnerId?: (() => Promise<string | undefined>) | undefined;
   readonly logger: Logger;
 }
 
@@ -70,6 +78,7 @@ export function createConversationService(
   dependencies: ConversationServiceDependencies,
 ): ConversationService {
   const { leads, feedback, projects, emailService, ownerAddress, logger } = dependencies;
+  const findDemoOwnerId = dependencies.findDemoOwnerId ?? (async () => undefined);
 
   return {
     async list(limit) {
@@ -81,16 +90,17 @@ export function createConversationService(
        * which is the only way to tell "fifty people are waiting" from "at least fifty people
        * are waiting" without a second count query.
        */
-      const [awaitingLeads, awaitingComments] = await Promise.all([
+      const [awaitingLeads, awaitingComments, demoOwnerId] = await Promise.all([
         leads.listAwaitingReply(limit + 1),
         feedback.listAwaitingReply(limit + 1),
+        findDemoOwnerId(),
       ]);
 
       const hasMore = awaitingLeads.length > limit || awaitingComments.length > limit;
 
       const summaries = [
         ...awaitingLeads.slice(0, limit).map(toProspectSummary),
-        ...(await withBusinessNames(awaitingComments.slice(0, limit), projects)),
+        ...(await withBusinessNames(awaitingComments.slice(0, limit), projects, demoOwnerId)),
       ];
 
       /*
@@ -266,19 +276,39 @@ function toProspectSummary(lead: StoredLead): ConversationSummary {
 async function withBusinessNames(
   comments: readonly StoredComment[],
   projects: ProjectService,
+  demoOwnerId: string | undefined,
 ): Promise<readonly ConversationSummary[]> {
   if (comments.length === 0) return [];
 
   const found = await projects.listByIds([...new Set(comments.map((c) => c.projectId))]);
   const byId = new Map<string, StoredProject>(found.map((project) => [project.id, project]));
 
-  return comments.map((comment) => ({
-    id: formatConversationId({ source: 'comment', recordId: comment.id }),
-    personName: comment.authorName,
-    businessName: byId.get(comment.projectId)?.businessName ?? comment.authorName,
-    kind: 'customer' as const,
-    lastMessage: toPreview(comment.body),
-    receivedAt: comment.createdAt.toISOString(),
-    awaitingReply: true,
-  }));
+  return (
+    comments
+      /*
+       * The demonstration account is not waiting for a reply.
+       *
+       * This inbox's whole promise is "everybody waiting on a reply", and a tester poking at a
+       * feedback thread on the demo project is not a person the owner owes an answer to. Left
+       * in, the demo would put permanent rows at the top of the oldest-first list — which is
+       * the position reserved for the customer who has been waiting longest.
+       *
+       * A comment whose project has gone is still kept, exactly as before: `byId.get` returning
+       * nothing means the row survives with the person's own name, because dropping somebody
+       * who is genuinely waiting is the failure this list must not have.
+       */
+      .filter((comment) => {
+        const project = byId.get(comment.projectId);
+        return !(demoOwnerId && project?.ownerUserId === demoOwnerId);
+      })
+      .map((comment) => ({
+        id: formatConversationId({ source: 'comment', recordId: comment.id }),
+        personName: comment.authorName,
+        businessName: byId.get(comment.projectId)?.businessName ?? comment.authorName,
+        kind: 'customer' as const,
+        lastMessage: toPreview(comment.body),
+        receivedAt: comment.createdAt.toISOString(),
+        awaitingReply: true,
+      }))
+  );
 }

@@ -93,6 +93,7 @@ describe('the customer workspace', () => {
       ['Dashboard', routes.appDashboard],
       ['Assessment', routes.appAssessment],
       ['Website', routes.appProjects],
+      ['Reports', routes.appReports],
       ['Billing', routes.appBilling],
       ['Account', routes.appAccount],
     ] as const) {
@@ -101,17 +102,24 @@ describe('the customer workspace', () => {
   });
 
   /*
-   * Five items, and the reason is progressive disclosure rather than minimalism for its
-   * own sake: Feedback, Tasks and Preview live inside the project they belong to. A
-   * customer with one website does not need a nine-item sidebar to find it.
+   * Six items, and the count is pinned because the reason for it is not minimalism for its
+   * own sake: it is progressive disclosure. Feedback, Tasks and Preview live inside the
+   * project they belong to, and a customer with one website does not need a nine-item
+   * sidebar to find it.
+   *
+   * It was five until the monthly report shipped. The sixth earned its place by being a
+   * *purchase* rather than a feature — DECISION 015 sells the Website Performance Report as
+   * Growth Partner's headline deliverable, and a deliverable with no home in the product is
+   * one the customer cancels the first quiet month. This number going up again should cost
+   * the same argument.
    */
-  it('keeps the navigation to five items', () => {
+  it('keeps the navigation to six items', () => {
     renderLayout();
 
     const nav = screen.getByRole('navigation', { name: /your account/i });
     const items = within(nav).getAllByRole('listitem');
 
-    expect(items).toHaveLength(5);
+    expect(items).toHaveLength(6);
   });
 
   it('marks the current page for a screen reader, not just visually', () => {
@@ -160,7 +168,7 @@ describe('the customer workspace', () => {
 
     const nav = screen.getByRole('navigation', { name: /your account/i });
 
-    expect(within(nav).getAllByRole('listitem')).toHaveLength(5);
+    expect(within(nav).getAllByRole('listitem')).toHaveLength(6);
     expect(within(nav).queryByRole('link', { name: /customers/i })).toBeNull();
     expect(within(nav).queryByRole('link', { name: /admin/i })).toBeNull();
   });

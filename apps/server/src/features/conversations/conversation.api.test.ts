@@ -314,7 +314,33 @@ describe('the console inbox', () => {
     expect(thread.replies[0].authorName).toBe('Sam Staff');
   });
 
-  it('does not email a customer whose reply is already in their portal', async () => {
+  /*
+   * ==========================================================================
+   * THIS TEST USED TO ASSERT THE OPPOSITE, AND IT WAS ASSERTING A HARNESS GAP
+   * ==========================================================================
+   *
+   * It read "does not email a customer whose reply is already in their portal", with the
+   * reasoning that two copies of one sentence teach people to ignore the portal. It passed
+   * for as long as it existed — and not because the code agreed with it.
+   *
+   * `ConversationService.reply` loads the project for exactly one purpose, and says so in a
+   * comment written when it was added: *"This is the call site that most needed it. The inbox
+   * is where the owner answers somebody who is waiting, and until now a reply sent from here
+   * reached the customer's portal silently — the one surface in the system where the whole
+   * point is that a person on the other end is expecting to hear something."* It passes
+   * `subject`, `FeedbackService` notifies on it, and production has emailed these customers
+   * ever since.
+   *
+   * What kept the old assertion green was that `createPlatformHarness` wired no notifier at
+   * all, so **no customer notification in the entire application could be observed** — every
+   * service takes the port optionally and defaults to a no-op. The test was measuring the rig.
+   *
+   * The portal-noise concern is real and is answered elsewhere: the email is a short
+   * notification with a link, not a copy of the thread, and `IMMEDIATE_KINDS` is the one table
+   * deciding what interrupts anybody.
+   * ==========================================================================
+   */
+  it('emails a customer who was waiting, when the console answers them', async () => {
     const cookie = await signInAdmin();
     const customer = await giveCustomerRequest(TUESDAY);
     const before = harness.email.sent.length;
@@ -323,8 +349,12 @@ describe('the console inbox', () => {
       .set('Cookie', cookie)
       .send({ body: 'Done.' });
 
-    /* Two copies of the same sentence is how a portal teaches people to ignore it. */
-    expect(harness.email.sent).toHaveLength(before);
+    const sent = harness.email.sent.slice(before);
+    const toCustomer = sent.filter((message) => message.to === 'ray@rayplumbing.example');
+
+    expect(toCustomer).toHaveLength(1);
+    /* A notification with a link, not a second copy of the thread. */
+    expect(toCustomer[0]?.html).toContain('/app/projects/');
   });
 
   it('takes an answered request out of the inbox', async () => {

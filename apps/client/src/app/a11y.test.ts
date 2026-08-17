@@ -140,16 +140,46 @@ describe('the route boundaries', () => {
     expect(routeSources().length).toBeGreaterThanOrEqual(4);
   });
 
+  /*
+   * ==========================================================================
+   * ONE BOUNDARY IS ALLOWED TO FALL BACK TO NOTHING, AND IT IS NOT A ROUTE
+   * ==========================================================================
+   *
+   * The rule above is about **content**: a route's chunk is the page, and a blank page for
+   * the length of a cold load is the failure it exists to prevent.
+   *
+   * `AppLayout`'s demo boundary is not content. It is a banner *around* the product, loaded
+   * only for the demonstration account, and the page underneath renders immediately whether
+   * or not it has arrived. A `RouteFallback` there would put a "Loading" bar above a screen
+   * that is already fully usable — drawing the eye to the frame at the exact moment somebody
+   * is meant to be looking at what is inside it, on the one session where that matters most.
+   *
+   * The exception is named rather than pattern-matched, so a second `fallback={null}` in that
+   * file still fails. The list is checked in both directions: an entry that stops matching
+   * anything fails the build, which is the same discipline `tokens.test.ts` applies to its own
+   * exceptions.
+   */
+  const NULL_FALLBACK_ALLOWED = new Map([
+    ['AppLayout.tsx', 'the demo banner: furniture around a page that renders without it'],
+  ]);
+
   it('never falls back to nothing', () => {
     const silent = [...routeSources(), ...shells()]
       .filter(({ source }) => source.includes('fallback={null}'))
       .map(({ file }) => file);
 
     expect(
-      silent,
+      silent.filter((file) => !NULL_FALLBACK_ALLOWED.has(file)),
       'A null Suspense fallback is a blank content area for as long as the chunk takes. Use ' +
         'RouteFallback, which renders nothing for the first 400ms and is therefore the same ' +
         'thing on a warm connection.',
     ).toEqual([]);
+
+    /* The other direction: an exception nothing matches is one that should be deleted. */
+    for (const [file, reason] of NULL_FALLBACK_ALLOWED) {
+      expect(silent, `"${file}" is listed as allowed (${reason}) but no longer has one`).toContain(
+        file,
+      );
+    }
   });
 });

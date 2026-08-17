@@ -54,6 +54,18 @@ export interface AuthRepository {
    */
   setRole(id: string, role: UserRole): Promise<StoredUser | null>;
   /**
+   * Marks an account as the demonstration account.
+   *
+   * Separate from `updateUser` for exactly the reason `setRole` is: kept off the general
+   * update object, the write is greppable, and `demo.api.test.ts` asserts no HTTP route can
+   * reach it. Its only caller is the demo seeder.
+   *
+   * Unlike `setRole` this takes no value — there is no "unmark", because an account that has
+   * ever been the demo has held invented data under a shared passcode and must not become a
+   * real customer by a flag flip. Deleting it is the supported way back.
+   */
+  markDemo(id: string): Promise<StoredUser | null>;
+  /**
    * Every account, newest first, for the admin surface. Bounded by the caller.
    *
    * The only read in the repository with no filter on it, which is why it is named for what
@@ -189,6 +201,23 @@ export function createMongoAuthRepository(
       const document = await UserModel.findByIdAndUpdate(
         id,
         { $set: { role } },
+        { new: true, runValidators: true },
+      )
+        .select(WITH_PASSWORD)
+        .lean()
+        .exec();
+
+      return document ? toStoredUser(document) : null;
+    },
+
+    async markDemo(id) {
+      await connect();
+      if (!OBJECT_ID.test(id)) return null;
+
+      /* A literal `true`, so there is no value a caller could get wrong. See the interface. */
+      const document = await UserModel.findByIdAndUpdate(
+        id,
+        { $set: { demo: true } },
         { new: true, runValidators: true },
       )
         .select(WITH_PASSWORD)

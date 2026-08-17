@@ -248,6 +248,29 @@ export const pages: readonly PageMeta[] = [
       'Where your website build has got to: progress, your preview link, the things we need from you, and your approval.',
     noIndex: true,
   },
+  /*
+   * The private demonstration door. `noIndex`, and it still needs a built HTML file for the
+   * same reason `/welcome` does: `vercel.json` has no SPA fallback outside `/app`, so a hard
+   * refresh on the one page somebody was told to type in would otherwise 404.
+   *
+   * The description is deliberately incurious. It appears in a browser tab and in a link
+   * preview if somebody pastes the URL into a chat, and neither is a place to explain what is
+   * behind the passcode.
+   */
+  {
+    path: routes.promo,
+    title: 'Private demonstration',
+    description:
+      'A private demonstration of the customer portal. A passcode is needed, and it is sent separately by whoever shared this link.',
+    noIndex: true,
+  },
+  {
+    path: routes.appReports,
+    title: 'Your reports',
+    description:
+      'What your website produced each month, what we changed, and what we are doing next.',
+    noIndex: true,
+  },
   {
     path: routes.appBilling,
     title: 'Your billing',

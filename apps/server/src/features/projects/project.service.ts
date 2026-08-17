@@ -174,6 +174,36 @@ export interface ProjectService {
     readonly previewUrl?: string | undefined;
     readonly productionUrl?: string | undefined;
   }): Promise<StoredProject>;
+
+  /**
+   * Sets, revises or clears the estimated launch date.
+   *
+   * ==========================================================================
+   * A DATE THAT MOVES SILENTLY IS WORSE THAN NO DATE
+   * ==========================================================================
+   *
+   * This is a domain operation rather than a field on `updateDetails` for one reason: the
+   * *second* time it is called it has to send an email, and the first time it must not.
+   *
+   * Setting a first estimate is good news arriving — the customer had nothing and now has
+   * something, and they will see it the moment they open the portal. **Moving** one is
+   * different in kind. It is a promise being changed, and a customer who finds out by
+   * noticing a different number on a page they happened to revisit has been told nothing;
+   * they have been left to discover it. `notifier.estimateChanged` refuses a same-day
+   * re-save on top of this, so an operator pressing save twice sends nothing.
+   *
+   * `null` clears it, and clearing is deliberately silent. "We no longer know when this will
+   * be finished" is not a sentence to put in an email without a human writing the rest of it.
+   * ==========================================================================
+   */
+  setEstimate(params: {
+    readonly project: StoredProject;
+    /** `null` returns the project to "not set yet". */
+    readonly estimatedCompletionAt: Date | null;
+    /** Whose name goes on the change. From the session, never from a body. */
+    readonly by: string;
+  }): Promise<StoredProject>;
+
   createForOwner(input: NewProjectInput): Promise<StoredProject>;
 
   /**
@@ -828,6 +858,42 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
       });
 
       return started;
+    },
+
+    async setEstimate({ project, estimatedCompletionAt, by }) {
+      const previous = project.estimatedCompletionAt;
+
+      const updated = await repository.update(project.id, {
+        estimatedCompletionAt,
+        estimateUpdatedAt: now(),
+        estimateUpdatedBy: by,
+      });
+
+      if (!updated) throw new AppError('NOT_FOUND', 'No project with that id.');
+
+      logger.info('project.estimate_set', {
+        projectId: project.id,
+        cleared: estimatedCompletionAt === null,
+        moved: previous !== undefined && estimatedCompletionAt !== null,
+      });
+
+      /*
+       * On movement only, and the condition says both halves of that out loud: there has to
+       * have been a previous date for anything to have moved *from*, and there has to be a new
+       * one for it to have moved *to*. A first estimate and a cleared estimate both fall out
+       * here, which is the whole rule.
+       */
+      if (previous && estimatedCompletionAt) {
+        await notifier.estimateChanged({
+          to: recipientFor(updated),
+          businessName: updated.businessName,
+          projectId: updated.id,
+          previous,
+          next: estimatedCompletionAt,
+        });
+      }
+
+      return updated;
     },
 
     async setUrls({ project, previewUrl, productionUrl }) {

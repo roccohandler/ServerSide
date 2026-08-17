@@ -4,7 +4,11 @@ import { AppError } from '../../lib/appError.js';
 import { success } from '../../lib/apiResponse.js';
 import { parseBody, parseQuery, pathParam } from '../../lib/requestSchema.js';
 import { toActivityView, type ActivityService } from '../activity/index.js';
-import { toAssessmentView, type AssessmentService } from '../assessments/index.js';
+import {
+  parseSaveAssessmentReport,
+  toAdminAssessmentView,
+  type AssessmentService,
+} from '../assessments/index.js';
 import {
   requireAdmin,
   requireCapability,
@@ -20,10 +24,13 @@ import { createProjectFileRoutes, toFileView, type FileService } from '../files/
 import type { LeadService } from '../leads/index.js';
 import { toOnboardingView, type OnboardingService } from '../onboarding/index.js';
 import { createProjectAccess, requireProject, type ProjectService } from '../projects/index.js';
+import { DEMO_EMAIL } from '../demo/index.js';
+import { parseSaveReport, toAdminReportView, type ReportService } from '../reports/index.js';
 import {
   parseAddTask,
   parseCreateProject,
   parseSetDeploymentUrl,
+  parseSetEstimate,
   parseSetMilestone,
   parseSetProjectOwner,
   parseUndoMilestone,
@@ -47,6 +54,8 @@ export interface AdminRoutesDependencies {
    */
   readonly billingService: BillingService;
   readonly assessmentService: AssessmentService;
+  /** Growth Partner's monthly deliverable, composed and published from the project page. */
+  readonly reportService: ReportService;
   readonly taskService: TaskService;
   readonly feedbackService: FeedbackService;
   readonly deploymentService: DeploymentService;
@@ -107,6 +116,17 @@ const listQuerySchema = z.object({
    * the unbounded problem this limit exists to prevent.
    */
   q: z.string().trim().max(80).optional(),
+  /**
+   * Puts the demonstration account's records back into a list.
+   *
+   * Off by default, because the console is the owner's picture of the *business* and a demo
+   * project in the middle of it is a wrong answer to "how many builds are running". On when
+   * somebody is actually debugging the demo, which is the only time it is the right answer.
+   */
+  includeDemo: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === 'true'),
 });
 
 /**
@@ -170,6 +190,7 @@ export function createAdminRouter(dependencies: AdminRoutesDependencies): Router
     projectService,
     billingService,
     assessmentService,
+    reportService,
     taskService,
     feedbackService,
     deploymentService,
@@ -195,11 +216,36 @@ export function createAdminRouter(dependencies: AdminRoutesDependencies): Router
 
   /* ------------------------------------------------------------- projects */
 
+  /*
+   * ==========================================================================
+   * THE DEMONSTRATION ACCOUNT IS NOT PART OF THE BUSINESS
+   * ==========================================================================
+   *
+   * DECISION 033 chose "a demo customer is a customer" over a `demo` column filtered in
+   * eleven repositories, because one forgotten filter is a leak in either direction. The
+   * price of that choice is paid here: demo rows are real rows, so they *would* appear in the
+   * owner's own picture of the business — and a demo project in the middle of the project
+   * list is a wrong answer to "how many builds are running".
+   *
+   * That price is a small, enumerable list rather than a filter on every read: this list, the
+   * accounts list, and the inbox. It is deliberately at the *route* rather than in the
+   * repository, because the underlying queries are still correct — the demo project is a
+   * project — and it is only this surface that is answering a question about the business.
+   *
+   * `?includeDemo=true` puts them back, for the afternoon somebody is debugging the demo.
+   */
+  async function demoOwnerId(): Promise<string | undefined> {
+    const user = await authRepository.findUserByEmail(DEMO_EMAIL);
+    /* The flag, not the address. An account at that address without it is not the demo. */
+    return user?.demo ? user.id : undefined;
+  }
+
   router.get('/projects', async (request, response) => {
-    const { limit, q } = parseQuery(listQuerySchema, request.query);
-    const { rows: projects, hasMore } = await page(limit, (bound) =>
-      projectService.listAll(bound, q),
-    );
+    const { limit, q, includeDemo } = parseQuery(listQuerySchema, request.query);
+    const { rows, hasMore } = await page(limit, (bound) => projectService.listAll(bound, q));
+
+    const demoId = includeDemo ? undefined : await demoOwnerId();
+    const projects = demoId ? rows.filter((project) => project.ownerUserId !== demoId) : rows;
 
     /*
      * The full stored record, not the customer view. Staff legitimately need the
@@ -424,6 +470,27 @@ export function createAdminRouter(dependencies: AdminRoutesDependencies): Router
     );
   });
 
+  /*
+   * When we think it will be finished.
+   *
+   * Its own route rather than a field on `PATCH /`, for the reason the domain operation gives
+   * about itself: moving an estimate sends an email and setting a first one does not, and a
+   * rule like that cannot live in a six-field edit form. See `ProjectService.setEstimate`.
+   */
+  one.patch('/estimate', requireCapability('project:write:any'), async (request, response) => {
+    const project = requireProject(request);
+    const auth = requireRequestAuth(request);
+    const { estimatedCompletionAt } = parseSetEstimate(request.body);
+
+    const updated = await projectService.setEstimate({
+      project,
+      estimatedCompletionAt,
+      by: auth.user.name,
+    });
+
+    response.json(success({ project: updated }));
+  });
+
   one.patch('/milestone', async (request, response) => {
     const project = requireProject(request);
     const { milestone } = parseSetMilestone(request.body);
@@ -569,6 +636,64 @@ export function createAdminRouter(dependencies: AdminRoutesDependencies): Router
    */
   one.use('/files', createProjectFileRoutes({ fileService, source: 'team' }));
 
+  /* --------------------------------------------- monthly performance reports */
+
+  one.get('/reports', requireCapability('project:read:any'), async (request, response) => {
+    const project = requireProject(request);
+    const reports = await reportService.listForProject(project.id, 24);
+    response.json(success({ reports: reports.map(toAdminReportView) }));
+  });
+
+  /*
+   * Compose or correct a month. Saving is not publishing — `POST /reports/:id/publish` below
+   * is, and the two are separate for the reason the assessment review states at length: a flag
+   * on a save is a checkbox somebody ticks by accident on the eighth revision, and the thing
+   * on the other side of this one is an email that cannot be recalled.
+   */
+  one.put('/reports', requireCapability('project:write:any'), async (request, response) => {
+    const project = requireProject(request);
+    const auth = requireRequestAuth(request);
+    const input = parseSaveReport(request.body);
+
+    if (!project.ownerUserId) {
+      throw new AppError(
+        'VALIDATION_ERROR',
+        'This project has no customer account attached, so a report would have nobody to appear for.',
+      );
+    }
+
+    const saved = await reportService.save({
+      ...input,
+      projectId: project.id,
+      userId: project.ownerUserId,
+      preparedBy: auth.user.name,
+    });
+
+    response.status(201).json(success({ report: toAdminReportView(saved) }));
+  });
+
+  one.post(
+    '/reports/:reportId/publish',
+    requireCapability('project:write:any'),
+    async (request, response) => {
+      const project = requireProject(request);
+      const report = await reportService.findById(pathParam(request.params, 'reportId'));
+
+      /* Same rule as the feedback routes: the record has to be on this project. */
+      if (!report || report.projectId !== project.id) {
+        throw new AppError('NOT_FOUND', 'No report with that id.');
+      }
+
+      const published = await reportService.publish({
+        report,
+        to: { email: project.email, name: project.contactName },
+        businessName: project.businessName,
+      });
+
+      response.json(success({ report: toAdminReportView(published) }));
+    },
+  );
+
   router.use('/projects/:projectId', one);
 
   /* ------------------------------------------------------------- accounts */
@@ -590,10 +715,14 @@ export function createAdminRouter(dependencies: AdminRoutesDependencies): Router
    * becoming folklore.
    */
   router.get('/accounts', requireCapability('customer:read:any'), async (request, response) => {
-    const { limit, q } = parseQuery(listQuerySchema, request.query);
-    const { rows: users, hasMore } = await page(limit, (bound) =>
-      authRepository.listUsers(bound, q),
-    );
+    const { limit, q, includeDemo } = parseQuery(listQuerySchema, request.query);
+    const { rows, hasMore } = await page(limit, (bound) => authRepository.listUsers(bound, q));
+
+    /*
+     * No extra query here, unlike the project list: `StoredUser` already carries the flag,
+     * which is the whole argument for putting it on the identity rather than on every row.
+     */
+    const users = includeDemo ? rows : rows.filter((user) => !user.demo);
 
     /*
      * Who among them has ever asked for anything.
@@ -675,11 +804,100 @@ export function createAdminRouter(dependencies: AdminRoutesDependencies): Router
 
   /* ---------------------------------------------------------- assessments */
 
+  /*
+   * ==========================================================================
+   * THE QUEUE FOR THE THING THE FRONT PAGE PROMISES
+   * ==========================================================================
+   *
+   * Every marketing page ends in "Get my free website assessment". Somebody presses it,
+   * makes an account, answers twenty questions — and until now the only trace of that on this
+   * side was an email, in an inbox, competing with everything else in an inbox.
+   *
+   * So this is the operational surface for the primary offer, and it did not exist. Oldest
+   * first, because the person who has been waiting longest is the one being let down, and
+   * only the ones with no delivered review, because a list that also contained finished work
+   * would be an archive rather than a queue. It is empty when nobody is waiting.
+   */
+  router.get('/assessments', requireCapability('customer:read:any'), async (request, response) => {
+    const { limit } = parseQuery(listQuerySchema, request.query);
+    const { rows, hasMore } = await page(limit, (bound) =>
+      assessmentService.listAwaitingReport(bound),
+    );
+
+    response.json(success({ assessments: rows.map(toAdminAssessmentView), hasMore }));
+  });
+
   router.get('/assessments/:id', async (request, response) => {
     const assessment = await assessmentService.findById(pathParam(request.params, 'id'));
     if (!assessment) throw new AppError('NOT_FOUND', 'No assessment with that id.');
-    response.json(success({ assessment: toAssessmentView(assessment) }));
+    /*
+     * The admin view, which carries the draft. The customer's `toAssessmentView` deliberately
+     * cannot represent an unpublished review at all — see its note — so the console needs the
+     * other one or it would be editing a document it cannot read back.
+     */
+    response.json(success({ assessment: toAdminAssessmentView(assessment) }));
   });
+
+  /*
+   * Saving is not sending.
+   *
+   * `PATCH` writes the draft and changes nothing a customer can see; `POST /deliver` below is
+   * the publication. Two routes rather than a `deliver: true` flag on this one, because a
+   * flag on a save is a checkbox somebody ticks by accident on the eighth revision — and the
+   * thing on the other side of it is an email that cannot be recalled.
+   *
+   * `preparedBy` comes from the session rather than the body. A byline a request could choose
+   * is one that can be somebody else's name.
+   */
+  router.patch(
+    '/assessments/:id/report',
+    requireCapability('customer:read:any'),
+    async (request, response) => {
+      const assessment = await assessmentService.findById(pathParam(request.params, 'id'));
+      if (!assessment) throw new AppError('NOT_FOUND', 'No assessment with that id.');
+
+      const auth = requireRequestAuth(request);
+      const draft = parseSaveAssessmentReport(request.body);
+
+      const saved = await assessmentService.saveReport({
+        assessment,
+        draft: { ...draft, preparedBy: auth.user.name },
+      });
+
+      response.json(success({ assessment: toAdminAssessmentView(saved) }));
+    },
+  );
+
+  router.post(
+    '/assessments/:id/deliver',
+    requireCapability('customer:read:any'),
+    async (request, response) => {
+      const assessment = await assessmentService.findById(pathParam(request.params, 'id'));
+      if (!assessment) throw new AppError('NOT_FOUND', 'No assessment with that id.');
+
+      /*
+       * The recipient is resolved here rather than inside the service, matching the rule
+       * `NotificationRecipient` states about itself: callers pass the address they already
+       * hold rather than giving a domain service a repository it has no other use for. An
+       * assessment carries a `userId` and a business name, and neither is an address.
+       */
+      const owner = await authRepository.findUserById(assessment.userId);
+
+      if (!owner) {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          'The account that submitted this assessment no longer exists, so there is nobody to send the review to.',
+        );
+      }
+
+      const delivered = await assessmentService.deliverReport({
+        assessment,
+        to: { email: owner.email, name: owner.name },
+      });
+
+      response.json(success({ assessment: toAdminAssessmentView(delivered) }));
+    },
+  );
 
   return router;
 }

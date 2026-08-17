@@ -75,6 +75,36 @@ export interface AuthService {
     readonly currentPassword: string;
     readonly newPassword: string;
   }): Promise<AuthSession>;
+  /**
+   * Mints a session for an account whose bearer has been authenticated by other means.
+   *
+   * ==========================================================================
+   * READ THIS BEFORE CALLING IT
+   * ==========================================================================
+   *
+   * This method does no authentication. It takes a `StoredUser` and issues a cookie for it,
+   * which is exactly as dangerous as it sounds — a caller that resolves a user from anything
+   * a request supplied has built an impersonation endpoint.
+   *
+   * It exists for **one** caller: `POST /api/demo/enter`, which compares a passcode against
+   * the configured one with `timingSafeEqual` and then signs somebody in as the single
+   * demonstration account. That account is fixed, is looked up by a constant address the
+   * request cannot influence, and holds `role: 'customer'`.
+   *
+   * The alternative was a second authentication system — a demo token, demo middleware, and
+   * a second answer to "who is this request". The brief that commissioned Demo Mode forbids
+   * exactly that, and it is right to: one session mechanism means one place expiry, rotation,
+   * `SameSite` and signout are implemented, and the demo inherits every one of them.
+   *
+   * `ttlMs` is a parameter rather than a mechanism. `createSession` has always taken an
+   * `expiresAt`; a demo session is hours rather than the standard thirty days so that it
+   * cannot quietly become an indefinite credential.
+   * ==========================================================================
+   */
+  issueSessionFor(params: {
+    readonly user: StoredUser;
+    readonly ttlMs?: number | undefined;
+  }): Promise<AuthSession>;
 }
 
 export interface AuthServiceDependencies {
@@ -178,9 +208,9 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
     }
   }
 
-  async function issueSession(user: StoredUser): Promise<AuthSession> {
+  async function issueSession(user: StoredUser, ttlMs = SESSION_TTL_MS): Promise<AuthSession> {
     const token = createToken();
-    const expiresAt = new Date(now().getTime() + SESSION_TTL_MS);
+    const expiresAt = new Date(now().getTime() + ttlMs);
 
     await repository.createSession({ tokenHash: hashToken(token), userId: user.id, expiresAt });
     await repository.updateUser(user.id, { lastLoginAt: now() });
@@ -620,5 +650,8 @@ export function createAuthService(dependencies: AuthServiceDependencies): AuthSe
 
       return issueSession(updated ?? user);
     },
+
+    /* One caller. See the note on the interface before adding a second. */
+    issueSessionFor: ({ user, ttlMs }) => issueSession(user, ttlMs),
   };
 }

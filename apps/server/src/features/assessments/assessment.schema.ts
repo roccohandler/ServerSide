@@ -5,6 +5,8 @@ import {
   ANSWER_MIN,
   ASSESSMENT_CATEGORIES,
   ASSESSMENT_FIELD_LIMITS,
+  ASSESSMENT_FINDING_SEVERITIES,
+  type AssessmentReportDraft,
   type AssessmentSubmission,
 } from './assessment.types.js';
 
@@ -53,4 +55,39 @@ export const submitAssessmentSchema = z.strictObject({
 
 export function parseSubmitAssessment(body: unknown): AssessmentSubmission {
   return parseBody(submitAssessmentSchema, body);
+}
+
+/*
+ * The owner's review, as the console submits it.
+ *
+ * `deliveredAt` has no field here for exactly the reason `score` has none above: it is
+ * decided by the server, at the moment of an explicit publish, and a body that could carry
+ * it would be a way to back-date a document somebody was told the date of.
+ *
+ * `preparedBy` likewise comes from the session in the route, not from here — a byline a
+ * request could choose is one that can be somebody else's name.
+ */
+const findingSchema = z.strictObject({
+  title: z.string().trim().min(1).max(ASSESSMENT_FIELD_LIMITS.findingTitle),
+  detail: z.string().trim().min(1).max(ASSESSMENT_FIELD_LIMITS.findingDetail),
+  severity: z.enum(ASSESSMENT_FINDING_SEVERITIES),
+});
+
+export const saveAssessmentReportSchema = z.strictObject({
+  summary: z
+    .string()
+    .trim()
+    .min(1, { error: 'A review needs a summary before it can be saved.' })
+    .max(ASSESSMENT_FIELD_LIMITS.reportSummary),
+  findings: z.array(findingSchema).max(ASSESSMENT_FIELD_LIMITS.findings).default([]),
+  recommendations: z
+    .array(z.string().trim().min(1).max(ASSESSMENT_FIELD_LIMITS.reportRecommendation))
+    .max(ASSESSMENT_FIELD_LIMITS.reportRecommendations)
+    .default([]),
+});
+
+export function parseSaveAssessmentReport(
+  body: unknown,
+): Omit<AssessmentReportDraft, 'preparedBy'> {
+  return parseBody(saveAssessmentReportSchema, body);
 }

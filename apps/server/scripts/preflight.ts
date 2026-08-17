@@ -549,6 +549,35 @@ function checkAuthAndOrigins(env: NodeJS.ProcessEnv, isProduction: boolean): voi
           fix: 'Customer notifications are immediate and unaffected. Set it to receive the once-a-day summary of new accounts, completed tasks and client comments; queued lines otherwise expire after seven days.',
         },
   );
+
+  /*
+   * Demo Mode. Reported, never printed.
+   *
+   * A `pass` either way, and that is the point: unset is not a degraded state here, it is the
+   * safe one — the routes are not mounted, `/api/demo/enter` is a genuine 404, and nothing
+   * else in the application behaves differently. This line exists so somebody reading the
+   * preflight output can tell which of the two deployments they are looking at, because the
+   * difference is otherwise invisible until you type a passcode into `/promo`.
+   *
+   * The value never appears. Every other check in this file holds to the same rule, and this
+   * is the one where breaking it would publish the secret to a build log.
+   */
+  record(
+    env.DEMO_PASSCODE
+      ? {
+          area: 'Demo',
+          check: 'Demonstration access',
+          level: 'pass',
+          detail: '/promo is open. Passcode set (not shown).',
+        }
+      : {
+          area: 'Demo',
+          check: 'Demonstration access',
+          level: 'pass',
+          detail: 'DEMO_PASSCODE is not set — /api/demo is unmounted, which is the safe default.',
+          fix: 'Set DEMO_PASSCODE (12+ characters) to open /promo for a private demonstration. See docs/DEMO-MODE.md.',
+        },
+  );
 }
 
 /**

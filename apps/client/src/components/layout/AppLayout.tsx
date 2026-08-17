@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { routes } from '../../config/routes';
 import { site } from '../../content';
@@ -15,6 +15,16 @@ import { Icon } from '@jobforge/ui';
 import type { UnreadSummary } from '@jobforge/shared';
 import styles from './AppLayout.module.css';
 import { cx } from '@jobforge/ui';
+
+/*
+ * A concrete module, never a barrel. Routing a `lazy()` through an index merges chunks that
+ * `scripts/check-budget.ts` exists to keep apart — the one sanctioned exception to the
+ * "reach a feature through its index" rule, stated in `CLAUDE.md` and applying here for
+ * exactly the same reason it applies in `app/routes/*.tsx`.
+ */
+const DemoLayer = lazy(() =>
+  import('./DemoLayer').then((module) => ({ default: module.DemoLayer })),
+);
 
 /*
  * ============================================================================
@@ -40,10 +50,25 @@ import { cx } from '@jobforge/ui';
  * ============================================================================
  */
 
+/*
+ * Six items, and the sixth had to argue for itself.
+ *
+ * The note above says the navigation is short on purpose and that nothing is here because a
+ * feature exists. `Reports` is here because a *purchase* exists: DECISION 015 sells the
+ * monthly Website Performance Report as Growth Partner's headline deliverable, and a
+ * deliverable with no home in the product is one the customer cancels the first quiet month
+ * because there is nothing on screen to remind them what they are paying for.
+ *
+ * It is shown to everybody rather than only to subscribers, which is the trade. A customer
+ * with no reports gets an empty state that explains what one is and points at the plan — a
+ * real answer to "what is this", rather than the dead end a hidden item would have been the
+ * day somebody's first report landed and the navigation silently grew.
+ */
 const NAV_ITEMS = [
   { to: routes.appDashboard, label: 'Dashboard' },
   { to: routes.appAssessment, label: 'Assessment' },
   { to: routes.appProjects, label: 'Website' },
+  { to: routes.appReports, label: 'Reports' },
   { to: routes.appBilling, label: 'Billing' },
   { to: routes.appAccount, label: 'Account' },
 ] as const;
@@ -133,6 +158,28 @@ export function AppLayout() {
      */
     <AnnouncerProvider>
       <div className={styles['shell']}>
+        {/*
+         * ================================================================
+         * THE DEMONSTRATION LAYER, AND WHAT IT COSTS A REAL CUSTOMER
+         * ================================================================
+         *
+         * Nothing. This is the only place in the client that reads `user.demo`, and the
+         * whole layer — banner, tour, feedback form, its stylesheet — is behind one
+         * `lazy()` inside the check. A customer who is not on the demonstration account
+         * never downloads a byte of it, which is the property the eager budget cares
+         * about and the one the exit criterion measures.
+         *
+         * `Suspense` with a `null` fallback rather than a skeleton, deliberately: the
+         * banner is furniture around the product, and a placeholder bar that appears and
+         * then swaps would draw the eye to the frame at the exact moment somebody is
+         * meant to be looking at what is inside it.
+         * ================================================================
+         */}
+        {user?.demo ? (
+          <Suspense fallback={null}>
+            <DemoLayer />
+          </Suspense>
+        ) : null}
         <a href={`#${APP_MAIN_CONTENT_ID}`} className={styles['skipLink']}>
           Skip to main content
         </a>

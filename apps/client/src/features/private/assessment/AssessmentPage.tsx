@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react';
 import { useResource } from '@jobforge/ui';
 import { routes } from '../../../config/routes';
 import { useDocumentMeta } from '../../../hooks/useDocumentMeta';
-import type { ApiFailure, AssessmentView } from '@jobforge/shared';
+import type {
+  ApiFailure,
+  AssessmentFindingSeverity,
+  AssessmentReportView,
+  AssessmentView,
+} from '@jobforge/shared';
 import { fetchLatestAssessment, submitAssessment } from '../../assessment/services/assessmentApi';
 import {
   clearAssessmentDraft,
@@ -10,7 +15,7 @@ import {
   toSubmission,
   type AssessmentDraft,
 } from '../../assessment';
-import { Button } from '@jobforge/ui';
+import { Badge, Button } from '@jobforge/ui';
 import { AppEmpty, AppError, AppLoading } from '../../../components/patterns/AppState';
 import { Notice } from '../../../components/patterns/Notice';
 import { useAnnounce } from '../../../components/patterns/useAnnounce';
@@ -23,6 +28,86 @@ const BAND_LABELS: Readonly<Record<AssessmentView['band'], string>> = {
   workable: 'Worth improving',
   'costing-you': 'Likely costing you work',
 };
+
+/**
+ * How a finding's severity is said and shown.
+ *
+ * The words are the customer's rather than ours — "Fix this first" is an instruction, where
+ * `critical` is a label somebody has to translate. The badge tone carries the same ordering
+ * for anybody scanning, and the word carries it for anybody listening.
+ */
+const SEVERITY: Readonly<
+  Record<
+    AssessmentFindingSeverity,
+    { readonly label: string; readonly tone: 'accent' | 'brand' | 'neutral' }
+  >
+> = {
+  critical: { label: 'Fix this first', tone: 'accent' },
+  important: { label: 'Worth doing', tone: 'brand' },
+  minor: { label: 'When you get to it', tone: 'neutral' },
+};
+
+/**
+ * The owner's written review — the thing the free assessment actually promises.
+ *
+ * Rendered *above* the self-scored result on the page, and that order is the point: once a
+ * person has looked at the website, what a person said is the answer and the score is the
+ * working. Before then the score is all there is, and the panel below says so plainly rather
+ * than leaving the reader to wonder whether they were forgotten.
+ */
+function ReviewPanel({ report }: { readonly report: AssessmentReportView }) {
+  const delivered = new Date(report.deliveredAt);
+
+  return (
+    <section className={styles['panel']} aria-labelledby="assessment-review">
+      <h2 id="assessment-review" className={styles['panelTitle']}>
+        Your website review
+      </h2>
+      <p className={styles['panelMeta']}>
+        Written by {report.preparedBy}
+        {Number.isNaN(delivered.getTime())
+          ? ''
+          : ` on ${delivered.toLocaleDateString(undefined, {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}`}
+        .
+      </p>
+
+      <p className={styles['panelBody']}>{report.summary}</p>
+
+      {report.findings.length > 0 ? (
+        <ul className={styles['findings']}>
+          {report.findings.map((finding) => (
+            <li key={finding.title}>
+              <div className={styles['findingHead']}>
+                <h3 className={styles['findingTitle']}>{finding.title}</h3>
+                <Badge tone={SEVERITY[finding.severity].tone}>
+                  {SEVERITY[finding.severity].label}
+                </Badge>
+              </div>
+              <p className={styles['panelBody']}>{finding.detail}</p>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {report.recommendations.length > 0 ? (
+        <>
+          <h3 className={styles['findingTitle']}>What we would do about it</h3>
+          <ol className={styles['recommendations']}>
+            {report.recommendations.map((recommendation) => (
+              <li key={recommendation} className={styles['recommendation']}>
+                {recommendation}
+              </li>
+            ))}
+          </ol>
+        </>
+      ) : null}
+    </section>
+  );
+}
 
 /*
  * `/app/assessment` — the result, kept.
@@ -146,6 +231,30 @@ export function AssessmentPage() {
     <div className={styles['page']}>
       <h1 className={styles['title']}>Your assessment</h1>
 
+      {assessment.report ? (
+        <ReviewPanel report={assessment.report} />
+      ) : (
+        /*
+         * Said plainly rather than left out.
+         *
+         * A page that shows only the machine's score, with nothing about the review, reads
+         * as though the promise on the front page was the score — and somebody who has been
+         * waiting three days has no way to tell whether they were forgotten. This is not a
+         * loading state and must not look like one: it is a commitment with a person behind
+         * it, and no spinner can say that.
+         */
+        <section className={styles['panel']} aria-labelledby="assessment-pending">
+          <h2 id="assessment-pending" className={styles['panelTitle']}>
+            Your review is being written
+          </h2>
+          <p className={styles['panelBody']}>
+            Your answers are in and somebody is going through your website properly. When the review
+            is ready it appears here and we will email you — you do not need to do anything in the
+            meantime.
+          </p>
+        </section>
+      )}
+
       <section className={styles['panel']} aria-labelledby="assessment-score">
         <h2 id="assessment-score" className={styles['panelTitle']}>
           {assessment.score} out of 100 — {BAND_LABELS[assessment.band]}
@@ -182,8 +291,16 @@ export function AssessmentPage() {
       </section>
 
       <section className={styles['panel']} aria-labelledby="assessment-recommendations">
+        {/*
+         * The heading changes once a review exists, because the section's job changes.
+         *
+         * On its own it is the answer. Underneath a written review it is the working — the
+         * generic advice attached to whichever categories the customer's own answers marked
+         * weakest — and leaving it headed "What to do about it" would put two answers to one
+         * question on one page, the second of which nobody looked at the website to write.
+         */}
         <h2 id="assessment-recommendations" className={styles['panelTitle']}>
-          What to do about it
+          {assessment.report ? 'From your own answers' : 'What to do about it'}
         </h2>
 
         {assessment.recommendations.length === 0 ? (

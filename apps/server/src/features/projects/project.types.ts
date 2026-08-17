@@ -232,6 +232,26 @@ export interface StoredProject {
   /** PaymentIntent ids for the two one-time payments — how a later refund finds its project. */
   readonly depositPaymentIntentId?: string | undefined;
   readonly finalPaymentIntentId?: string | undefined;
+  /*
+   * ==========================================================================
+   * WHEN WE THINK IT WILL BE DONE
+   * ==========================================================================
+   *
+   * Three fields for one date, and the two beside it are not bookkeeping.
+   *
+   * **Absent is a legitimate state and must render as "not set yet", never as a date.** Early
+   * in a build there genuinely is no answer, and inventing one — a default of "four weeks
+   * from the deposit", say — would be the system making a promise no person made.
+   *
+   * `estimateUpdatedAt` and `estimateUpdatedBy` exist because a date that moves silently is
+   * worse than no date at all. The customer's project page shows when the estimate last
+   * changed, so a date they are looking at is one they can tell is current; the console shows
+   * who moved it, which is the question a month later.
+   */
+  readonly estimatedCompletionAt?: Date | undefined;
+  readonly estimateUpdatedAt?: Date | undefined;
+  /** A name, not a user id — the same argument `AssessmentReport.preparedBy` makes. */
+  readonly estimateUpdatedBy?: string | undefined;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -292,6 +312,10 @@ export interface ProjectUpdate {
   readonly finalSessionId?: string;
   readonly depositPaymentIntentId?: string;
   readonly finalPaymentIntentId?: string;
+  /** `null` clears the estimate, which returns the project to "not set yet". */
+  readonly estimatedCompletionAt?: Date | null;
+  readonly estimateUpdatedAt?: Date;
+  readonly estimateUpdatedBy?: string;
 }
 
 /**
@@ -314,6 +338,16 @@ export interface CustomerProjectView {
   readonly previewUrl?: string | undefined;
   readonly productionUrl?: string | undefined;
   readonly assessmentId?: string | undefined;
+  /**
+   * Both absent until somebody sets one, and the pair travels together.
+   *
+   * A date with no "last updated" beside it is a date the reader cannot tell the age of, and
+   * an estimate whose age is unknowable is one they stop believing after the first slip.
+   * `estimateUpdatedBy` is deliberately *not* here — the customer needs to know the date
+   * moved, not which member of staff moved it.
+   */
+  readonly estimatedCompletionAt?: string | undefined;
+  readonly estimateUpdatedAt?: string | undefined;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -337,6 +371,8 @@ export function toCustomerProjectView(project: StoredProject): CustomerProjectVi
     previewUrl: project.previewUrl,
     productionUrl: project.productionUrl,
     assessmentId: project.assessmentId,
+    estimatedCompletionAt: project.estimatedCompletionAt?.toISOString(),
+    estimateUpdatedAt: project.estimateUpdatedAt?.toISOString(),
     createdAt: project.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString(),
   };

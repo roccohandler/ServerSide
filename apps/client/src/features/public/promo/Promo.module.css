@@ -1,0 +1,65 @@
+/*
+ * The entry page, and the only stylesheet this feature has.
+ *
+ * It borrows the auth boundary's shape — a centred card on a plain ground — because that is
+ * what this is: a password prompt. Building it to look like a marketing page would be the
+ * first of many small ways the demonstration stopped resembling the product.
+ */
+
+.page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-6) var(--space-4);
+  background: var(--color-surface-sunken);
+}
+
+.card {
+  width: 100%;
+  max-width: var(--container-xs);
+  padding: var(--space-7);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-2xl);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+}
+
+.lede {
+  margin: 0 0 var(--space-5);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-6);
+  padding-inline-start: var(--space-5);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.footnote {
+  margin: var(--space-6) 0 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--color-ink-subtle);
+}

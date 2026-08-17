@@ -375,7 +375,12 @@ describe('page metadata', () => {
         routes.appAssessmentRequest,
         'private: where /get-my-assessment lands somebody the moment their account exists, and where the dashboard sends anybody who left before finishing it — not a page anybody browses to',
       ],
+      [
+        routes.promo,
+        'the private demonstration door: given out by hand with the passcode sent separately, and deliberately linked from nowhere — see docs/DEMO-MODE.md',
+      ],
       [routes.appProjects, 'private: linked from the workspace navigation'],
+      [routes.appReports, 'private: linked from the workspace navigation'],
       [routes.appBilling, 'private: linked from the workspace navigation'],
       [routes.appAccount, 'private: linked from the workspace navigation'],
     ]);

@@ -264,6 +264,69 @@ describe('the authentication API', () => {
     });
 
     /*
+     * ========================================================================
+     * THE DEPLOYMENT THIS TEST EXISTS BECAUSE OF
+     * ========================================================================
+     *
+     * `TEST_ORIGIN` is in the allowlist, which is what the test above proves. This one
+     * proves the case the allowlist could not cover: a request arriving at a host nobody
+     * configured, from a browser sitting on that same host.
+     *
+     * That is a real deployment rather than a hypothetical. A Vercel URL that is not the
+     * one `PUBLIC_SITE_URL` names — a preview, a renamed project, a domain added after the
+     * environment was filled in — produces exactly this: every read works, sign-in works,
+     * and every state-changing request from a signed-in browser answers 403 with a message
+     * about verification, on an application where nothing is broken.
+     *
+     * `Origin === Host` cannot be forged by another site, which is the entire threat model
+     * here. Accepting it makes the guard correct without configuration, and leaves the
+     * allowlist doing the job it is actually for: naming the console's separate origin.
+     * ========================================================================
+     */
+    it('allows an authenticated write whose Origin is the host it was sent to', async () => {
+      const signup = await post('/api/auth/signup').send(SIGNUP);
+      const cookie = sessionCookieFrom(signup.headers);
+
+      /*
+       * `http`, because the harness runs with `TRUST_PROXY_HOPS` at its non-production
+       * default of 0 — so `request.protocol` reports the socket rather than
+       * `X-Forwarded-Proto`, exactly as it would on a machine with no proxy in front of it.
+       * Production sets one hop and the same comparison is made against `https`; that is a
+       * property of the proxy configuration rather than of this guard, and pinning it here
+       * would be pinning `trust proxy` twice.
+       */
+      const unconfigured = 'http://a-host-nobody-listed.example';
+
+      const response = await request(harness.app)
+        .patch('/api/auth/profile')
+        .set('Cookie', cookie)
+        .set('Host', 'a-host-nobody-listed.example')
+        .set('Origin', unconfigured)
+        .send({ name: 'Dana R.' });
+
+      expect(response.status).toBe(200);
+    });
+
+    it('still rejects another origin arriving at that same unconfigured host', async () => {
+      const signup = await post('/api/auth/signup').send(SIGNUP);
+      const cookie = sessionCookieFrom(signup.headers);
+
+      /*
+       * The other half, and the one that makes the relaxation safe. An attacker's page
+       * sends *its own* origin, never ours — so the same request that succeeds above is
+       * refused the moment the two disagree.
+       */
+      const response = await request(harness.app)
+        .patch('/api/auth/profile')
+        .set('Cookie', cookie)
+        .set('Host', 'a-host-nobody-listed.example')
+        .set('Origin', 'https://evil.example')
+        .send({ name: 'Taken Over' });
+
+      expect(response.status).toBe(403);
+    });
+
+    /*
      * The public forms carry no cookie and are reached by curl and by servers. Making
      * them demand an Origin would break real callers to defend against an attack that
      * cannot apply to them.

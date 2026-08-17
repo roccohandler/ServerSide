@@ -33,6 +33,15 @@
 export const ACTIVITY_TYPES = [
   'account.created',
   'assessment.submitted',
+  /**
+   * The owner's written review was published.
+   *
+   * A second name beside `assessment.submitted` for the same reason `file.uploaded` and
+   * `file.delivered` are two: the customer answering twenty questions and somebody here
+   * writing them a review are opposite directions, and one name would make a customer's
+   * own timeline read as though they had done both.
+   */
+  'assessment.delivered',
   'billing.checkout_started',
   'billing.payment_succeeded',
   'billing.payment_failed',
@@ -58,6 +67,8 @@ export const ACTIVITY_TYPES = [
    */
   'file.uploaded',
   'file.delivered',
+  /** A month's Website Performance Report was published. See `features/reports`. */
+  'report.published',
 ] as const;
 
 export type ActivityType = (typeof ACTIVITY_TYPES)[number];

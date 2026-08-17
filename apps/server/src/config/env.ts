@@ -156,6 +156,15 @@ export interface ServerConfig {
     readonly blobToken: string | undefined;
     readonly enabled: boolean;
   };
+  /**
+   * Demo Mode. `enabled` false leaves every `/api/demo` route unmounted — a genuine 404
+   * rather than an open door, the same shape `cron` uses for the same reason.
+   */
+  readonly demo: {
+    readonly passcode: string | undefined;
+    readonly sessionTtlMs: number;
+    readonly enabled: boolean;
+  };
   readonly cors: {
     /**
      * Never empty, and never a wildcard. Read by both the CORS middleware and the CSRF
@@ -313,6 +322,45 @@ const envSchema = z.object({
    * short-lived client token minted from it, scoped to one path.
    */
   BLOB_READ_WRITE_TOKEN: optionalString,
+
+  /*
+   * ==========================================================================
+   * THE DEMONSTRATION PASSCODE
+   * ==========================================================================
+   *
+   * One shared secret that opens `/promo` and signs somebody in as the demonstration
+   * customer. **Unset leaves every `/api/demo` route unmounted**, which is the `/api/cron`
+   * pattern and is deliberate: an unconfigured deployment has a genuine 404 rather than an
+   * open door, so the feature cannot be half-on.
+   *
+   * Never `VITE_`-prefixed. It is a credential, Vite inlines that prefix into the public
+   * bundle, and the whole point of the design is that the passcode never reaches a browser.
+   * `check-demo.ts` sweeps the built bundles for it after every build.
+   *
+   * Rotating it is one environment variable and a redeploy, which invalidates nothing else —
+   * sessions already minted keep working until they expire, and that is the right behaviour:
+   * rotating the door does not throw out the person already through it.
+   *
+   * A minimum length rather than a complexity rule. It is guessed over the network, behind
+   * `authRateLimiter`, so length is the only property that matters and a rule demanding a
+   * punctuation mark would produce a passcode somebody has to spell out on a phone call.
+   */
+  DEMO_PASSCODE: z
+    .string()
+    .trim()
+    .min(12, 'DEMO_PASSCODE must be at least 12 characters. It is guessed over the network.')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+
+  /*
+   * How long a demo session lasts. Hours, not the thirty days a customer gets.
+   *
+   * A demo session must not quietly become an indefinite credential: it is minted from a
+   * shared secret that several people have been told, so its value is that it expires.
+   * Twelve hours covers a demonstration, an afternoon of poking, and somebody coming back
+   * after lunch — and not a laptop left in a coffee shop overnight.
+   */
+  DEMO_SESSION_HOURS: z.coerce.number().int().min(1).max(72).default(12),
 
   LEAD_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
   LEAD_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(1000).default(5),
@@ -565,6 +613,11 @@ export function loadServerConfig(source: NodeJS.ProcessEnv = process.env): Serve
     files: {
       blobToken: raw.BLOB_READ_WRITE_TOKEN,
       enabled: Boolean(raw.BLOB_READ_WRITE_TOKEN),
+    },
+    demo: {
+      passcode: raw.DEMO_PASSCODE,
+      sessionTtlMs: raw.DEMO_SESSION_HOURS * 60 * 60 * 1000,
+      enabled: Boolean(raw.DEMO_PASSCODE),
     },
     cors: {
       allowedOrigins: resolveAllowedOrigins({

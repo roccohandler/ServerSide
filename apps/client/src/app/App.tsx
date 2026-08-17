@@ -5,6 +5,7 @@ import { marketingRoutes } from './routes/marketingRoutes';
 import { authRoutes } from './routes/authRoutes';
 import { privateRoutes } from './routes/privateRoutes';
 import { demoRoutes } from './routes/demoRoutes';
+import { promoRoutes } from './routes/promoRoutes';
 
 /*
  * ============================================================================
@@ -92,6 +93,7 @@ export function App() {
             {authRoutes}
             {privateRoutes}
             {demoRoutes}
+            {promoRoutes}
           </Routes>
         </AuthProvider>
       </BrowserRouter>

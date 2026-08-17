@@ -65,6 +65,22 @@ export const setDeploymentUrlSchema = z.strictObject({
 });
 
 /**
+ * The estimated launch date.
+ *
+ * `nullable` rather than `optional`, and the difference is the whole shape of the field:
+ * omitting it would mean "leave it alone", which is what a `PATCH` normally means and is
+ * exactly what this route must not offer. There are two things an operator can do here —
+ * name a date, or say there is no longer one — and both are explicit.
+ *
+ * `estimateUpdatedBy` is absent for the reason `preparedBy` is absent from the review schema:
+ * it comes from the session, and a byline a request could choose is one that can be somebody
+ * else's name.
+ */
+export const setEstimateSchema = z.strictObject({
+  estimatedCompletionAt: z.coerce.date().nullable(),
+});
+
+/**
  * A project brought into existence from the console, for a scope agreed off-platform.
  *
  * `ownerEmail` is optional and is an *account* address rather than a contact one — supplying
@@ -125,3 +141,4 @@ export const parseUndoMilestone = (body: unknown) => parseBody(undoMilestoneSche
 export const parseAddComment = (body: unknown) => parseBody(addCommentSchema, body);
 export const parseAddTask = (body: unknown) => parseBody(addTaskSchema, body);
 export const parseSetDeploymentUrl = (body: unknown) => parseBody(setDeploymentUrlSchema, body);
+export const parseSetEstimate = (body: unknown) => parseBody(setEstimateSchema, body);

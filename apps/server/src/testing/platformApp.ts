@@ -12,7 +12,10 @@ import { createDeploymentService } from '../features/deployments/index.js';
 import { createFeedbackService } from '../features/feedback/index.js';
 import { createLeadService } from '../features/leads/index.js';
 import { createOnboardingService } from '../features/onboarding/index.js';
+import { createNotifier } from '../features/notifications/index.js';
+import { createDemoService } from '../features/demo/index.js';
 import { createProjectService } from '../features/projects/index.js';
+import { createReportService } from '../features/reports/index.js';
 import { createTaskService } from '../features/tasks/index.js';
 import {
   createInMemoryActivityRepository,
@@ -21,7 +24,9 @@ import {
   createInMemoryDeploymentRepository,
   createInMemoryFeedbackRepository,
   createInMemoryOnboardingRepository,
+  createInMemoryDemoRepository,
   createInMemoryProjectRepository,
+  createInMemoryReportRepository,
   createInMemoryTaskRepository,
   createStubIdentityVerifier,
   type InMemoryAuthRepository,
@@ -61,6 +66,18 @@ export interface PlatformHarness {
   readonly stripe: FakeStripeClient;
   readonly email: RecordingEmailService;
   readonly identityVerifier: StubIdentityVerifier;
+  /**
+   * The services themselves, for the handful of assertions that are about a domain rule
+   * rather than about an endpoint.
+   *
+   * Deliberately narrow: only where a guard lives *below* the route layer and the route is
+   * unreachable in the state under test.  is here because Demo Mode refuses a
+   * checkout in the service and the route refuses it earlier for an unrelated and equally
+   * correct reason — so the endpoint cannot exercise the check the brief asks for.
+   */
+  readonly services: {
+    readonly billing: ReturnType<typeof createBillingService>;
+  };
   readonly repositories: {
     readonly projects: ReturnType<typeof createInMemoryProjectRepository>;
     readonly tasks: ReturnType<typeof createInMemoryTaskRepository>;
@@ -68,6 +85,8 @@ export interface PlatformHarness {
     readonly deployments: ReturnType<typeof createInMemoryDeploymentRepository>;
     readonly activity: ReturnType<typeof createInMemoryActivityRepository>;
     readonly assessments: ReturnType<typeof createInMemoryAssessmentRepository>;
+    readonly reports: ReturnType<typeof createInMemoryReportRepository>;
+    readonly demo: ReturnType<typeof createInMemoryDemoRepository>;
     /**
      * Wired here for the console inbox, which reads leads alongside feedback.
      *
@@ -134,10 +153,39 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
   const deployments = createInMemoryDeploymentRepository();
   const activity = createInMemoryActivityRepository();
   const assessments = createInMemoryAssessmentRepository();
+  const reports = createInMemoryReportRepository();
+  const demo = createInMemoryDemoRepository({
+    projects,
+    tasks,
+    feedback,
+    activity,
+    assessments,
+    reports,
+  });
   const leads = createInMemoryLeadRepository();
   const onboarding = createInMemoryOnboardingRepository();
 
   const activityService = createActivityService({ repository: activity, logger: silentLogger });
+
+  /*
+   * The notification port, wired the way `app.ts` wires it.
+   *
+   * It was absent for a long time and its absence was invisible, which is the worst shape a
+   * harness gap can have: every service takes the port optionally and defaults to a no-op, so
+   * a rig without one is a rig where **no customer is ever told anything** — and every test
+   * asserting domain state passes exactly as before. "We emailed them" was the single largest
+   * untested claim in the application, and the deliverables of Phase 5 are the first feature
+   * whose whole point is that somebody hears about it.
+   *
+   * No digest queue. Digest-tier owner mail is logged and dropped here, which is a state the
+   * notifier documents as supported; the immediate half is what these tests are about.
+   */
+  const notifier = createNotifier({
+    emailService: email,
+    siteUrl: config.billing.siteUrl,
+    ownerAddress: 'owner@example.com',
+    logger: silentLogger,
+  });
 
   const authService = createAuthService({
     repository: authRepository,
@@ -169,6 +217,7 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
   const feedbackService = createFeedbackService({
     repository: feedback,
     activity: activityService,
+    notifier,
     logger: silentLogger,
   });
 
@@ -177,6 +226,14 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
     activity: activityService,
     emailService: email,
     notificationRecipient: 'owner@example.com',
+    notifier,
+    logger: silentLogger,
+  });
+
+  const reportService = createReportService({
+    repository: reports,
+    activity: activityService,
+    notifier,
     logger: silentLogger,
   });
 
@@ -184,6 +241,7 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
     repository: projects,
     tasks: taskService,
     activity: activityService,
+    notifier,
     logger: silentLogger,
   });
 
@@ -191,6 +249,7 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
     repository: deployments,
     projects,
     activity: activityService,
+    notifier,
     logger: silentLogger,
   });
 
@@ -258,6 +317,32 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
     logger: silentLogger,
   });
 
+  /*
+   * Demo Mode, and only when a test asked for it.
+   *
+   * Mirrors `app.ts` exactly: no passcode, no service, and `routes.ts` then does not mount
+   * `/api/demo` at all. A harness that always built one would make every existing test run
+   * against a deployment shape that is not the default, and would hide the property the
+   * unmounted case exists to give — a genuine 404.
+   */
+  const demoService = config.demo.passcode
+    ? createDemoService({
+        repository: demo,
+        authRepository,
+        authService,
+        projectRepository: projects,
+        projects,
+        tasks,
+        feedback,
+        activity,
+        assessments,
+        reports,
+        passcode: config.demo.passcode,
+        sessionTtlMs: config.demo.sessionTtlMs,
+        logger: silentLogger,
+      })
+    : undefined;
+
   const app = createApp({
     config,
     logger: silentLogger,
@@ -273,6 +358,8 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
     /* See the note above: the dashboard and the accounts table both read it now. */
     leadService,
     assessmentService,
+    reportService,
+    demoService,
     projectService,
     taskService,
     feedbackService,
@@ -298,6 +385,7 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
     stripe,
     email,
     identityVerifier,
+    services: { billing: billingService },
     repositories: {
       projects,
       tasks,
@@ -305,6 +393,8 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
       deployments,
       activity,
       assessments,
+      reports,
+      demo,
       leads,
       onboarding,
     },

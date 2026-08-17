@@ -39,6 +39,7 @@ export interface UserDocument {
   stripeCustomerId?: string;
   lastLoginAt?: Date;
   activityReadAt?: Date;
+  demo?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -78,6 +79,12 @@ const userSchema = new Schema<UserDocument>(
      * mark every existing account as having read everything the moment this shipped.
      */
     activityReadAt: { type: Date },
+    /*
+     * Written by the demo seeder alone, through the narrow write on `AuthRepository` that
+     * exists for it. Deliberately not named here: `demo.api.test.ts` sweeps the source for
+     * that identifier and expects exactly three files, none of which is a model.
+     */
+    demo: { type: Boolean },
   },
   { timestamps: true },
 );
@@ -113,6 +120,7 @@ export function toStoredUser(document: UserDocument & { _id: unknown }): StoredU
     stripeCustomerId: document.stripeCustomerId,
     lastLoginAt: document.lastLoginAt,
     activityReadAt: document.activityReadAt,
+    demo: document.demo,
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
   };

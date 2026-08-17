@@ -47,6 +47,9 @@ export interface ProjectDocument {
   finalSessionId?: string;
   depositPaymentIntentId?: string;
   finalPaymentIntentId?: string;
+  estimatedCompletionAt?: Date;
+  estimateUpdatedAt?: Date;
+  estimateUpdatedBy?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,6 +91,9 @@ const projectSchema = new Schema<ProjectDocument>(
     approvedDeploymentId: { type: String, trim: true, maxlength: 64 },
     previewUrl: { type: String, trim: true, maxlength: PROJECT_FIELD_LIMITS.url },
     productionUrl: { type: String, trim: true, maxlength: PROJECT_FIELD_LIMITS.url },
+    estimatedCompletionAt: { type: Date },
+    estimateUpdatedAt: { type: Date },
+    estimateUpdatedBy: { type: String, trim: true, maxlength: PROJECT_FIELD_LIMITS.contactName },
     depositStatus: { type: String, required: true, enum: PAYMENT_STATUSES, default: 'pending' },
     finalStatus: { type: String, required: true, enum: PAYMENT_STATUSES, default: 'pending' },
     subscriptionStatus: {
@@ -143,6 +149,9 @@ export function toStoredProject(document: ProjectDocument & { _id: unknown }): S
     approvedDeploymentId: document.approvedDeploymentId,
     previewUrl: document.previewUrl,
     productionUrl: document.productionUrl,
+    estimatedCompletionAt: document.estimatedCompletionAt,
+    estimateUpdatedAt: document.estimateUpdatedAt,
+    estimateUpdatedBy: document.estimateUpdatedBy,
     depositStatus: document.depositStatus,
     finalStatus: document.finalStatus,
     subscriptionStatus: document.subscriptionStatus,

@@ -121,9 +121,44 @@
 }
 
 /*
+ * A finding in the owner's written review, and a line in a monthly report.
+ *
+ * One block for both, because they are the same shape on the page — a short heading, an
+ * optional label, and a paragraph — and two stylesheets saying that would be two things to
+ * keep in step on a CSS budget with under a kilobyte of headroom.
+ */
+.findings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.findingHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.findingTitle {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+/*
  * Receipts get printed, and this is the only screen in the workspace that holds one. What a
  * printed invoice history has to carry is what was charged and when; what it must not carry
  * is a "Manage billing" button that goes to Stripe, or a recommendation to upgrade.
+ *
+ * The review and the monthly report are the two things here somebody *does* want on paper —
+ * a written assessment of their website is a document they will take to a meeting — so
+ * `.findings` is deliberately absent from this list.
  */
 @media print {
   .actions,

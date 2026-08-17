@@ -31,6 +31,15 @@ export interface CheckoutCustomer {
   readonly id: string;
   readonly email: string;
   readonly stripeCustomerId?: string | undefined;
+  /**
+   * True on the demonstration account. Checked here, in the service, and not in the route.
+   *
+   * The brief that commissioned Demo Mode is explicit that a frontend check is not a control,
+   * and `CLAUDE.md` rule 2 says the same about anything above the domain layer. A route-level
+   * refusal would be one route away from being forgotten; this one is on the path every
+   * self-serve purchase in the application takes.
+   */
+  readonly demo?: boolean | undefined;
 }
 
 export interface BillingService {
@@ -325,6 +334,32 @@ export function createBillingService(dependencies: BillingServiceDependencies): 
     },
 
     async createCustomerCheckoutSession({ customer, product }) {
+      /*
+       * ======================================================================
+       * THE DEMONSTRATION ACCOUNT CANNOT REACH STRIPE
+       * ======================================================================
+       *
+       * First line of the method, before the Price is looked up and before the client is
+       * touched, so **Stripe is contacted zero times on the demo path**. That ordering is
+       * what makes "no live charge is possible" provable by a test rather than argued from
+       * configuration: the fake client records no calls, and there is nothing to record.
+       *
+       * Production holds live keys. A test-mode path in the same process would mean a second
+       * client and a second set of Price ids, and getting that wrong charges somebody — so
+       * there is deliberately no Stripe test mode here. The demo simulates the state change
+       * instead, through `DemoService`, against a demo-owned project only.
+       *
+       * The message is written for the person reading it on screen, because they are a
+       * prospective customer being shown the product rather than an attacker.
+       * ======================================================================
+       */
+      if (customer.demo) {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          'This is a demonstration account, so no real payment can be taken. Use the simulated payment button instead.',
+        );
+      }
+
       const priceId = await requireVerifiedPrice(product);
       if (!stripe) throw new AppError('SERVICE_UNAVAILABLE', NOT_CONFIGURED);
 
@@ -368,6 +403,20 @@ export function createBillingService(dependencies: BillingServiceDependencies): 
     },
 
     async createCustomerPortalSession({ customer }) {
+      /*
+       * Before the client, for the reason spelled out on `createCustomerCheckoutSession`:
+       * Stripe is contacted zero times on the demo path. The demo account has no Stripe
+       * customer so the check below would refuse it anyway — but "it happens to fail" is a
+       * different property from "it cannot be reached", and only the second one survives
+       * somebody later giving the demo project a Stripe id to make a screen look complete.
+       */
+      if (customer.demo) {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          'This is a demonstration account, so there is no real billing to manage.',
+        );
+      }
+
       if (!stripe) {
         throw new AppError('SERVICE_UNAVAILABLE', NOT_CONFIGURED);
       }

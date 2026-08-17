@@ -1,11 +1,14 @@
 import type {
   AdminAccountListData,
+  AdminAssessmentView,
   AdminOnboardingListData,
   AdminProjectDetail,
   AdminProjectListData,
   AdminProjectStatus,
   AdminProjectView,
+  AdminReportView,
   ApiResult,
+  AssessmentFindingSeverity,
   CommentThreadView,
   ConversationListData,
   FileView,
@@ -14,7 +17,7 @@ import type {
   TaskView,
   UploadTicket,
 } from '@jobforge/shared';
-import { get, patch, post, remove } from './api';
+import { get, patch, post, put, remove } from './api';
 
 /*
  * ============================================================================
@@ -316,6 +319,111 @@ export function deleteFile(projectId: string, fileId: string): Promise<ApiResult
   return remove(
     `/admin/projects/${encodeURIComponent(projectId)}/files/${encodeURIComponent(fileId)}`,
   );
+}
+
+/* ------------------------------------------------------------------- reports */
+
+export function fetchProjectReports(
+  projectId: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<{ readonly reports: readonly AdminReportView[] }>> {
+  return get(`/admin/projects/${encodeURIComponent(projectId)}/reports`, signal);
+}
+
+/**
+ * Writes a month, creating it or replacing the draft that was there.
+ *
+ * `PUT` rather than `POST`, because `{ project, month }` identifies it: saving August twice
+ * is one August, and the server's unique index says so. Saving is deliberately not
+ * publishing — see `publishReport`.
+ */
+export function saveReport(
+  projectId: string,
+  input: {
+    readonly month: string;
+    readonly enquiries: number;
+    readonly baseline?: number;
+    readonly changeExplanation: string;
+    readonly whatWeChanged: readonly string[];
+    readonly whatIsNext: readonly string[];
+  },
+): Promise<ApiResult<{ readonly report: AdminReportView }>> {
+  return put(`/admin/projects/${encodeURIComponent(projectId)}/reports`, input);
+}
+
+/** Sends it. Emails the customer, writes their activity entry, and cannot be undone. */
+export function publishReport(
+  projectId: string,
+  reportId: string,
+): Promise<ApiResult<{ readonly report: AdminReportView }>> {
+  return post(
+    `/admin/projects/${encodeURIComponent(projectId)}/reports/${encodeURIComponent(reportId)}/publish`,
+  );
+}
+
+/* --------------------------------------------------------------- assessments */
+
+/**
+ * The queue: everybody who asked for a free website assessment and has not had one.
+ *
+ * Oldest first, because the person who has been waiting longest is the one being let down.
+ * Empty when nobody is waiting, which is the state to aim for.
+ */
+export function fetchAssessmentQueue(
+  limit: number,
+  signal?: AbortSignal,
+): Promise<
+  ApiResult<{ readonly assessments: readonly AdminAssessmentView[]; readonly hasMore: boolean }>
+> {
+  return get(`/admin/assessments?limit=${limit}`, signal);
+}
+
+export function fetchAssessment(
+  assessmentId: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<{ readonly assessment: AdminAssessmentView }>> {
+  return get(`/admin/assessments/${encodeURIComponent(assessmentId)}`, signal);
+}
+
+/** Saves the review without sending it. The byline comes from the session, not from here. */
+export function saveAssessmentReport(
+  assessmentId: string,
+  input: {
+    readonly summary: string;
+    readonly findings: readonly {
+      readonly title: string;
+      readonly detail: string;
+      readonly severity: AssessmentFindingSeverity;
+    }[];
+    readonly recommendations: readonly string[];
+  },
+): Promise<ApiResult<{ readonly assessment: AdminAssessmentView }>> {
+  return patch(`/admin/assessments/${encodeURIComponent(assessmentId)}/report`, input);
+}
+
+/** Publishes it. Emails the customer and cannot be undone. */
+export function deliverAssessmentReport(
+  assessmentId: string,
+): Promise<ApiResult<{ readonly assessment: AdminAssessmentView }>> {
+  return post(`/admin/assessments/${encodeURIComponent(assessmentId)}/deliver`);
+}
+
+/* ------------------------------------------------------------------ estimate */
+
+/**
+ * Sets, revises or clears the estimated launch date.
+ *
+ * `null` clears it. The server sends the customer an email when the date **moves** and says
+ * nothing when it is set for the first time or cleared — see `ProjectService.setEstimate`.
+ * Nothing about that rule lives here; this sends a date.
+ */
+export function setEstimate(
+  projectId: string,
+  estimatedCompletionAt: string | null,
+): Promise<ApiResult<{ readonly project: AdminProjectView }>> {
+  return patch(`/admin/projects/${encodeURIComponent(projectId)}/estimate`, {
+    estimatedCompletionAt,
+  });
 }
 
 /* ------------------------------------------------------------------ accounts */

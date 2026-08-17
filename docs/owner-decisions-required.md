@@ -1236,3 +1236,110 @@ server file was modified** — this is entry points and copy, and the endpoints 
 existed.
 
 Owner decision: [x] **Build the pair** (2026-08-16).
+
+---
+
+## DECISION 032 — The portal delivers, it does not only display — ANSWERED: build the deliverables
+
+**Answered 2026-08-16.** Phase 5 of `03_plan/mvp_closure_plan.md`.
+
+**What was wrong.** The customer portal _displayed_. It showed a milestone, a score somebody had
+given themselves, and a payment history. Every actual deliverable — the review of their website,
+the monthly report, the date it would be finished — happened in an email or a phone call and left
+no trace in the system that sold it.
+
+The sharpest version of that: **the primary call to action on every marketing page is "Get my
+free website assessment", and the thing it promises had no representation in the application at
+all.** A visitor answered twenty questions, the machine scored them, and the portal showed that
+score as though it were the deliverable. The owner's actual review lived in an inbox. There was
+no queue, no record of whether one had ever been written, and no way for the customer to tell
+whether they had been forgotten.
+
+**What was built.** Three deliverables, and one rule shared by two of them.
+
+1. **The assessment review.** `summary`, `findings[]` with a severity, `recommendations[]`, a
+   byline and a delivery date. A console queue of everybody waiting, oldest first, with the
+   editor on the same screen as the list — because writing one is the only thing anybody comes
+   to that screen to do.
+2. **The Website Performance Report.** `features/reports`. DECISION 015 sells it as a monthly
+   operational commitment and nothing measured it; a commitment nothing measures is one that
+   quietly stops. It has an overdue check, and the customer gets a permanent Reports screen —
+   the sixth item in a navigation whose comment says it is short on purpose, which it earned by
+   being a _purchase_ rather than a feature.
+3. **The estimated launch date.** Three fields, its own domain operation, and one rule that is
+   the whole reason it is not a seventh field on the edit form.
+
+**The rule shared by the first two: draft and published are different states, and only one is
+visible.** In both, the draft is **absent from the customer's payload** rather than hidden behind
+a flag the client is asked to respect — so the only way a half-written review could reach
+somebody is if a person published it. Saving and publishing are two buttons, because a flag on a
+save is a checkbox somebody ticks by accident on the eighth revision and the thing on the other
+side of it is an email that cannot be recalled.
+
+**The rule the third one turns on: a date that moves silently is worse than no date.** Setting a
+first estimate is quiet — good news arriving, which they will see the moment they open the
+portal. _Moving_ one emails them, because a customer who finds out by noticing a different number
+on a page they happened to revisit has not been told; they have been left to discover it.
+Clearing it is silent too, and deliberately: "we no longer know when this will be finished" is
+not a sentence to put in an automated email without a person writing the rest of it. **Absent is
+a legitimate state** and renders as nothing at all, never as a placeholder date.
+
+Owner decision: [x] Built — 2026-08-16
+
+---
+
+## DECISION 033 — Demo Mode is a customer, not a mode — ANSWERED: one account, one flag
+
+**Answered 2026-08-16.** Phase 7 of `03_plan/mvp_closure_plan.md`. Full account in
+`docs/DEMO-MODE.md`.
+
+**The gap.** The product could not be shown to anybody. A prospective partner, a friend, or
+somebody being sold to had three options: watch a screen share, be given a real account on the
+production database, or be shown the marketing site and asked to imagine the rest. The first does
+not scale, the second is a data-protection decision nobody made, and the third is what every
+competitor does.
+
+**The decision.** A private entry at `/promo`, a passcode checked on the server, and an isolated
+demonstration customer whose account exercises **the real application** — not a second frontend,
+not a screenshot tour, not a mocked API.
+
+And the single decision everything else follows from: **the demo account is a customer.**
+`role: 'customer'`, plus one `demo` flag on the user document. Every piece of isolation is the
+ownership boundary that already existed and was already tested — `authorizeOwnership`,
+`createProjectAccess`, and 404-never-403 — and not one line of it needed changing. It also makes
+"no admin access, no owner functionality, no administrative APIs" true **by construction**, since
+`requireAdmin` already answers `NOT_FOUND` to every customer.
+
+**Four things were refused, and each refusal is the reasoning:**
+
+- **A `demo` column on every collection.** Eleven repositories, and one forgotten filter is a
+  leak in _either_ direction.
+- **A separate database.** Mongoose binds models at module scope; per-request `useDb()` means
+  changing every repository in the application to buy isolation the ownership boundary provides.
+- **A second authentication system.** One session mechanism means one place expiry, rotation,
+  `SameSite` and signout are implemented, and the demo inherits every one of them.
+- **Stripe test mode in production.** A second client and a second set of Price ids in a process
+  holding live keys. Getting that wrong charges somebody.
+
+**The payment invariant is restated, not weakened.** Payment state moves on a verified webhook,
+**or** on an explicitly demo-scoped simulation against a demo-owned project. One extra door,
+named, and unreachable without the passcode. `createCustomerCheckoutSession` refuses a demo
+customer on its first line, before the Price lookup and before the client is touched — which is
+what makes "no live charge is possible" provable by a test rather than argued from configuration.
+
+**The price of the decision, paid in three named places.** Demo rows are real rows, so they would
+appear in the owner's own picture of the business: the project list, the accounts list and the
+inbox each exclude them, and `?includeDemo=true` puts them back.
+
+**Known limitation, recorded before it was discovered:** one demo account, shared. Two people
+demonstrating at once share a dataset, and one pressing Reset is visible to the other. A
+per-session account was refused because creating accounts from a public endpoint is an abuse
+vector and the isolation it buys is isolation from _other demo users_, which is the least
+important kind here.
+
+**Added on the owner's request, the same day:** the banner names the testers it was set up for,
+and carries a six-stop guided tour of the customer journey. Both are presentational; nothing
+authorises against a name, and the tour navigates rather than intercepts — it blocks nothing,
+disables nothing, and a tester who ignores it finds it still on the step they left it on.
+
+Owner decision: [x] Built — 2026-08-16

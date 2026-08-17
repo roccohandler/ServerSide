@@ -131,6 +131,8 @@ export function createCustomerBillingRouter(
           id: auth.user.id,
           email: auth.user.email,
           stripeCustomerId: auth.user.stripeCustomerId,
+          /* Carried, not checked here. The refusal is in the service — see its note. */
+          demo: auth.user.demo,
         },
         product: product as (typeof BILLING_PRODUCTS)[number],
       });
@@ -156,6 +158,7 @@ export function createCustomerBillingRouter(
           id: auth.user.id,
           email: auth.user.email,
           stripeCustomerId: auth.user.stripeCustomerId,
+          demo: auth.user.demo,
         },
       });
 

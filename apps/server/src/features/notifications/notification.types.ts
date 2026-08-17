@@ -105,6 +105,16 @@ export const NOTIFICATION_KINDS = [
   'estimate.changed',
   /** A file was sent to them. */
   'file.delivered',
+  /**
+   * The website review they asked for has been written and published.
+   *
+   * The single most important message this system sends, because it is the one the primary
+   * call to action promised. Everything else here reports on work somebody has already paid
+   * for; this one is the delivery of the free thing that earns the right to ask.
+   */
+  'assessment.delivered',
+  /** A monthly Website Performance Report was published. Growth Partner's deliverable. */
+  'report.published',
   /* ------------------------------------------------------------------- owner */
   /** A client approved their website. */
   'owner.approved',
@@ -167,6 +177,8 @@ export const IMMEDIATE_KINDS: readonly NotificationKind[] = [
   'payment.failed',
   'estimate.changed',
   'file.delivered',
+  'assessment.delivered',
+  'report.published',
   /* Owner: somebody is now waiting on a reply, or money moved. */
   'owner.changes_requested',
   'owner.approved',

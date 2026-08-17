@@ -47,6 +47,43 @@ import { SESSION_COOKIE_NAME } from '../features/auth/auth.types.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
+/**
+ * The origin the request was addressed to, as the browser would have written it.
+ *
+ * ============================================================================
+ * SAME-ORIGIN IS NOT CROSS-SITE, AND IT NEEDS NO CONFIGURATION
+ * ============================================================================
+ *
+ * This is the answer to a production failure that cost a whole evening, and the shape of it
+ * is worth recording because the guard was not wrong — it was *incomplete*.
+ *
+ * The allowlist is built from `siteUrl` and `CLIENT_ORIGIN`, and the note at its call site
+ * already anticipated the common deployment: the API and the site share a domain, so a
+ * same-origin `fetch` sends an `Origin` header and the list has to contain it. What it
+ * assumed is that `PUBLIC_SITE_URL` names the host the application is actually served from.
+ *
+ * On a preview deployment, a renamed project, or any Vercel URL that is not the one somebody
+ * typed into the environment months ago, that assumption is false — and the failure is
+ * miserable to diagnose: every `GET` works, sign-in works, and then **every state-changing
+ * request from a signed-in browser answers 403** with a message about verification. Nothing
+ * is broken. One environment variable disagrees with the URL bar.
+ *
+ * A request whose `Origin` equals its own `Host` cannot have been forged by another site.
+ * That is what "same-origin" means, and no allowlist is needed to establish it: an attacker's
+ * page at `evil.example` sending a request here sends `Origin: https://evil.example`, which
+ * this never matches. So the guard accepts it, and the allowlist goes back to being what it
+ * is for — naming the *other* origins that may drive this API, which is the console.
+ *
+ * The protocol comes from `request.protocol`, which honours `X-Forwarded-Proto` because
+ * `trust proxy` is set from `TRUST_PROXY_HOPS`. That matters: behind Vercel the socket is
+ * plain HTTP, so a naive `http://` here would never match the browser's `https://` and this
+ * fix would silently do nothing.
+ * ============================================================================
+ */
+function ownOrigin(protocol: string, host: string | undefined): string | undefined {
+  return host ? `${protocol}://${host}` : undefined;
+}
+
 export interface CsrfGuardOptions {
   /**
    * Origins allowed to make authenticated state-changing requests. The application's
@@ -81,13 +118,22 @@ export function createCsrfGuard(options: CsrfGuardOptions): RequestHandler {
       return;
     }
 
-    const origin = request.headers.origin;
+    const origin = request.headers.origin?.replace(/\/$/, '');
+    const self = ownOrigin(request.protocol, request.get('host'));
 
-    if (!origin || !allowed.has(origin.replace(/\/$/, ''))) {
+    if (!origin || !(allowed.has(origin) || origin === self)) {
       logger.warn('csrf.rejected', {
         method: request.method,
         path: request.path,
-        hasOrigin: Boolean(origin),
+        /*
+         * Both origins, by name. They are public values — the browser sent one and the
+         * other is the host this process is answering on — and withholding them is what
+         * made the production failure this guard's own header describes take an evening
+         * to find. A log that says only "rejected" cannot tell anybody which of the two
+         * is wrong.
+         */
+        origin: origin ?? null,
+        expected: self ?? null,
       });
       next(
         new AppError(

@@ -926,9 +926,68 @@ The resolution is that the demo does not go near the webhook path at all:
       panel. The brief's own framing: normal product UX plus a small safety layer, never a demo UI
       pretending to be the product
 - [ ] **7.6.4** Reset behind `InlineConfirm`, which is what that pattern is for
-- [ ] **7.6.5** **No `if (isDemo)` anywhere else.** The flag has exactly three readers: the banner,
-      the billing panel's simulated-payment wording, and the server. Anything else that wants to
-      branch on it is a sign the demo is diverging from the product
+- [ ] **7.6.5** **No `if (isDemo)` anywhere else.** The flag has four readers: the banner, the
+      tour, the billing panel's simulated-payment wording, and the server. Anything else that
+      wants to branch on it is a sign the demo is diverging from the product
+
+#### 11.6a The banner names the people it is for — added 2026-08-16
+
+The banner as specified above says _what_ the account is. The owner asked for it to also say
+**who it is for**: `For testers — John, Mason and Lukas`.
+
+That is a smaller change than it looks and a better one than the generic version. A named
+banner does two things the anonymous one cannot. It tells the reader the session is theirs
+rather than a public sandbox, which is the difference between "poke at this" and "this was set
+up for you". And it dates itself — a name that stops being current is a banner somebody
+notices and changes, where `DEMO MODE` is furniture that survives forever.
+
+- [ ] **7.6.6** `DEMO_TESTERS` — a constant, one place, formatted with an Oxford-free
+      `A, B and C` join. **Not** an environment variable: it is not a secret, it is read by a
+      browser, and a `VITE_`-prefixed one would be inlined into the bundle anyway. Changing who
+      is named is a one-line edit and a deploy, which is the right cost for a fact this soft
+- [ ] **7.6.7** The names are **presentational only**. Nothing authorises against them, nothing
+      stores them, and the passcode is one shared secret — there is no per-tester identity, and
+      inventing one would be a second authentication system to buy attribution nobody asked for
+
+#### 11.6b The guided tour — added 2026-08-16
+
+The second half of the same request: a button in the banner that **walks the tester through the
+customer experience** rather than leaving them to find it.
+
+This is the item most capable of being built wrong, so the shape is decided here.
+
+**What it is not.** Not a spotlight overlay, not a coach-mark library, not a modal sequence that
+covers the product. Every one of those replaces the thing being demonstrated with a tutorial
+about it, and the whole premise of this phase is that the demo _is_ the real application.
+
+**What it is.** An ordered list of the stops on the customer journey, each one a route and a
+sentence saying what to look at when you get there. Pressing `Start the tour` navigates to the
+first stop and the banner grows one line: the sentence, a `2 of 6` position, and Back / Next.
+The product underneath is untouched and fully usable — a tester can ignore the tour, click
+something else, and the tour is still on the step they left it on.
+
+- [ ] **7.6.8** `DEMO_TOUR` — an ordered array of `{ path, title, body }`, in the same module as
+      the tester names. Six stops: the dashboard, the project overview, the preview to approve,
+      the things we need, the assessment review, and billing. **Data, not components** — a stop
+      is a route and two strings, and anything more would be a second description of a screen
+      that already describes itself
+- [ ] **7.6.9** Position lives in `sessionStorage`, not in the URL. A query parameter would make
+      every screenshot a tester sends back carry `?tour=3`, and would put tour state into a link
+      they might share with somebody who has no session
+- [ ] **7.6.10** The tour is **navigation, not interception**. Next is a `navigate()`; nothing
+      blocks a click, disables a control, or waits for the tester to do the "right" thing
+- [ ] **7.6.11** A stop whose route does not exist for this dataset is skipped rather than
+      shown broken. The seed guarantees all six, so this is a guard against the seed changing
+      and nobody noticing — which is exactly the kind of drift the reset makes easy
+- [ ] **7.6.12** `End the tour` on every step, and the last step ends it rather than looping
+- [ ] **7.6.13** It ships in the **same lazy chunk as the banner**. The tour is only ever
+      reachable from a control inside the banner, so a second boundary would buy nothing and
+      cost a request
+
+#### 11.6c What the tour costs a normal customer
+
+- [ ] **7.6.14** Zero. Same measurement as 7.6.2, and for the same reason: the whole layer is
+      behind one `lazy()` inside `user.demo`. Verified against the budget at the exit criterion
 
 ### 11.7 Feedback
 
@@ -970,6 +1029,9 @@ Every one of these is a test, and every one of them is about what an attacker or
 - [ ] **7.9.12** Demo records are absent from the console lists, the inbox and the digest
 - [ ] **7.9.13** The full existing suite passes unchanged — normal customer and console behaviour
       is what regression means here
+- [ ] **7.9.14** The banner, the tester names and the tour are absent for a normal customer —
+      asserted from a rendered layout, not from a bundle grep, because the failure worth
+      catching is a flag read the wrong way round rather than a chunk that shipped
 
 ### 11.10 Phase 7 exit criteria
 
@@ -1238,3 +1300,88 @@ unavailable, but a format **no reader can get wrong**. `month: 'long'` is what d
 `08/09/2026` is two different days and `9 August 2026` is one everywhere. The locale argument is
 `undefined` so the guard's rule holds unchanged, and the reasoning is written above the function
 because the next person will otherwise re-pin the locale for the same good reason.
+
+---
+
+## 17. Closing state — 2026-08-16
+
+Measured, not estimated. `npm run verify` green end to end.
+
+| Metric         | Start of Phase 5 | Now                                     |
+| -------------- | ---------------- | --------------------------------------- |
+| Test files     | 90               | **92**                                  |
+| Tests          | 1,371            | **1,411**                               |
+| Eager JS (gz)  | 163.1 kB         | **163.5 kB** — 0.5 kB under the ceiling |
+| Eager CSS (gz) | 19.1 kB          | **19.1 kB** — unchanged                 |
+
+**Phases 5, 7 and 8 are done. Phase 6 is not**, and §17.3 says exactly what is left in it.
+
+### 17.1 What shipped
+
+**Phase 5 — the portal delivers.** The assessment review (model, console queue, editor,
+delivery, customer view), the Website Performance Report as a new `features/reports`, and the
+estimated launch date with its notify-on-movement rule. DECISION 032.
+
+**Phase 7 — Demo Mode.** `/promo`, a server-checked passcode, an isolated demo customer, a seed,
+a reset, demo-safe money, the tester banner, the guided tour, and nineteen security tests.
+DECISION 033 and `docs/DEMO-MODE.md`.
+
+**One production defect, found mid-phase and fixed.** See §17.2.
+
+### 17.2 Where the build differed from the plan
+
+**The harness could not see a single customer notification, and had never been able to.**
+`createPlatformHarness` wired no `Notifier` at all. Every service takes the port optionally and
+defaults to a no-op, so the rig was one where **nobody is ever told anything** — and every test
+asserting domain state passed exactly as before. "We emailed them" was the largest untested
+claim in the application. Wiring it broke exactly one test, which is the next item.
+
+**A test was asserting the harness gap rather than the behaviour.** `conversation.api.test.ts`
+held "does not email a customer whose reply is already in their portal", and it had been green
+since it was written — not because the code agreed. `ConversationService.reply` loads the
+project _specifically_ so the customer is emailed, and says so in a comment written when it was
+added. Production has sent that email ever since. The test now asserts the opposite, with the
+history recorded above it.
+
+**`available.final` could not be reached from the checkout route in the demo.** Phase 4 widened
+the route's availability gate to every product, and the seeded demonstration has its deposit
+paid and its build at `review` — so every purchasable product is already unavailable to it and
+the request is refused before the service is called. Two correct guards, in the right order; the
+demo refusal is therefore tested at the service level and through the portal route, which has no
+such gate.
+
+**The CSRF guard was incomplete, and it took production to show it.** The allowlist is built
+from `PUBLIC_SITE_URL` and `CLIENT_ORIGIN`. A deployment served from a URL those do not name
+answers **403 to every state-changing request from a signed-in browser** while every read works
+— sign-in works, then nothing does. A request whose `Origin` equals its own `Host` is
+same-origin by definition and cannot be forged cross-site, so the guard now accepts it and needs
+no configuration to be correct. The rejection log names both origins, which is the half that
+would have made this ten minutes rather than an evening.
+
+**Two divergences from §9 worth recording.** The launch-day baseline is stored on the _report_
+rather than on the project — the first report establishes it, which is one fewer field to forget
+to set and equally truthful. And `Reports` became a sixth item in a navigation whose own comment
+says it is short on purpose; it earned that by being a purchase rather than a feature, and the
+count is pinned by a test that now carries the argument.
+
+**One `Suspense fallback={null}` was allowed, by name.** `a11y.test.ts` forbids them because a
+null fallback is a blank _content area_. The demo banner is not content — it is furniture around
+a page that renders fully without it, and a "Loading" bar there would draw the eye to the frame
+at the one moment somebody is meant to be looking at what is inside it. The exception list is
+checked in both directions.
+
+### 17.3 What is left — Phase 6
+
+Not started. Fifteen items, in §10:
+
+- **6.1 Account-level messages.** A customer between projects, or before one, still has no way
+  to reach the owner except the public contact form — which files them as a _prospect_. The
+  design is settled: a read model over an extended `feedback`, never a second collection.
+- **6.2 Follow-up nudges.** `features/followup`, idempotent send records, stop-on-progress, a
+  one-click unsubscribe with a stored suppression, and a two-email cap.
+- **6.3 The worklist.** `GET /api/admin/worklist` and a console Today screen — "what is going
+  stale", which is a different question from the inbox's "who is waiting".
+
+Nothing shipped depends on any of it. The assessment queue built in Phase 5 covers the most
+urgent case 6.3 was for — the primary offer now has an operational surface — and the digest
+still covers the owner's daily summary.

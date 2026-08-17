@@ -2,6 +2,7 @@ import type { EmailMessage, EmailService } from '../../infrastructure/email/emai
 import { describeError, redactEmail, type Logger } from '../../lib/logger.js';
 import {
   buildApprovalRequestedEmail,
+  buildAssessmentDeliveredEmail,
   buildEstimateChangedEmail,
   buildFeedbackRepliedEmail,
   buildFileDeliveredEmail,
@@ -10,6 +11,7 @@ import {
   buildPaymentFailedEmail,
   buildPreviewReadyEmail,
   buildProjectLaunchedEmail,
+  buildReportPublishedEmail,
   buildTasksAssignedEmail,
 } from './notification.email.js';
 import { isImmediate, type NotificationKind } from './notification.types.js';
@@ -134,6 +136,21 @@ export interface Notifier {
     readonly note: string | undefined;
   }): Promise<void>;
 
+  /** The free review the front page promised has been written and published. */
+  assessmentDelivered(params: {
+    readonly to: NotificationRecipient;
+    readonly businessName: string;
+    readonly findingCount: number;
+    readonly preparedBy: string;
+  }): Promise<void>;
+
+  /** A month's Website Performance Report is out. */
+  reportPublished(params: {
+    readonly to: NotificationRecipient;
+    readonly businessName: string;
+    readonly monthLabel: string;
+  }): Promise<void>;
+
   /**
    * One of the owner's immediate three, or a line for the digest.
    *
@@ -201,6 +218,8 @@ const paths = {
     `${siteUrl}/app/projects/${encodeURIComponent(projectId)}/feedback`,
   projectPreview: (siteUrl: string, projectId: string) =>
     `${siteUrl}/app/projects/${encodeURIComponent(projectId)}/preview`,
+  assessment: (siteUrl: string) => `${siteUrl}/app/assessment`,
+  reports: (siteUrl: string) => `${siteUrl}/app/reports`,
 };
 
 /**
@@ -370,6 +389,27 @@ export function createNotifier(dependencies: NotifierDependencies): Notifier {
         }),
       ),
 
+    assessmentDelivered: ({ to, businessName, findingCount, preparedBy }) =>
+      deliver('assessment.delivered', () =>
+        buildAssessmentDeliveredEmail({
+          to,
+          businessName,
+          findingCount,
+          preparedBy,
+          assessmentUrl: paths.assessment(siteUrl),
+        }),
+      ),
+
+    reportPublished: ({ to, businessName, monthLabel }) =>
+      deliver('report.published', () =>
+        buildReportPublishedEmail({
+          to,
+          businessName,
+          monthLabel,
+          reportsUrl: paths.reports(siteUrl),
+        }),
+      ),
+
     async owner({ kind, subject, heading, lines, replyTo }) {
       if (!ownerAddress) {
         /*
@@ -441,6 +481,12 @@ export const noopNotifier: Notifier = {
     /* intentionally nothing */
   },
   async fileDelivered() {
+    /* intentionally nothing */
+  },
+  async assessmentDelivered() {
+    /* intentionally nothing */
+  },
+  async reportPublished() {
     /* intentionally nothing */
   },
   async owner() {

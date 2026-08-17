@@ -11,9 +11,14 @@ import type {
 } from '../features/auth/auth.types.js';
 import type { AssessmentRepository } from '../features/assessments/assessment.repository.js';
 import type {
+  AssessmentReport,
   NewAssessmentRecord,
   StoredAssessment,
 } from '../features/assessments/assessment.types.js';
+import type { DemoRepository } from '../features/demo/demo.repository.js';
+import type { NewDemoFeedbackRecord, StoredDemoFeedback } from '../features/demo/demo.types.js';
+import type { ReportRepository } from '../features/reports/report.repository.js';
+import type { NewReportRecord, StoredReport } from '../features/reports/report.types.js';
 import type { ProjectRepository } from '../features/projects/project.repository.js';
 import type {
   NewProjectRecord,
@@ -160,6 +165,12 @@ export function createInMemoryAuthRepository(
       const user = users.find((candidate) => candidate.id === id);
       if (!user) return null;
       return replace(id, { ...user, role, updatedAt: now() });
+    },
+
+    async markDemo(id: string) {
+      const user = users.find((candidate) => candidate.id === id);
+      if (!user) return null;
+      return replace(id, { ...user, demo: true, updatedAt: now() });
     },
 
     async listUsers(limit: number, search?: string | undefined) {
@@ -350,6 +361,181 @@ export function createInMemoryAssessmentRepository(
               assessment.userId === userId && assessment.submittedAt.getTime() >= since.getTime(),
           )
           .sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime())[0] ?? null
+      );
+    },
+
+    async saveReport(id: string, report: AssessmentReport) {
+      const index = assessments.findIndex((assessment) => assessment.id === id);
+      const existing = assessments[index];
+      if (!existing) return null;
+
+      const updated: StoredAssessment = { ...existing, report, updatedAt: now() };
+      assessments[index] = updated;
+      return updated;
+    },
+
+    async listAwaitingReport(limit: number) {
+      return assessments
+        .filter((assessment) => assessment.report?.deliveredAt === undefined)
+        .sort((a, b) => a.submittedAt.getTime() - b.submittedAt.getTime())
+        .slice(0, limit);
+    },
+
+    async countAwaitingReport() {
+      return assessments.filter((assessment) => assessment.report?.deliveredAt === undefined)
+        .length;
+    },
+  };
+}
+
+/* ----------------------------------------------------------------------- demo */
+
+/**
+ * The in-memory demo store.
+ *
+ * `purge` is the interesting half, and it is written against the *same* arrays the other
+ * doubles hold rather than against private ones — because what the real implementation does
+ * is delete across nine collections in one database, and a double with its own copies would
+ * make "reset deleted the demo's rows and no others" a test of nothing.
+ */
+export function createInMemoryDemoRepository(stores: {
+  readonly projects: { readonly projects: StoredProject[] };
+  readonly tasks: { readonly tasks: StoredTask[] };
+  readonly feedback: { readonly comments: StoredComment[] };
+  readonly activity: { readonly entries: StoredActivity[] };
+  readonly assessments: { readonly assessments: StoredAssessment[] };
+  readonly reports: { readonly reports: StoredReport[] };
+}): DemoRepository & { readonly feedbackNotes: StoredDemoFeedback[] } {
+  const feedbackNotes: StoredDemoFeedback[] = [];
+  let nextId = 1;
+
+  /** Removes in place, because every caller holds the same array reference. */
+  function drop<T>(rows: T[], doomed: (row: T) => boolean): number {
+    let removed = 0;
+    for (let index = rows.length - 1; index >= 0; index -= 1) {
+      if (doomed(rows[index] as T)) {
+        rows.splice(index, 1);
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+
+  return {
+    feedbackNotes,
+
+    async purge(userId: string) {
+      const projectIds = new Set(
+        stores.projects.projects
+          .filter((project) => project.ownerUserId === userId)
+          .map((project) => project.id),
+      );
+
+      return (
+        drop(stores.projects.projects, (project) => project.ownerUserId === userId) +
+        drop(stores.tasks.tasks, (task) => task.userId === userId) +
+        drop(stores.activity.entries, (entry) => entry.userId === userId) +
+        drop(stores.assessments.assessments, (assessment) => assessment.userId === userId) +
+        drop(stores.reports.reports, (report) => report.userId === userId) +
+        drop(stores.feedback.comments, (comment) => projectIds.has(comment.projectId))
+      );
+    },
+
+    async recordFeedback(record: NewDemoFeedbackRecord) {
+      const stored: StoredDemoFeedback = {
+        ...record,
+        id: `demo-feedback-${nextId++}`,
+        createdAt: new Date(),
+      };
+      feedbackNotes.push(stored);
+      return stored;
+    },
+
+    async listFeedback(limit: number) {
+      return [...feedbackNotes].reverse().slice(0, limit);
+    },
+  };
+}
+
+/* -------------------------------------------------------------------- reports */
+
+export function createInMemoryReportRepository(
+  options: { now?: () => Date } = {},
+): ReportRepository & { readonly reports: StoredReport[] } {
+  const now = options.now ?? (() => new Date());
+  const reports: StoredReport[] = [];
+  let nextId = 1;
+
+  return {
+    reports,
+
+    async save(record: NewReportRecord) {
+      const timestamp = now();
+      const index = reports.findIndex(
+        (report) => report.projectId === record.projectId && report.month === record.month,
+      );
+
+      /* Upsert, matching the unique `{ projectId, month }` index the real one relies on. */
+      const existing = reports[index];
+      const saved: StoredReport = existing
+        ? { ...existing, ...record, updatedAt: timestamp }
+        : {
+            ...record,
+            id: `report-${nextId++}`,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          };
+
+      if (existing) reports[index] = saved;
+      else reports.push(saved);
+
+      return saved;
+    },
+
+    async findById(id: string) {
+      return reports.find((report) => report.id === id) ?? null;
+    },
+
+    async findForProjectMonth(projectId: string, month: string) {
+      return (
+        reports.find((report) => report.projectId === projectId && report.month === month) ?? null
+      );
+    },
+
+    async listPublishedForUser(userId: string, limit: number) {
+      return reports
+        .filter((report) => report.userId === userId && report.publishedAt !== undefined)
+        .sort((a, b) => b.month.localeCompare(a.month))
+        .slice(0, limit);
+    },
+
+    async listForProject(projectId: string, limit: number) {
+      return reports
+        .filter((report) => report.projectId === projectId)
+        .sort((a, b) => b.month.localeCompare(a.month))
+        .slice(0, limit);
+    },
+
+    async publish(id: string, publishedAt: Date) {
+      const index = reports.findIndex((report) => report.id === id);
+      const existing = reports[index];
+      if (!existing) return null;
+
+      const updated: StoredReport = { ...existing, publishedAt, updatedAt: now() };
+      reports[index] = updated;
+      return updated;
+    },
+
+    async findProjectIdsPublishedFor(projectIds: readonly string[], month: string) {
+      return new Set(
+        reports
+          .filter(
+            (report) =>
+              report.month === month &&
+              report.publishedAt !== undefined &&
+              projectIds.includes(report.projectId),
+          )
+          .map((report) => report.projectId),
       );
     },
   };
