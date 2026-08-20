@@ -376,6 +376,27 @@ than responsibility. Judge by whether the file has one reason to change.
   being a seventh field on `updateDetails`. **Absent is a legitimate state** and must render as
   "not set yet" — never as a placeholder date.
 - **`git mv` is blocked** by a local hook. Use plain `mv`; git detects the rename.
+- **`.gitattributes` is load-bearing on Windows, and its absence fails a build nobody changed.**
+  `.prettierrc` sets `endOfLine: "lf"` and `verify` opens with `format:check`, so LF is the gate
+  rather than a preference — while git on Windows defaults to `core.autocrlf=true` and rewrites
+  every text file to CRLF **on checkout**. The two disagree silently: `git diff` shows nothing,
+  because autocrlf normalises back to LF when comparing, so the repository content is correct
+  the entire time. Then somebody switches branch, git re-materialises every file that differs
+  through the CRLF filter, and 119 files nobody touched are rejected by `format:check` with an
+  empty diff to explain it. That is not hypothetical; it happened on a routine merge to `main`.
+  `* text=auto eol=lf` makes the checkout itself produce LF whatever `core.autocrlf` says, so
+  nobody has to configure their machine to be able to run `npm run verify`.
+- **A root script that wraps a workspace script needs a trailing `--`.** `npm run admin:create`
+  forwards nothing without it: `npm run admin:create -- --check` appends `--check` to the
+  _outer_ npm, which swallows it as an unknown config flag and runs the inner script with no
+  arguments at all. On `admin:create` that means a command asking to _report_ silently performs
+  the privilege grant instead. `npm run admin:create --workspace @jobforge/server --` is the
+  form that forwards. The failure prints `npm warn Unknown cli config` and is otherwise silent.
+- **The workspace selector is `@jobforge/server`, not `server`.** `--workspace server` matched
+  the old top-level directory and stopped resolving when DECISION 026 moved everything into
+  `apps/*` — the same root cause as the `dotenv` path above, and it sat wrong in `.env.example`
+  for both `admin:create` and `stripe:setup`. Root aliases now exist for all three server
+  scripts, so `npm run admin:create` and `npm run preflight` need no selector at all.
 - **A moved workspace needs `npm install`.** The `node_modules/@jobforge/*` symlinks point at the
   old path until you re-run it, and the failure looks like a missing module rather than a stale link.
 - **Vercel's Root Directory is a dashboard setting and a directory move cannot update it.** The
