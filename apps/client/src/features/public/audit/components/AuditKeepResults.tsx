@@ -5,6 +5,7 @@ import { TextField } from '@jobforge/ui';
 import { Container, Section } from '@jobforge/ui';
 import { routes } from '../../../../config/routes';
 import type { ScorecardCategory } from '../../../../types/content';
+import { track } from '../../../../lib/analytics';
 import { useAuth } from '../../../../session';
 import { submitAssessment } from '../../../assessment';
 import { saveAssessmentDraft } from '../../../assessment';
@@ -113,8 +114,31 @@ export function AuditKeepResults({
      * credential pages submit the draft the moment a session exists — see
      * `useCredentialPage`. Saving *before* navigating matters: the two pages read the
      * draft during their first render to decide whether to show the reassurance notice.
+     *
+     * ======================================================================
+     * WHY THIS STILL GOES TO `/signup` AND NOT TO `/get-my-assessment`
+     * ======================================================================
+     *
+     * The conversion audit flagged this as a defect: `/get-my-assessment` is where every
+     * primary call to action lands (DECISION 028), it is where the funnel events fire, and
+     * an audit-sourced account was invisible to all of them.
+     *
+     * The second half of that is real and is fixed below. The first half is not, and
+     * changing the route would have been the wrong repair. This button says "Create my
+     * account and keep these" — it is an account offered to hold results the visitor has
+     * *already been given*, not an offer of a free assessment. Landing it on a page headed
+     * about a free assessment changes the subject, which is precisely the bait-and-switch
+     * DECISION 031 refused when it put a plain "Create an account" door in the header
+     * rather than pointing that one at the offer either.
+     *
+     * So the destination keeps the promise the words made, and the *path* becomes countable
+     * instead. `audit-signup` is its own location, which is a better number than the one the
+     * report asked for: it separates "scored their own site, then made an account" from
+     * "arrived on the offer page", and those are two different people.
+     * ======================================================================
      */
     saveAssessmentDraft(submission);
+    track('cta_clicked', { location: 'audit-signup' });
     navigate(routes.signup);
   }
 

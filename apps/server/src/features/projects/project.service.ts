@@ -7,12 +7,14 @@ import type { StoredTask, TaskKind, TaskService } from '../tasks/index.js';
 import type { ProjectRepository } from './project.repository.js';
 import {
   MILESTONE_PRESENTATION,
+  isLegalMilestoneMove,
   type ApprovalState,
   type NewProjectInput,
   type ProjectDetailsUpdate,
   type ProjectMilestone,
   type StoredProject,
 } from './project.types.js';
+import type { ProjectScope, ScopeInput } from './scope.types.js';
 
 /**
  * How long after a milestone change it may still be undone.
@@ -41,7 +43,29 @@ export interface ProjectService {
     readonly owner: { readonly id: string; readonly email: string; readonly name: string };
     readonly businessName: string;
     readonly assessmentId?: string | undefined;
-  }): Promise<{ readonly project: StoredProject; readonly created: boolean }>;
+    /**
+     * The PaymentIntent this deposit was taken on.
+     *
+     * How a later refund finds its project — the same reason the owner-link path stores one —
+     * and, more usefully here, how a **duplicate** is told apart from a redelivery. Stripe
+     * delivers at least once, so seeing a deposit for an already-paid project is ordinary;
+     * seeing one on a *different* PaymentIntent means the customer has been charged twice, and
+     * those two are indistinguishable without this.
+     */
+    readonly paymentIntentId?: string | undefined;
+  }): Promise<{
+    readonly project: StoredProject;
+    readonly created: boolean;
+    /**
+     * True when this payment is a second, distinct charge against a deposit already settled.
+     *
+     * The caller alerts the owner. It is deliberately *not* refunded automatically: a refund
+     * is money moving, and the shape that took the second payment — two tabs, or a
+     * double-tap — is close enough to the shape of a legitimate second project that a person
+     * should look before anything is reversed.
+     */
+    readonly duplicate: boolean;
+  }>;
   /**
    * The launch instalment cleared on a project bought self-serve.
    *
@@ -74,6 +98,28 @@ export interface ProjectService {
   settleFinalPayment(params: {
     readonly ownerUserId: string;
     readonly paymentIntentId?: string | undefined;
+  }): Promise<StoredProject | null>;
+  /**
+   * ============================================================================
+   * A GROWTH PARTNER SUBSCRIPTION BOUGHT FROM THE PORTAL
+   * ============================================================================
+   *
+   * The self-serve twin of the owner-link path, and it exists for the same reason
+   * `settleFinalPayment` does: a customer subscribing from their own billing page sends
+   * `userId`, never a project id, so the subscription arrives naming an *account*.
+   *
+   * Without this the money is taken and nothing is attached: `subscriptionStatus` stays
+   * `none`, the billing page keeps reading *Not started*, the subscription webhooks that
+   * follow cannot find a project to update — and `available.plan` stays true, so the
+   * page goes on offering a plan they are already paying for.
+   *
+   * Newest project, as above, and for the same reason: one account holds one project.
+   * ============================================================================
+   */
+  attachSubscription(params: {
+    readonly ownerUserId: string;
+    readonly subscriptionId?: string | undefined;
+    readonly stripeCustomerId?: string | undefined;
   }): Promise<StoredProject | null>;
   /** Owner-set. Records activity and moves the customer-visible state. */
   setMilestone(params: {
@@ -113,12 +159,55 @@ export interface ProjectService {
     readonly changedAt: Date;
   }): Promise<StoredProject>;
   /**
+   * ==========================================================================
+   * THE AGREED SCOPE — DECISION 040
+   * ==========================================================================
+   *
+   * `sendScope` is the owner writing the agreement down; `acceptScope` is the customer
+   * agreeing to it. Together they make `docs/business-offer.md` rule #35 — "scope is agreed
+   * in writing before any payment" — something the server enforces rather than something the
+   * business intends.
+   *
+   * Two properties are load-bearing and each one fails quietly if broken:
+   *
+   *   1. **A send always clears any acceptance.** An owner correcting a typo and an owner
+   *      adding two thousand dollars of work are indistinguishable from here, and only one of
+   *      them is safe to carry an old acceptance forward. So neither does.
+   *   2. **Acceptance is idempotent and never moves.** A second click returns the first
+   *      acceptance with its timestamp intact, exactly as `approve` does — the date is the
+   *      thing the record exists to hold, and a refreshed page must not refresh it.
+   */
+  sendScope(params: {
+    readonly project: StoredProject;
+    readonly scope: ScopeInput;
+  }): Promise<StoredProject>;
+  /**
+   * The customer accepting the scope they were sent.
+   *
+   * Refuses when there is nothing to accept, which is a real state rather than a defensive
+   * check: the console can be mid-conversation with somebody whose project exists and whose
+   * agreement has not been written up yet.
+   */
+  acceptScope(params: {
+    readonly project: StoredProject;
+    readonly acceptedBy: StoredUser;
+  }): Promise<StoredProject>;
+  /**
    * The customer's explicit approval. Records who, when, and which deployment — an
    * approval that cannot say what was approved is not worth having.
    */
   approve(params: {
     readonly project: StoredProject;
     readonly approvedBy: StoredUser;
+    /**
+     * Which deployment they were looking at, when there is one to name.
+     *
+     * Resolved by the route rather than here, because this service does not depend on
+     * deployments and must not — `DeploymentService` already depends on the project
+     * repository, so the reverse edge would close a cycle. Optional because a preview URL set
+     * by hand has no deployment behind it, and an absent answer is better than a guessed one.
+     */
+    readonly approvedDeploymentId?: string | undefined;
   }): Promise<StoredProject>;
   /** The other explicit action: the customer wants changes before it goes live. */
   requestChanges(params: {
@@ -333,7 +422,7 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
       });
     },
 
-    async activateForCustomer({ owner, businessName, assessmentId }) {
+    async activateForCustomer({ owner, businessName, assessmentId, paymentIntentId }) {
       /*
        * ==================================================================
        * IDEMPOTENT ACTIVATION
@@ -351,13 +440,85 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
        * ==================================================================
        */
       const existing = await repository.listByOwner(owner.id, 1);
-      const found = existing[0];
+      let found = existing[0];
 
       if (found) {
         logger.info('project.activation_skipped_existing', {
           userId: owner.id,
           projectId: found.id,
         });
+
+        /*
+         * ==================================================================
+         * AN EXISTING PROJECT STILL HAS TO BE MARKED PAID
+         * ==================================================================
+         *
+         * This branch used to do nothing but re-seed, and it was correct for as long as the
+         * only way to reach it was a *redelivery* of a payment that had already created the
+         * project — where the deposit was paid by definition.
+         *
+         * DECISION 040 made it the ordinary path. The scope is now agreed before any money
+         * moves, which means the owner creates the project first (`status: 'agreed'`, which
+         * `PROJECT_STATUSES` has always defined as exactly this) and the customer pays against
+         * a project that already exists. Without this the deposit would clear at Stripe and
+         * the project would sit at `pending` forever: the portal would keep offering the
+         * button, the console would show an unpaid build, and the only place the money existed
+         * would be Stripe's dashboard.
+         *
+         * Guarded on the current value rather than written unconditionally, so a redelivery is
+         * still a no-op and no second activity entry appears — the property this whole method
+         * exists to hold.
+         * ==================================================================
+         */
+        if (found.depositStatus !== 'paid') {
+          const settled = await repository.update(found.id, {
+            depositStatus: 'paid',
+            status: 'deposit-paid',
+            ...(paymentIntentId ? { depositPaymentIntentId: paymentIntentId } : {}),
+          });
+
+          if (settled) {
+            logger.info('project.deposit_settled_on_existing', {
+              userId: owner.id,
+              projectId: found.id,
+            });
+            found = settled;
+          }
+        }
+
+        /*
+         * ==================================================================
+         * TWO TABS, TWO CHARGES
+         * ==================================================================
+         *
+         * `available.deposit` is checked when a Checkout session is *created*, so two tabs
+         * opened before either is paid both get a valid session and both can complete. The
+         * state converges — the project ends up paid either way — and Stripe has taken the
+         * money twice.
+         *
+         * Preventing it properly means a claim at session creation, which is a lock across two
+         * systems for a race that needs two tabs and a decisive customer. Detecting it costs a
+         * comparison, and detection is what actually matters: the customer needs the second
+         * charge back, and nothing anywhere noticed it had happened.
+         *
+         * **A different PaymentIntent is the whole test.** A redelivery of the same payment —
+         * which Stripe does routinely — carries the same one, and this must stay silent for
+         * those or it becomes an alert nobody reads.
+         */
+        const duplicate = Boolean(
+          paymentIntentId &&
+          found.depositPaymentIntentId &&
+          found.depositPaymentIntentId !== paymentIntentId,
+        );
+
+        if (duplicate) {
+          logger.error('project.duplicate_deposit', {
+            userId: owner.id,
+            projectId: found.id,
+            paymentIntentId,
+          });
+        }
+
         // Still seed: a first delivery that created the project and then failed before
         // seeding must be completed by the retry. Seeding is itself idempotent.
         const late = await tasks.seedOnboarding({ projectId: found.id, userId: owner.id });
@@ -378,7 +539,7 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
           tasks: late.map((task) => ({ title: task.title, description: task.description })),
         });
 
-        return { project: found, created: false };
+        return { project: found, created: false, duplicate };
       }
 
       const project = await repository.create({
@@ -393,6 +554,7 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
         depositStatus: 'paid',
         finalStatus: 'pending',
         subscriptionStatus: 'none',
+        ...(paymentIntentId ? { depositPaymentIntentId: paymentIntentId } : {}),
       });
 
       logger.info('project.activated', { userId: owner.id, projectId: project.id });
@@ -432,7 +594,7 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
         tasks: seeded.map((task) => ({ title: task.title, description: task.description })),
       });
 
-      return { project, created: true };
+      return { project, created: true, duplicate: false };
     },
 
     async settleFinalPayment({ ownerUserId, paymentIntentId }) {
@@ -466,8 +628,57 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
       return updated;
     },
 
+    async attachSubscription({ ownerUserId, subscriptionId, stripeCustomerId }) {
+      const [newest] = await repository.listByOwner(ownerUserId, 1);
+
+      if (!newest) {
+        logger.error('project.subscription_no_project', { userId: ownerUserId });
+        return null;
+      }
+
+      /* Stripe delivers at least once, and the same subscription arrives again on renewal. */
+      if (newest.subscriptionId === subscriptionId && newest.subscriptionStatus === 'active') {
+        return newest;
+      }
+
+      const updated = await repository.update(newest.id, {
+        ...(subscriptionId ? { subscriptionId } : {}),
+        ...(stripeCustomerId && !newest.stripeCustomerId ? { stripeCustomerId } : {}),
+        subscriptionStatus: 'active',
+      });
+
+      logger.info('project.subscription_attached', {
+        userId: ownerUserId,
+        projectId: newest.id,
+      });
+
+      /*
+       * No activity entry, for the reason given on `settleFinalPayment`: the fulfilment
+       * port has already written "We received your payment" for this event.
+       */
+      return updated;
+    },
+
     async setMilestone({ project, milestone }) {
       if (project.milestone === milestone) return project;
+
+      /*
+       * The legality check the comment on `ProjectDetailsUpdate` has claimed lived here since
+       * it was written, and which did not. Every transition was permitted, so a `<select>` on
+       * a page holding several customers' projects could take a launched site back to
+       * `onboarding` — emailing the customer and writing a real stage change into their
+       * history. The rules and their reasoning are in `isLegalMilestoneMove`.
+       *
+       * The message names the alternative rather than only the refusal, because an operator
+       * who meant it has a legitimate route and should not have to guess what it is.
+       */
+      if (!isLegalMilestoneMove(project.milestone, milestone)) {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          `A project cannot move from ${MILESTONE_PRESENTATION[project.milestone].label.toLowerCase()} to ${MILESTONE_PRESENTATION[milestone].label.toLowerCase()}. ` +
+            'If this was a mis-click, undo it; if the project genuinely needs to go back, move it one stage at a time so the client sees what happened.',
+        );
+      }
 
       const updated = await repository.update(project.id, {
         milestone,
@@ -565,6 +776,39 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
           businessName: updated.businessName,
           productionUrl: updated.productionUrl,
         });
+
+        /*
+         * ==================================================================
+         * THE ONE TASK THAT ARRIVES AFTER A LAUNCH
+         * ==================================================================
+         *
+         * Every other task blocks a build. This asks a client whose site is now live to keep
+         * their Google listing current and to ask a happy customer for a review.
+         *
+         * It is a task rather than a line in the launch email for the reason tasks exist at
+         * all: an email is read once and a task is a thing that stays until it is done. And it
+         * is the highest-value thing this business can ask a new client to do — every buyer in
+         * this market checks third-party reviews before ringing anybody, and a well-kept
+         * profile does more for a local service business than anything on the website.
+         *
+         * The site already says exactly that, in `localSearch.caveat`: "for most local service
+         * businesses a well-kept Google Business Profile matters more than anything on the
+         * website itself, and we will tell you that rather than sell you around it." This is
+         * that sentence arriving at the moment it is useful rather than while somebody is
+         * still deciding whether to buy.
+         *
+         * Guarded on there being an account, like every other task: one with no owner has
+         * nobody to appear for. `addTask` is the domain operation, so it emails them too.
+         */
+        if (updated.ownerUserId) {
+          await this.addTask({
+            project: updated,
+            kind: 'review-listing',
+            title: 'Check your Google listing, and ask one customer for a review',
+            description:
+              'Your website is live, and this is the highest-value hour you can spend on it. Make sure your Google Business Profile has your new address, your hours and a few recent photos — then ask one customer who was happy to leave a review. For most local service businesses that listing does more than the website does.',
+          });
+        }
       }
 
       return updated;
@@ -897,9 +1141,43 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
     },
 
     async setUrls({ project, previewUrl, productionUrl }) {
+      /*
+       * ==================================================================
+       * A PRODUCTION URL APPEARING *IS* THE LAUNCH, AND THE MILESTONE HAS TO AGREE
+       * ==================================================================
+       *
+       * This method already treated a production URL as the launch: it writes
+       * `deployment.production_ready` to the customer's stream and sends the "your website is
+       * live" email, on the argument — correct — that a deployment on a host the webhook
+       * cannot see would otherwise launch a website and tell nobody.
+       *
+       * It left the milestone where it was. So for every site hosted outside Vercel the
+       * customer received an email saying their website was live while their dashboard went on
+       * saying "We are putting your website live", indefinitely, until somebody remembered a
+       * second action. The two halves of one event, half-done.
+       *
+       * ## And the second half, which the first half exposed
+       *
+       * The announcement used to fire on *any* production-URL change, so correcting a typo in
+       * a domain on a site that had been up for a month emailed the client "your website is
+       * live" a second time. That was invisible while nothing else in this method knew the
+       * difference between launching and editing; `launching` is now the thing that knows, and
+       * both the email and the customer-visible entry hang off it.
+       *
+       * A URL change on an already-live site is still recorded — as `internal`. The audit trail
+       * keeps it, which is what an audit trail is for, and the customer is not told their
+       * website went live again.
+       * ==================================================================
+       */
+      const launching =
+        productionUrl !== undefined &&
+        project.productionUrl !== productionUrl &&
+        project.milestone !== 'live';
+
       const updated = await repository.update(project.id, {
         ...(previewUrl === undefined ? {} : { previewUrl }),
         ...(productionUrl === undefined ? {} : { productionUrl }),
+        ...(launching ? { milestone: 'live' as const } : {}),
       });
 
       if (!updated) throw new AppError('NOT_FOUND', 'No project with that id.');
@@ -908,13 +1186,36 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
         projectId: project.id,
         preview: previewUrl !== undefined,
         production: productionUrl !== undefined,
+        launched: launching,
       });
 
       /*
-       * A production URL appearing is the customer's launch, however it got there. The
-       * activity entry is what puts it in their stream and their dashboard.
+       * The stage change, in the customer's history, beside the launch it belongs to.
+       *
+       * Written here rather than by calling `setMilestone` because that would send a second
+       * "your website is live" email — this method sends its own below, deliberately, and for
+       * a host the deployment webhook cannot see it is the only one that will be sent.
        */
-      if (productionUrl !== undefined && project.productionUrl !== productionUrl) {
+      if (launching) {
+        await activity.record({
+          type: 'project.milestone_changed',
+          summary: MILESTONE_PRESENTATION['live'].label,
+          audience: 'customer',
+          projectId: project.id,
+          userId: project.ownerUserId,
+        });
+      }
+
+      /*
+       * A production URL appearing is the customer's launch, however it got there — and
+       * `launching` is what distinguishes that from an operator correcting the address of a
+       * site that has been up for a month.
+       *
+       * The condition used to be the URL change alone, which meant a typo fix emailed the
+       * client "your website is live" a second time. Nothing in the method knew the difference
+       * until the milestone move above gave it a name.
+       */
+      if (launching) {
         await activity.record({
           type: 'deployment.production_ready',
           summary: 'Your website is live.',
@@ -934,6 +1235,20 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
           to: recipientFor(updated),
           businessName: updated.businessName,
           productionUrl: updated.productionUrl,
+        });
+      } else if (productionUrl !== undefined && project.productionUrl !== productionUrl) {
+        /*
+         * The address of a live site changed. `internal`, and the audience is the whole
+         * decision: it is a real event and the audit trail should have it, and it is not news
+         * the customer needs — being told their website went live again, a month after it did,
+         * is worse than being told nothing.
+         */
+        await activity.record({
+          type: 'deployment.production_ready',
+          summary: `The production address was changed to ${updated.productionUrl ?? 'a new URL'}.`,
+          audience: 'internal',
+          projectId: project.id,
+          userId: project.ownerUserId,
         });
       } else if (previewUrl !== undefined && project.previewUrl !== previewUrl) {
         await activity.record({
@@ -960,7 +1275,117 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
       return updated;
     },
 
-    async approve({ project, approvedBy }) {
+    async sendScope({ project, scope }) {
+      /*
+       * The version always moves and the acceptance always goes. See the interface note: an
+       * acceptance that survives a replacement points at a document that has changed, which
+       * is the one thing this record exists to make impossible.
+       */
+      const next: ProjectScope = {
+        version: (project.scope?.version ?? 0) + 1,
+        summary: scope.summary,
+        lines: scope.lines,
+        priceCents: scope.priceCents,
+        ...(scope.notes ? { notes: scope.notes } : {}),
+        ...(scope.caseStudy ? { caseStudy: true } : {}),
+        sentAt: now(),
+        sentBy: scope.sentBy,
+      };
+
+      const updated = await repository.update(project.id, { scope: next });
+      if (!updated) throw new AppError('NOT_FOUND', 'No project with that id.');
+
+      logger.info('project.scope_sent', { projectId: project.id, version: next.version });
+
+      await activity.record({
+        type: 'project.scope_sent',
+        summary:
+          next.version === 1
+            ? 'We sent you the scope and price to look over.'
+            : 'We sent you an updated scope and price to look over.',
+        audience: 'customer',
+        projectId: project.id,
+        userId: project.ownerUserId,
+      });
+
+      /*
+       * The customer is emailed, and this is one of the few places that is unambiguously
+       * right: the next move is theirs, they cannot make it without knowing, and it is the
+       * gate on everything after it — an unaccepted scope means no deposit button, so a
+       * client waiting for one would be waiting for something they were never told about.
+       *
+       * `previewReady` is the closest sibling and takes the same shape: something is ready,
+       * here is where it is, the link goes to their own project rather than to a document.
+       */
+      await notifier.scopeReady({
+        to: recipientFor(updated),
+        businessName: updated.businessName,
+        projectId: updated.id,
+        revised: next.version > 1,
+      });
+
+      return updated;
+    },
+
+    async acceptScope({ project, acceptedBy }) {
+      const current = project.scope;
+
+      if (!current) {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          'There is nothing to accept yet — we have not sent you the scope and price for this project.',
+        );
+      }
+
+      // Idempotent, exactly as `approve` is. A second click returns the first acceptance.
+      if (current.acceptedAt) return project;
+
+      const updated = await repository.update(project.id, {
+        scope: {
+          ...current,
+          acceptedAt: now(),
+          acceptedByUserId: acceptedBy.id,
+          acceptedName: acceptedBy.name,
+        },
+      });
+
+      if (!updated) throw new AppError('NOT_FOUND', 'No project with that id.');
+
+      logger.info('project.scope_accepted', {
+        projectId: project.id,
+        userId: acceptedBy.id,
+        version: current.version,
+      });
+
+      await activity.record({
+        type: 'project.scope_accepted',
+        summary: `${acceptedBy.name} accepted the scope and price.`,
+        audience: 'customer',
+        projectId: project.id,
+        userId: project.ownerUserId,
+      });
+
+      /*
+       * The owner, immediately, and not the customer — the same asymmetry `approve` makes and
+       * for the same reason. The customer just pressed the button; the panel changing is the
+       * confirmation. For the owner this is the signal that the deposit has become payable,
+       * which is the moment a build stops being a conversation.
+       */
+      await notifier.owner({
+        kind: 'owner.scope_accepted',
+        subject: `Scope accepted — ${updated.businessName}`,
+        heading: 'A scope was accepted',
+        lines: [
+          `${acceptedBy.name} accepted the scope for ${updated.businessName}.`,
+          'The deposit is now offered on their billing page.',
+        ],
+        replyTo: updated.email,
+      });
+
+      return updated;
+    },
+
+    async approve({ project, approvedBy, approvedDeploymentId }) {
       /*
        * Approval requires something to approve. A project with no preview cannot be
        * approved, because "you approved it" has to refer to a thing that existed.
@@ -978,6 +1403,12 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
       const updated = await repository.update(project.id, {
         approval: 'approved' as ApprovalState,
         approvedAt: now(),
+        /*
+         * Written at last. The field has existed, been documented and been cleared by
+         * `requestChanges` since the approval feature shipped, and nothing ever set it — so
+         * every approval on record was one this system could not say the subject of.
+         */
+        ...(approvedDeploymentId ? { approvedDeploymentId } : {}),
         milestone: 'launching',
       });
 
@@ -1020,9 +1451,53 @@ export function createProjectService(dependencies: ProjectServiceDependencies): 
     },
 
     async requestChanges({ project, requestedBy }) {
+      /*
+       * ========================================================================
+       * CHANGING YOUR MIND IS ALLOWED. UNDOING A LAUNCH OR A PAYMENT IS NOT.
+       * ========================================================================
+       *
+       * `approve` has always required a preview to approve; this had no precondition at
+       * all, and the two cases below are where that mattered — pressing it dragged a
+       * *launched* project back to `revisions` and withdrew an approval that a payment
+       * had already been taken against.
+       *
+       * The line is deliberately not "after approval". Approving and then thinking better
+       * of it minutes later is a real thing people do, the portal offers it in those words
+       * ("I would like changes after all"), and `approve` moves the milestone to
+       * `launching` immediately — so a guard on `launching` alone would remove the
+       * affordance the product intends. Reversal stays open for exactly as long as the
+       * approval is still only an approval.
+       *
+       * Once the site is live, or once the balance has been paid against that approval,
+       * the record is load-bearing: it is what the payment was owed on and what a dispute
+       * would be answered with. Wanting a change then is still a real thing, and it has a
+       * real home — the feedback thread, which reaches the same person and does not
+       * rewrite what happened.
+       * ========================================================================
+       */
+      if (project.milestone === 'live' || project.finalStatus === 'paid') {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          'Your website has already gone live, so it cannot be sent back for changes here. Send us a message with what you would like changed and we will pick it up.',
+        );
+      }
+
       const updated = await repository.update(project.id, {
         approval: 'changes_requested' as ApprovalState,
         milestone: 'revisions',
+        /*
+         * One press, one round — which is exactly what the published terms define a round as:
+         * "one consolidated set of requested changes submitted together". Fifteen items in one
+         * message is a round; fifteen messages over a fortnight is still a round, because a
+         * comment is not this button.
+         *
+         * Counted here rather than derived from the activity stream, because it is the number
+         * a customer is shown against a published allowance and it has to be a fact the system
+         * asserts. The site publishes "two revision rounds" and the portal now says which one
+         * they are on — a client who cannot tell has no way to spend the second one
+         * deliberately, which is where the argument about it starts.
+         */
+        revisionRounds: (project.revisionRounds ?? 0) + 1,
         /*
          * Requesting changes withdraws any previous approval outright rather than
          * leaving a stale timestamp beside a project nobody currently approves.

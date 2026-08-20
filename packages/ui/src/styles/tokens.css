@@ -282,12 +282,32 @@
   --radius-lg: 20px;
   --radius-full: 999px;
 
-  /* Warm shadows. A neutral-grey shadow reads as dirt on a cream ground. */
-  --shadow-sm: 0 1px 2px rgb(23 25 30 / 6%);
-  --shadow-md: 0 4px 12px rgb(23 25 30 / 8%);
-  --shadow-lg: 0 12px 32px rgb(23 25 30 / 12%);
+  /*
+   * Warm shadows. A neutral-grey shadow reads as dirt on a cream ground.
+   *
+   * ## Why these are heavier than they were
+   *
+   * White on cream is **1.16:1**. That is the entire surface difference between a card and
+   * the page it sits on, and `--color-border` — the hairline the card also carries — is
+   * 1.34:1 against white. Neither of them separates anything. The shadow is not decoration
+   * here; it is the *only* thing doing the work, and at 4% it was not doing it.
+   *
+   * The number came from measuring the other palette. The dark set below runs at 35–55%
+   * alpha to lift a `#1D2027` card off a `#15171C` page — a 1.10:1 difference, i.e. the
+   * same job — which meant this palette was asking one seventh of the ink to solve a
+   * slightly harder problem. These are ~1.7× what they were: enough that a card reads as an
+   * object on a phone in daylight, and still far short of dark's alpha, because charcoal at
+   * 11% over cream is a legible shadow where charcoal at 11% over charcoal is nothing.
+   *
+   * Elevation only. No hue moved, no contrast pair changed — `box-shadow` is deliberately
+   * outside the token guard's colour rule (see the note at the top of `tokens.test.ts`),
+   * because there is no useful token for "charcoal at 11% going downward".
+   */
+  --shadow-sm: 0 1px 2px rgb(23 25 30 / 10%);
+  --shadow-md: 0 4px 14px rgb(23 25 30 / 13%);
+  --shadow-lg: 0 14px 36px rgb(23 25 30 / 18%);
   /* For white cards on the cream page, where the lift is what separates them. */
-  --shadow-card: 0 1px 2px rgb(23 25 30 / 4%), 0 8px 24px rgb(23 25 30 / 6%);
+  --shadow-card: 0 1px 2px rgb(23 25 30 / 7%), 0 10px 28px rgb(23 25 30 / 11%);
 
   /* ---------------------------------------------------------------- layout */
 
@@ -390,28 +410,34 @@
   /*
    * What this document is painted in, told to the browser.
    *
-   * `light dark` — both, in that order — is what makes native form controls, scrollbars
-   * and the space beyond the page follow the theme instead of staying white behind a dark
-   * page. The two `[data-theme]` rules below narrow it to one when the reader has chosen.
+   * `light`, not `light dark`. The default palette is the light one for everybody — see the
+   * note below on why the operating system stopped being asked — so this is a statement of
+   * fact rather than a range. It is also the load-bearing half of that decision: without it,
+   * a reader whose OS is dark gets charcoal native selects, a charcoal date picker, a dark
+   * scrollbar and a dark overscroll area around a cream page. Deleting a media query does
+   * not stop the browser having an opinion; this is what stops it acting on one.
+   *
+   * `:root[data-theme='dark']` below sets `dark`, so a reader who chooses dark gets their
+   * controls painted to match.
    */
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 /*
  * ============================================================================
- * THE SAME IDENTITY WITH THE LIGHTS OFF
+ * THE SAME IDENTITY WITH THE LIGHTS OFF — FOR A READER WHO ASKS FOR IT
  * ============================================================================
  *
- * Every token above is a light-mode value, and this file used to say so — both `index.html`
- * documents declared `color-scheme: light` under a comment calling it "a committed light
- * design". That was a decision, it is superseded here, and the reason is worth stating
- * rather than deleting: a committed design is a defensible thing to have, and it stops
- * being defensible when the commitment is to ignore something the reader's browser is
- * already telling us.
+ * Every token above is a light-mode value and that is what this site serves by default. The
+ * palette below is the alternate, and the only thing that reaches it is a stored choice.
  *
- * `prefers-color-scheme: dark` arrives on a large share of every page load this site has
- * ever served. A light-only answer was not the absence of a feature; it was a wrong answer
- * to a question that had been asked. See `03_plan/deferred_work_plan.md` §1.
+ * Two reversals are recorded here rather than deleted, because the second one only makes
+ * sense next to the first. The file originally declared `color-scheme: light` under a comment
+ * calling it "a committed light design". That was superseded on 2026-08-16 by a measured dark
+ * palette wired to `prefers-color-scheme`, on the argument that a committed design stops being
+ * defensible when the commitment is to ignore something the browser is already telling us.
+ * The palette was the right half of that change and it is still here. The wiring was the wrong
+ * half — see the note further down — and it is gone. See DECISION 036.
  *
  * ## Every value below was measured, not inverted
  *
@@ -424,6 +450,13 @@
  * `tokens.test.ts` computes AA over **both** palettes from these hex values, against every
  * foreground/background pair any stylesheet in the repository states together. A guessed
  * value fails the build, which is the only reason a second palette is safe to have.
+ *
+ * Know what that guard does **not** see, because it is the reason three defects survived it:
+ * it can only measure a rule that states a foreground *and* a background, which is 144 of the
+ * 948 colour-bearing rules in this repository. A rule that paints only a background is
+ * invisible to it — and `background: var(--color-ink)` on a phone bezel is legible in both
+ * themes and wrong in one of them. `tokens.test.ts` now carries a separate rule for that
+ * class; see "NO TEXT TOKEN PAINTS A SURFACE" there.
  *
  * ## What changes role, and what does not
  *
@@ -440,101 +473,53 @@
  *   `--color-accent`                  does not change at all. It was always the value chosen
  *                                     to work on charcoal (5.0:1) and the whole page is
  *                                     charcoal now.
- *   the `--shadow-*` set              is rewritten. Charcoal at 6% alpha over charcoal is
+ *   the `--shadow-*` set              is rewritten. Charcoal at 10% alpha over charcoal is
  *                                     invisible, so elevation stops reading entirely — and
  *                                     elevation is the only thing separating a card from the
  *                                     page once both are dark.
  *
- * ## Declared twice, deliberately
+ * ## Declared once, and the operating system is not asked
  *
- * `@media (prefers-color-scheme: dark)` answers the operating system. `[data-theme='dark']`
- * answers an explicit choice on a light system. The media block is narrowed by
- * `:not([data-theme='light'])` so that choosing light on a dark system wins, which is the
- * case a single unguarded media query gets wrong.
+ * This block used to exist twice: once inside `@media (prefers-color-scheme: dark)` and once
+ * under `[data-theme='dark']`. The media query is gone. **The light palette is the default
+ * for every visitor, whatever their machine is set to**, and dark is reached only through the
+ * Appearance control in the footer.
  *
- * `light-dark()` would express all of this once instead of twice and it is not used, for one
- * reason: a browser that does not know the function drops the declaration, and a dropped
- * *token* is not a fallback to light — it is a page with no colours at all. The duplication
- * degrades to the light theme on anything old, and gzip charges almost nothing for a block
- * that is structurally identical to one thirty lines above it.
+ * That is a reversal of the change above it and it is worth the paragraph, because the
+ * argument that added the media query was a good one — a browser was telling us something and
+ * we were ignoring it. What it got wrong is *what* it was being told. `prefers-color-scheme`
+ * is one global answer to a per-application question, usually set once, at night, for a phone
+ * — and this is a marketing site with one conversion goal whose buyer reads it on a phone, in
+ * a driveway, in daylight. Positive polarity measures better for exactly that reader, at every
+ * age (Piepenbrock et al. 2013 found the advantage holds for older adults too, which is the
+ * result that would have excused a dark default if it had gone the other way), and a dark
+ * screen is at its worst under a bright sky.
+ *
+ * There were three site-specific reasons on top of the research:
+ *
+ *   1. **Cast Cream is a quarter of the brand.** A palette that deletes it is not this site
+ *      with the lights off, it is a different company at the same URL — which is precisely
+ *      what the owner reported seeing across two devices.
+ *   2. **The structural rhythm is light-only.** Cream page against charcoal band is 15.2:1
+ *      and it is the loudest device on the homepage. Read from the dark palette the same
+ *      two tokens are 1.08:1, so eight section bands flatten into one another. Nothing in a
+ *      token block can fix that; it is a second *composition*, not a second palette.
+ *   3. **The product being sold is a light website.** The hero browser frame and all ten
+ *      portfolio captures are screenshots of bright pages. A dark chrome around light
+ *      product photography for a whole scroll is a sales page arguing with its own evidence.
+ *
+ * What is kept, and why this is not "no dark mode": every value below still exists and still
+ * clears AA, `useTheme` still remembers a choice, and the control is still in the footer. The
+ * accessibility guidance that matters here asks for **user control**, and a toggle is that; an
+ * OS setting is not. Only the *default* moved. See DECISION 036.
+ *
+ * `light-dark()` is still not used, for the reason it never was: a browser that does not know
+ * the function drops the declaration, and a dropped *token* is not a fallback to light — it is
+ * a page with no colours at all.
  * ============================================================================
  */
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    /* Text. Cream rather than white — the warmth is the identity, and it is 15.5:1 here. */
-    --color-ink: #f3eee4; /* 15.5:1 on --color-page */
-    --color-ink-muted: #aba69c; /* 7.4:1 on page, 6.7:1 on surface, 6.2:1 on surface-muted */
-    --color-ink-inverse: #f3eee4; /* unchanged: 16.8:1 on the deeper dark band */
-    --color-ink-inverse-muted: #b9b4aa; /* 9.4:1 on --color-surface-dark */
-    --color-on-accent: #17191e; /* 5.0:1 on --color-accent-strong — see the note above */
-
-    /*
-     * Surfaces — the same warm ramp, read from the other end. The page is no longer the
-     * lightest thing on it: a card *lifts* by getting lighter, exactly as white lifts off
-     * cream, and the wells go deeper instead of dirtier.
-     */
-    --color-surface: #1d2027; /* cards, forms, anything that should lift */
-    --color-page: #15171c; /* the page ground */
-    --color-surface-muted: #24272f; /* alternating bands and wells */
-    --color-surface-sunken: #0f1115; /* deeper wells, table stripes */
-
-    /*
-     * The structural band goes *below* the page rather than above it. In light mode a
-     * charcoal header is an inversion; here there is nothing to invert, so the band earns
-     * its separation by being the darkest surface in the document.
-     */
-    --color-surface-dark: #0b0d11;
-    --color-surface-dark-raised: #22252c;
-
-    /* Brand. `--color-brand` is the colour structure is drawn in, so it follows the ground. */
-    --color-brand: #f3eee4; /* 11.8:1 on --color-tint-brand */
-    --color-brand-strong: #05070a; /* a deep fill carrying cream at 17.4:1 */
-    --color-tint-brand: #2a2e36; /* the quiet panel, one step above the page */
-
-    /*
-     * Ember, unchanged where it was already right. `--color-accent` was chosen for charcoal
-     * and the page is charcoal; `-strong` becomes that same lit ember because a fill on a
-     * dark page reads by being brighter than it, and `-deep` — the hover — goes brighter
-     * still rather than darker, which is the direction reversal a dark theme actually needs.
-     */
-    --color-accent: #e85c24; /* 5.5:1 on the dark band, 5.1:1 on the page */
-    --color-accent-strong: #e85c24; /* fills carrying --color-on-accent (5.0:1) */
-    --color-accent-deep: #ff8551; /* the hover/pressed state of the above (7.3:1) */
-    --color-accent-text: #f4763f; /* 6.4:1 on page, 5.8:1 on surface */
-    --color-tint-accent: #2b1810; /* the ember wash, banked down */
-
-    /* Blacker and heavier: a 55% charcoal veil over a charcoal page separates nothing. */
-    --color-scrim: rgb(5 6 8 / 70%);
-
-    /* Lines */
-    --color-border: #2b2f37;
-    --color-border-strong: #948b7d; /* 5.3:1 on page, 4.9:1 on surface — inputs, controls */
-    --color-border-dark: #333740;
-
-    /* Feedback */
-    --color-focus: #f4763f; /* 6.4:1 on page, 5.8:1 on surface, 7.0:1 on the dark band */
-    --color-success: #63c68c; /* 8.5:1 on page, 7.7:1 on --color-tint-success */
-    --color-tint-success: #12251a;
-    --color-danger: #f2887c; /* 7.3:1 on page, 7.0:1 on --color-tint-danger */
-    --color-tint-danger: #2c1512;
-
-    /*
-     * Elevation, rebuilt. The light set is charcoal at 4–12%, which over a charcoal page is
-     * nothing at all — so a card would sit on the page with no edge and no lift, and the
-     * whole surface ramp above would be doing the separating on its own. Black at a much
-     * higher alpha is what reads on a dark ground.
-     */
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
-    --shadow-md: 0 4px 12px rgb(0 0 0 / 45%);
-    --shadow-lg: 0 12px 32px rgb(0 0 0 / 55%);
-    --shadow-card: 0 1px 2px rgb(0 0 0 / 35%), 0 8px 24px rgb(0 0 0 / 40%);
-
-    color-scheme: dark;
-  }
-}
-
-/* An explicit dark choice on a light system. Same values; see the note above on why twice. */
+/* The only way into the dark palette: an explicit choice, stored by `useTheme`. */
 :root[data-theme='dark'] {
   --color-ink: #f3eee4;
   --color-ink-muted: #aba69c;
@@ -580,7 +565,15 @@
   color-scheme: dark;
 }
 
-/* An explicit light choice. Every token above already holds it; this is the browser's half. */
+/*
+ * An explicit light choice — a reader who was on dark and came back.
+ *
+ * It declares what `:root` already declares, and it is kept rather than deleted because
+ * `data-theme="light"` is a state that genuinely appears in the DOM: the bootstrap in both
+ * `index.html` documents writes it whenever `jobforge:theme` holds `light`. A stylesheet that
+ * has no rule for a value its own bootstrap writes is a stylesheet the next reader has to
+ * check twice.
+ */
 :root[data-theme='light'] {
   color-scheme: light;
 }

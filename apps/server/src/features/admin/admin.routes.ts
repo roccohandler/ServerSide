@@ -30,6 +30,7 @@ import {
   parseAddTask,
   parseCreateProject,
   parseSetDeploymentUrl,
+  parseSendScope,
   parseSetEstimate,
   parseSetMilestone,
   parseSetProjectOwner,
@@ -158,6 +159,18 @@ const attachOnboardingSchema = z.strictObject({
 });
 
 const parseAttachOnboarding = (body: unknown) => parseBody(attachOnboardingSchema, body);
+
+/**
+ * Which month the response guarantee was missed in. DECISION 009.
+ *
+ * `YYYY-MM`, matching the monthly report's key, because the two are about the same calendar
+ * month and two spellings of a month is how a credit ends up on a different one from the
+ * report that explains it. No amount: the service derives it from the plan's price, so nothing
+ * a request could send decides how much money moves.
+ */
+const guaranteeCreditSchema = z.strictObject({
+  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, { error: 'Use YYYY-MM.' }),
+});
 
 /*
  * ============================================================================
@@ -472,12 +485,130 @@ export function createAdminRouter(dependencies: AdminRoutesDependencies): Router
   });
 
   /*
+   * ==========================================================================
+   * AN INVOICE, WHICH IS WHAT THE ROUTE ABOVE SHOULD HAVE BEEN
+   * ==========================================================================
+   *
+   * DECISION 041. A Checkout Session expires after 24 hours, so a link sent on a Friday
+   * afternoon is dead before Monday and the client's only symptom is an expiry page for a
+   * payment they were trying to make.
+   *
+   * Its own route rather than a flag on `/checkout-link`, because the two produce genuinely
+   * different things: one mints a URL for the operator to send, the other raises a document
+   * Stripe delivers, chases and keeps. A boolean would make "which one did I send them?"
+   * unanswerable a month later, which is exactly the question an invoice exists to answer.
+   *
+   * The body is only the product. Every figure comes from the verified Price and the due date
+   * from `INVOICE_DUE_DAYS` — nothing about an amount is accepted from a request, on this
+   * surface or any other.
+   * ==========================================================================
+   */
+  one.post('/invoice', requireCapability('project:write:any'), async (request, response) => {
+    const project = requireProject(request);
+    const auth = requireRequestAuth(request);
+    const { product } = parseCreateCheckoutLink(request.body);
+
+    const invoice = await billingService.createInvoice({ projectId: project.id, product });
+
+    const half = product === 'build-deposit' ? 'deposit' : 'launch';
+
+    await activityService.record({
+      type: 'billing.checkout_started',
+      /*
+       * Internal and named, exactly as the checkout-link entry above is, and for the same
+       * reason: the customer finds out from Stripe. What this is for is the question a month
+       * later — who asked for this, and which document did they send.
+       */
+      summary: `${auth.user.name} invoiced ${invoice.emailedTo} for the ${half} payment${
+        invoice.number ? ` (${invoice.number})` : ''
+      }.`,
+      audience: 'internal',
+      projectId: project.id,
+      userId: project.ownerUserId,
+    });
+
+    response.status(201).json(
+      success({
+        url: invoice.url,
+        number: invoice.number,
+        product: invoice.product,
+        /*
+         * A delivery claim this time, unlike the checkout route's — and the difference is
+         * real rather than a wording preference. Stripe sends the invoice itself and reports
+         * whether it accepted it, where our own `Notifier` swallows its failures by contract.
+         */
+        emailedTo: invoice.emailedTo,
+      }),
+    );
+  });
+
+  /*
    * When we think it will be finished.
    *
    * Its own route rather than a field on `PATCH /`, for the reason the domain operation gives
    * about itself: moving an estimate sends an email and setting a first one does not, and a
    * rule like that cannot live in a six-field edit form. See `ProjectService.setEstimate`.
    */
+  /*
+   * ==========================================================================
+   * THE RESPONSE-GUARANTEE REMEDY — DECISION 009
+   * ==========================================================================
+   *
+   * The terms publish a 24-business-hour response guarantee and say the month's fee is
+   * "waived in full and applied without you having to request it". The mechanics were
+   * undefined and the operation lived behind `BILLING_ADMIN_TOKEN` and curl — so a promise
+   * the customer never has to ask for was one the owner had to remember, from a terminal.
+   *
+   * ## The credit only. The refund stays where it is
+   *
+   * `recordGuaranteeCredit` has two remedies: a customer-balance credit the next invoice
+   * absorbs, and a refund of the month for a client who is leaving and has no next invoice.
+   * This route hard-codes `'credit'`, and the omission is the decision.
+   *
+   * DECISION 019 keeps anything that moves money *out* on the token surface — refunds,
+   * cancellations, payment statuses — because those are irreversible and a mis-click on a page
+   * holding several customers' projects is a different kind of accident from a mis-typed curl
+   * command. A credit is not that: it sits on the customer's Stripe balance, Stripe applies it
+   * to the next invoice, and applying one twice is caught by the idempotency below rather than
+   * by anybody's care.
+   *
+   * ## Idempotent per project-month, which is what makes it safe to offer at all
+   *
+   * The service keys on `(projectId, month)`, so a second press returns the first credit. That
+   * is the property that lets this be a button: without it, the honest version would have to be
+   * a confirmation dialog, and a confirmation in front of a remedy is a reason not to apply it.
+   * ==========================================================================
+   */
+  one.post(
+    '/guarantee-credit',
+    requireCapability('project:write:any'),
+    async (request, response) => {
+      const project = requireProject(request);
+      const { month } = parseBody(guaranteeCreditSchema, request.body);
+
+      const credit = await billingService.recordGuaranteeCredit({
+        projectId: project.id,
+        month,
+        remedy: 'credit',
+      });
+
+      await activityService.record({
+        type: 'billing.payment_succeeded',
+        /*
+         * Customer-visible, and that is the point of the whole clause. The terms say the waiver
+         * is applied *without you having to request it*, which is only true if the customer can
+         * see that it was — a credit nobody is told about is a credit that gets asked for.
+         */
+        summary: `We missed our response guarantee in ${month}, so that month's Growth Partner fee has been credited to your account. Nothing to do at your end.`,
+        audience: 'customer',
+        projectId: project.id,
+        userId: project.ownerUserId,
+      });
+
+      response.status(201).json(success({ credit }));
+    },
+  );
+
   one.patch('/estimate', requireCapability('project:write:any'), async (request, response) => {
     const project = requireProject(request);
     const auth = requireRequestAuth(request);
@@ -487,6 +618,28 @@ export function createAdminRouter(dependencies: AdminRoutesDependencies): Router
       project,
       estimatedCompletionAt,
       by: auth.user.name,
+    });
+
+    response.json(success({ project: updated }));
+  });
+
+  /*
+   * Sending the scope and price for the customer to accept. DECISION 040.
+   *
+   * Its own route rather than fields on `PATCH /`, for the same reason the estimate is: the
+   * six fields on that form are *descriptions* of a client, and this is a commercial
+   * commitment that emails somebody, versions itself, and withdraws any acceptance it
+   * replaces. A rule like that cannot live in a general-purpose edit form — and a form that
+   * could set it accidentally is a form that eventually will.
+   */
+  one.post('/scope', requireCapability('project:write:any'), async (request, response) => {
+    const project = requireProject(request);
+    const auth = requireRequestAuth(request);
+    const input = parseSendScope(request.body);
+
+    const updated = await projectService.sendScope({
+      project,
+      scope: { ...input, sentBy: auth.user.name },
     });
 
     response.json(success({ project: updated }));

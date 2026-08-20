@@ -30,6 +30,24 @@ export function Footer() {
             <p className={styles['name']}>
               <Logo onDark />
             </p>
+            {/*
+             * The tagline, and this is the first surface that has ever rendered it.
+             *
+             * It was declared in `content/site.ts` with a comment saying it appeared "under
+             * the name in the header" — which stopped being true when the header dropped it
+             * for fitting into 141px of a 427px requirement, and nothing else picked it up.
+             * A string with no consumer is exactly what composition rule 6 forbids, and the
+             * cost of this one was not bytes: it was that the site's category label existed
+             * only as a comment, on a brand whose main risk is being filed under the wrong
+             * category.
+             *
+             * Here rather than back in the header, because the constraint that removed it
+             * from the header has not changed and this slot has no such constraint. What
+             * matters for DECISION 038 is that the category noun sits next to the business
+             * name on every page, and the footer carries the name on every page with room to
+             * spare.
+             */}
+            <p className={styles['tagline']}>{site.tagline}</p>
             <p className={styles['description']}>{site.description}</p>
           </div>
 

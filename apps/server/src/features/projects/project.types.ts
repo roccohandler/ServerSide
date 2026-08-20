@@ -32,6 +32,9 @@
  * ============================================================================
  */
 
+import type { CustomerScopeView, ProjectScope } from './scope.types.js';
+import { toCustomerScopeView } from './scope.types.js';
+
 /** The commercial state. Advanced by webhooks and by the owner. Billing's field. */
 export const PROJECT_STATUSES = [
   /** Scope agreed in writing; nothing paid yet. */
@@ -79,6 +82,92 @@ export type ProjectMilestone = (typeof PROJECT_MILESTONES)[number];
 export function milestoneIndex(milestone: ProjectMilestone): number {
   return PROJECT_MILESTONES.indexOf(milestone);
 }
+
+/**
+ * ============================================================================
+ * REVISION ROUNDS INCLUDED IN THE BUILD
+ * ============================================================================
+ *
+ * Two, and it is published in four places on the marketing site and in the terms.
+ *
+ * ## Why the number is here and not imported
+ *
+ * `apps/client/src/config/pricing.ts` holds `buildScope.revisionRounds`, and it is the
+ * authority for what the *site says*. The server cannot import it — the two frontends and the
+ * backend share only `packages/*`, and a browser bundle's configuration reaching into the API
+ * would invert the one dependency direction this repository is arranged around.
+ *
+ * So it is duplicated, deliberately and with the same discipline as `billing.amounts.ts`,
+ * which duplicates the prices for exactly the same reason. `pricing.sync.test.ts` reads the
+ * server file as text and fails the build when the two disagree; a matching assertion covers
+ * this one. Two numbers that must agree are safe only when something checks that they do.
+ * ============================================================================
+ */
+export const INCLUDED_REVISION_ROUNDS = 2;
+
+/*
+ * ============================================================================
+ * WHICH MILESTONE MOVES ARE LEGAL
+ * ============================================================================
+ *
+ * `ProjectDetailsUpdate`'s comment has claimed since it was written that `setMilestone`
+ * "decides what the change means… and whether the transition is legal at all". It decided the
+ * first two. It never decided the third: every transition was permitted, so a `<select>` in
+ * the console could take a launched project back to `onboarding`, or jump a build from
+ * `planning` straight to `live` past the customer's approval — and each of those emails the
+ * customer and writes a real stage change into their history.
+ *
+ * ## Three rules, and the first is the only hard one
+ *
+ *   1. **Nothing leaves `live`.** A website that is up does not go back to being built. If
+ *      more work is needed that is a new engagement, or a `revisions` cycle on a new project —
+ *      not a rewrite of what already happened. This is the rule that protects a record a
+ *      payment was taken against.
+ *
+ *   2. **The review loop runs in both directions.** `review`, `revisions` and `approval` are a
+ *      cycle by design — a client asks for changes, they are made, it goes back for approval,
+ *      they ask for more. Constraining that to forward-only would break the ordinary shape of
+ *      the work.
+ *
+ *   3. **Everything else may go forward, and back by exactly one stage.** Forward skips are
+ *      legitimate: a returning client with their materials already in hand does not need a
+ *      `planning` stage anybody will notice. A single step back is the ordinary correction. A
+ *      *jump* backwards is the mis-click, and `undoMilestone` is what that has instead — it
+ *      writes an internal entry rather than telling the customer their website moved backwards
+ *      on purpose.
+ *
+ * ## What this deliberately does not constrain
+ *
+ * `approve()` and `requestChanges()` set a milestone through the repository directly, and
+ * neither goes through here. That is correct: both are *domain operations* with their own
+ * preconditions — an approval requires a preview, a change request refuses a live site — and
+ * routing them through a general legality table would replace two specific rules with one
+ * vague one.
+ * ============================================================================
+ */
+export function isLegalMilestoneMove(from: ProjectMilestone, to: ProjectMilestone): boolean {
+  if (from === to) return true;
+
+  // 1. Nothing leaves a live website.
+  if (from === 'live') return false;
+
+  // 2. The review loop, in any direction.
+  const loop: readonly ProjectMilestone[] = ['review', 'revisions', 'approval'];
+  if (loop.includes(from) && loop.includes(to)) return true;
+
+  // 3. Forward freely; back by one.
+  return (
+    milestoneIndex(to) > milestoneIndex(from) || milestoneIndex(to) === milestoneIndex(from) - 1
+  );
+}
+
+export type { CustomerScopeView, ProjectScope, ScopeInput } from './scope.types.js';
+export {
+  SCOPE_FIELD_LIMITS,
+  scopeAccepted,
+  scopeAllowsSelfServeDeposit,
+  toCustomerScopeView,
+} from './scope.types.js';
 
 /**
  * What the customer is told, and who the next move belongs to.
@@ -217,6 +306,30 @@ export interface StoredProject {
   readonly status: ProjectStatus;
   readonly milestone: ProjectMilestone;
   readonly approval: ApprovalState;
+  /**
+   * The written agreement, as a record — absent until the owner sends one.
+   *
+   * A nested object rather than eight `scope*` columns, because the fields only mean anything
+   * together: a `scopeAcceptedAt` beside a `scopeVersion` from a later send is two fields that
+   * must agree, which is the arrangement `scopeOf`/`scopeFields` exists elsewhere in this
+   * repository to avoid. Absent or whole, and never half.
+   *
+   * See `scope.types.ts` and DECISION 040.
+   */
+  readonly scope?: ProjectScope | undefined;
+  /**
+   * How many revision rounds the customer has used.
+   *
+   * The published terms define a round as **one consolidated set of requested changes**, so
+   * this counts `requestChanges` rather than comments — fifteen items in one message is a
+   * round, and fifteen messages over a fortnight is still a round.
+   *
+   * Stored rather than derived from the activity stream, and the reason is what it is for: it
+   * is the number the customer is shown against a published allowance, so it has to be a fact
+   * the system asserts rather than an arithmetic result that shifts if an entry is ever
+   * corrected. Absent on projects that predate it, which reads as zero.
+   */
+  readonly revisionRounds?: number | undefined;
   readonly approvedAt?: Date | undefined;
   /** Which deployment the approval was given against. See `deployments`. */
   readonly approvedDeploymentId?: string | undefined;
@@ -296,6 +409,16 @@ export interface ProjectUpdate {
   readonly status?: ProjectStatus;
   readonly milestone?: ProjectMilestone;
   readonly approval?: ApprovalState;
+  /**
+   * Written whole, never patched.
+   *
+   * `ScopeService` composes the complete object and hands it over, so there is no path that
+   * can set `acceptedAt` without also having decided the version it belongs to. A partial
+   * update here — `{ scope: { acceptedAt } }` — is what would let an acceptance outlive the
+   * document it was given against.
+   */
+  readonly scope?: ProjectScope;
+  readonly revisionRounds?: number;
   readonly approvedAt?: Date | null;
   readonly approvedDeploymentId?: string | null;
   readonly previewUrl?: string;
@@ -335,6 +458,24 @@ export interface CustomerProjectView {
   readonly progress: { readonly step: number; readonly total: number };
   readonly approval: ApprovalState;
   readonly approvedAt?: string | undefined;
+  /**
+   * The agreed scope, when one has been sent.
+   *
+   * Absent means the owner has not sent one, which the portal renders as "we are still
+   * writing this up" rather than as an empty panel. The customer sees the same document
+   * either way — before acceptance to read and accept, after it as the record of what they
+   * agreed to, which is the half that matters in a disagreement three months later.
+   */
+  readonly scope?: CustomerScopeView | undefined;
+  /**
+   * Revision rounds used, and the allowance they are used against.
+   *
+   * Both, always, because a count with no denominator is a number nobody can act on. The
+   * allowance travels with it rather than being a constant the client holds, so the published
+   * figure and the one on the customer's screen cannot drift — which is the whole reason this
+   * is here rather than being rendered from `buildScope` in the browser.
+   */
+  readonly revisions: { readonly used: number; readonly included: number };
   readonly previewUrl?: string | undefined;
   readonly productionUrl?: string | undefined;
   readonly assessmentId?: string | undefined;
@@ -368,6 +509,8 @@ export function toCustomerProjectView(project: StoredProject): CustomerProjectVi
     },
     approval: project.approval,
     approvedAt: project.approvedAt?.toISOString(),
+    ...(project.scope ? { scope: toCustomerScopeView(project.scope) } : {}),
+    revisions: { used: project.revisionRounds ?? 0, included: INCLUDED_REVISION_ROUNDS },
     previewUrl: project.previewUrl,
     productionUrl: project.productionUrl,
     assessmentId: project.assessmentId,

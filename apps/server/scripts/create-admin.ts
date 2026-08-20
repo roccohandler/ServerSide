@@ -5,9 +5,9 @@
  *
  * Usage, from the repo root:
  *
- *     npm run admin:create --workspace @jobforge/server                     # create or promote
- *     npm run admin:create --workspace @jobforge/server -- --check          # report, nothing changes
- *     npm run admin:create --workspace @jobforge/server -- --reset-password # also set the password
+ *     npm run admin:create                     # create or promote
+ *     npm run admin:create -- --check          # report, nothing changes
+ *     npm run admin:create -- --reset-password # also set the password
  *
  * Reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from the **server-side** environment. Neither is
  * ever printed, neither is ever sent to a browser, and neither has a `VITE_` twin — Vite

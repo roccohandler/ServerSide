@@ -8,7 +8,7 @@ import {
   VERCEL_WEBHOOK_SECRET,
   type PlatformHarness,
 } from '../testing/platformApp.js';
-import { EXPECTED_AMOUNT_CENTS } from '../features/billing/billing.amounts.js';
+import { BUILD_PRICE_CENTS, EXPECTED_AMOUNT_CENTS } from '../features/billing/billing.amounts.js';
 
 /*
  * ============================================================================
@@ -157,10 +157,77 @@ describe('the customer lifecycle', () => {
     const dashboardAfterAssessment = await authed('get', '/api/app/dashboard');
     expect(dashboardAfterAssessment.body.data.assessment.score).toBe(50);
     // No project yet, so the next move is buying the build.
-    expect(dashboardAfterAssessment.body.data.currentAction.kind).toBe('pay-deposit');
+    /*
+     * No project, so nothing has been agreed and the next step is a conversation rather than
+     * a payment. This used to read `pay-deposit` and point at `/app/billing`; DECISION 040
+     * closed the deposit button until a scope exists, so an instruction to go and press it
+     * would send somebody to a control that is not there.
+     */
+    expect(dashboardAfterAssessment.body.data.currentAction.kind).toBe('request-scope');
     expect(dashboardAfterAssessment.body.data.project).toBeNull();
 
-    /* ----------------------------------------------------- 2. the payment */
+    /* ------------------------------------------ 2. the scope, agreed in writing */
+
+    /*
+     * ======================================================================
+     * THE STEP THAT DID NOT EXIST, AND THE ONE THE PUBLISHED TERMS ALWAYS DESCRIBED
+     * ======================================================================
+     *
+     * `docs/business-offer.md` rule #35 has always said the scope is agreed in writing before
+     * any payment. Until DECISION 040 a customer could reach Checkout with nothing written
+     * down by anybody, and this test walked straight from an assessment to a $2,450 payment —
+     * which is what made the gap easy to miss for as long as it existed.
+     *
+     * The owner creates the project (`status: 'agreed'` — nothing paid yet, which
+     * `PROJECT_STATUSES` has always had a value for) and sends the scope. Both are owner-side
+     * operations, driven here through the services for the same reason the milestone moves
+     * are: this test is the *customer's* path end to end, and the console has its own.
+     * ======================================================================
+     */
+    const created = await harness.services.projects.createForOwner({
+      businessName: 'Cascade Heating & Air',
+      contactName: 'Dana Reyes',
+      email: 'dana@cascadeheating.example',
+    });
+
+    const owner = harness.auth.users[0];
+    if (!owner) throw new Error('the signup in beforeEach did not produce an account');
+
+    const agreed = await harness.services.projects.attachOwner({ project: created, owner });
+
+    await harness.services.projects.sendScope({
+      project: agreed,
+      scope: {
+        summary: 'A six-page website for Cascade Heating & Air.',
+        lines: ['Home, about and contact', 'Six service pages', 'Quote request funnel'],
+        priceCents: BUILD_PRICE_CENTS,
+        sentBy: 'Maxwell Cuenca',
+      },
+    });
+
+    /* Sent and unread: the deposit is still refused, and the dashboard says why. */
+    const beforeAccepting = await authed('get', '/api/app/dashboard');
+    expect(beforeAccepting.body.data.currentAction.kind).toBe('accept-scope');
+    expect(beforeAccepting.body.data.billing.available.deposit).toBe(false);
+
+    const refused = await authed('post', '/api/app/billing/checkout').send({
+      product: 'build-deposit',
+    });
+    expect(refused.status).toBe(400);
+    expect(harness.stripe.checkoutRequests).toHaveLength(0);
+
+    /* The customer reads it and agrees. This is the record rule #35 was always describing. */
+    const accepted = await authed('post', `/api/app/projects/${agreed.id}/scope/accept`).send({});
+    expect(accepted.status).toBe(200);
+    expect(accepted.body.data.project.scope.acceptedAt).toEqual(expect.any(String));
+    expect(accepted.body.data.project.scope.acceptedName).toBe('Dana Reyes');
+    /* The internal handle is not in the customer's payload — `CustomerScopeView` is built up. */
+    expect(accepted.body.data.project.scope.acceptedByUserId).toBeUndefined();
+
+    /* ----------------------------------------------------- 3. the payment */
+
+    const readyToPay = await authed('get', '/api/app/dashboard');
+    expect(readyToPay.body.data.currentAction.kind).toBe('pay-deposit');
 
     const checkout = await authed('post', '/api/app/billing/checkout').send({
       product: 'build-deposit',
@@ -174,10 +241,12 @@ describe('the customer lifecycle', () => {
     expect(stripeRequest?.metadata).toEqual({ userId, product: 'build-deposit' });
     expect(stripeRequest?.customerEmail).toBe('dana@cascadeheating.example');
 
-    // Nothing has been fulfilled by the browser reaching Stripe.
-    expect(harness.repositories.projects.projects).toHaveLength(0);
+    // Nothing has been fulfilled by the browser reaching Stripe. The project is the one the
+    // owner created, still unpaid.
+    expect(harness.repositories.projects.projects).toHaveLength(1);
+    expect(harness.repositories.projects.projects[0]?.depositStatus).toBe('pending');
 
-    /* ----------------------------------- 3. the webhook, which is the truth */
+    /* ----------------------------------- 4. the webhook, which is the truth */
 
     const delivered = await deliverStripeEvent({
       id: 'evt_deposit_paid',

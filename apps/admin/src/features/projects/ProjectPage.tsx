@@ -18,6 +18,8 @@ import { useTitle } from '../../hooks/useTitle';
 import { LeaveGuard } from '../../components/LeaveGuard';
 import { CheckoutLinkPanel } from './CheckoutLinkPanel';
 import { EstimatePanel } from './EstimatePanel';
+import { ScopePanel } from './ScopePanel';
+import { GuaranteePanel } from './GuaranteePanel';
 import { ReportsPanel } from './ReportsPanel';
 import { DetailsForm } from './DetailsForm';
 import { FilesPanel } from './FilesPanel';
@@ -265,6 +267,26 @@ export function ProjectPage() {
        * button rather than in the shared slot below.
        */}
       <EstimatePanel project={project} onChanged={reload} />
+
+      {/* ------------------------------------------------------------- scope */}
+
+      {/*
+       * The written agreement. DECISION 040.
+       *
+       * It owns its own notices for the same reason the two panels above do — the message that
+       * matters is *what sending is about to withdraw*, and that has to be read beside the
+       * button rather than in the shared slot below.
+       */}
+      <ScopePanel project={project} onChanged={reload} />
+
+      {/* ------------------------------------------------------ the guarantee */}
+
+      {/*
+       * Renders nothing on a project with no plan — see the panel. The remedy is a month of
+       * Growth Partner, so there is nothing to waive, and a control that can only produce an
+       * error is worse than an absent one.
+       */}
+      <GuaranteePanel project={project} onApplied={reload} />
 
       {/* ------------------------------------------------------------ reports */}
 

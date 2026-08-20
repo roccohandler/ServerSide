@@ -16,13 +16,28 @@ import type { AudienceTrade, ValueProposition } from '../types/content';
 
 export const hero = {
   /*
-   * "Digital growth systems for local service businesses" is gone.
+   * ==========================================================================
+   * THE EYEBROW IS THE CATEGORY. THE HEADLINE IS THE OUTCOME.
+   * ==========================================================================
    *
-   * It was a category label made of words a person who fixes furnaces does not use, and it
-   * was the first thing on the page. The eyebrow's job on this site is to say *who this is
-   * for* in the reader's own vocabulary, so that is what it does now.
+   * "Digital growth systems for local service businesses" was here first — a category label
+   * made of words a person who fixes furnaces does not use. It was replaced by "For local
+   * service businesses in Greater Seattle", which fixed the vocabulary and lost the category:
+   * it said who the page was for and never what the business *is*.
+   *
+   * That gap is the expensive one. Unbounce's five-second test found **only 6% of visitors
+   * could correctly say what a business did** — 94% left confused — and this brand has a
+   * specific reason to be in that 94%: a competitor with the same name sells field-service
+   * software to the same trades. A first screen that says who it is for and not what it is
+   * leaves the reader to guess, and the wrong guess is sitting right there.
+   *
+   * So the hierarchy is now the one the research asks for: **brand → category → outcome →
+   * audience and mechanism → action.** The eyebrow carries the category, the headline stays
+   * pure outcome, and Greater Seattle moves down to `trustPoints` — it qualifies the offer
+   * rather than defining it, and the About page already says the work is done remotely.
+   * ==========================================================================
    */
-  eyebrow: 'For local service businesses in Greater Seattle',
+  eyebrow: 'Customer-conversion websites for local service businesses',
   /*
    * The subject of the sentence is the reader's customers, not the reader's website.
    *
@@ -46,8 +61,20 @@ export const hero = {
    * What is left is the diagnosis, which is the only part a first-time reader needs before
    * the price — and the part that makes them recognise their own business.
    */
+  /*
+   * The third sentence is new, and it is the whole reason this pass touched the hero.
+   *
+   * The first two diagnose. Neither said what to *do*, so the primary button underneath them
+   * arrived unexplained — and a button reading "Get my Website Blueprint" with nothing above
+   * it saying what a Blueprint is reads as a newsletter, or a quiz, or an email trap.
+   *
+   * One sentence turns it into the obvious next step and, more importantly, frames it as the
+   * product demonstration rather than a marketing device: the reader is being offered the
+   * *thinking* first and the build second, which is the order this whole funnel is arranged
+   * in. It also states the price of that first step, which is nothing.
+   */
   subheading:
-    'Most local service businesses do not have a traffic problem — they have a website that loses people who were ready to get in touch. We build the one that does not.',
+    'Most local service businesses do not have a traffic problem — they have a website that loses people who were ready to get in touch. Tell us how your business actually gets hired and we will show you what your website should do about it, free, in about five minutes.',
 
   /** The one-line differentiator, shown directly under the hero copy. */
   differentiator:
@@ -151,6 +178,14 @@ export const hero = {
      * The point itself is not lost — it is the differentiator's whole second sentence.
      */
     'Domain, hosting and content in your name from day one',
+    /*
+     * Greater Seattle moved here from the eyebrow, which now carries the category instead.
+     *
+     * It qualifies the offer rather than defining it — a reader outside the area is not being
+     * turned away, which is what an eyebrow reading "for businesses in Greater Seattle" does
+     * to somebody in Tacoma reading on a phone. The About page says the work is remote.
+     */
+    `Built for service businesses around ${site.serviceArea.label}`,
     'Two revision rounds, and 30 days of fixes after launch',
     // Interpolated for the reason in `offer.ts` → `launch.steps[0]`: the free diagnostic
     // has one name, and this is the first screen a visitor reads it on.

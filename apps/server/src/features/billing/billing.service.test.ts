@@ -891,3 +891,100 @@ describe('Stripe API failure', () => {
     expect(repository.projects[0]?.depositSessionId).toBeUndefined();
   });
 });
+
+/*
+ * ============================================================================
+ * ONE ACCOUNT, ONE STRIPE CUSTOMER — ON THE WAY OUT AS WELL AS THE WAY IN
+ * ============================================================================
+ *
+ * `onPaymentSucceeded` has always stored the first customer id and never overwritten it.
+ * What was missing was the other half: sending it *back* to Stripe on the next checkout.
+ * Without that, a payment-mode session carrying only an email lets Stripe create a fresh
+ * guest customer each time, so the account's second payment belongs to a customer the
+ * application has never heard of — and the portal, the invoices and any later
+ * subscription all hang off the first one.
+ *
+ * The two assertions below are the whole property: the id is sent when it is known, and
+ * the email is sent instead when it is not (Stripe refuses a session carrying both).
+ * ============================================================================
+ */
+describe('Stripe customer continuity', () => {
+  it('sends the stored customer id on a checkout for a project that has one', async () => {
+    const stripe = createConfiguredStripe();
+    const repository = createInMemoryBillingRepository();
+    const service = buildService({ stripe, repository });
+    const project = await createAgreedProject(service);
+
+    // The deposit arrives and Stripe names the customer it created.
+    await service.handleWebhookEvent(
+      checkoutCompletedEvent({ projectId: project.id, product: 'build-deposit' }),
+    );
+    expect(repository.projects[0]?.stripeCustomerId).toBe('cus_123');
+
+    await service.createCheckoutSession({ projectId: project.id, product: 'build-final' });
+
+    const second = stripe.checkoutRequests.at(-1);
+    expect(second?.customerId).toBe('cus_123');
+  });
+
+  it('falls back to the email on a first payment, when there is no customer yet', async () => {
+    const stripe = createConfiguredStripe();
+    const service = buildService({ stripe });
+    const project = await createAgreedProject(service);
+
+    await service.createCheckoutSession({ projectId: project.id, product: 'build-deposit' });
+
+    const first = stripe.checkoutRequests[0];
+    expect(first?.customerId).toBeUndefined();
+    expect(first?.customerEmail).toBe(project.email);
+  });
+});
+
+describe('disputes and expired sessions', () => {
+  /*
+   * A dispute is not a refund: the outcome is weeks away and either side can win. The
+   * project keeps its honest state and the owner is told, because the alternative — which
+   * is what happened before — is a build proceeding on money that has been taken back.
+   */
+  it('tells the owner about a dispute without inventing a payment outcome', async () => {
+    const repository = createInMemoryBillingRepository();
+    const emailService = createRecordingEmailService();
+    const service = buildService({ repository, emailService });
+    const project = await createAgreedProject(service);
+
+    await service.handleWebhookEvent(
+      checkoutCompletedEvent({
+        projectId: project.id,
+        product: 'build-deposit',
+        paymentIntent: 'pi_disputed',
+      }),
+    );
+
+    await service.handleWebhookEvent({
+      id: 'evt_dispute',
+      type: 'charge.dispute.created',
+      data: { object: { payment_intent: 'pi_disputed' } },
+    });
+
+    // Still 'paid' — a dispute is a claim, not a resolution.
+    expect(repository.projects[0]?.depositStatus).toBe('paid');
+    const sent = emailService.sent.at(-1);
+    expect(sent?.subject).toContain('failed');
+    expect(sent?.text).toContain('disputed');
+  });
+
+  it('records an expired checkout and changes nothing', async () => {
+    const repository = createInMemoryBillingRepository();
+    const service = buildService({ repository });
+    const project = await createAgreedProject(service);
+
+    await service.handleWebhookEvent({
+      id: 'evt_expired',
+      type: 'checkout.session.expired',
+      data: { object: { metadata: { projectId: project.id, product: 'build-deposit' } } },
+    });
+
+    expect(repository.projects[0]?.depositStatus).toBe('pending');
+    expect(repository.projects[0]?.status).toBe('agreed');
+  });
+});

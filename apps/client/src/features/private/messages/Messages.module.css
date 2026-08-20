@@ -25,7 +25,9 @@
 
 .intro {
   margin: 0;
-  max-width: var(--container-prose);
+  /* `--container-narrow` — the readability width. It said `--container-prose`, which does
+     not exist, so the intro had no measure at all on a wide screen. */
+  max-width: var(--container-narrow);
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
   color: var(--color-ink-muted);

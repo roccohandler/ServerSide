@@ -40,6 +40,13 @@ export const workspace = {
    * somebody that something worked and nothing about what is now true.
    */
   announce: {
+    /*
+     * Says what follows from it, which is the whole rule for this block — and here that is
+     * the part the customer most needs: agreeing is what makes the deposit payable, and a
+     * screen-reader user who hears only "Agreed" has been told nothing about what changed.
+     */
+    scopeAccepted:
+      'Scope agreed. The deposit is on your billing page now, and nothing is charged until you pay it.',
     approved: 'Website approved. We are putting it live and will email you when it is up.',
     changesRequested:
       'Changes requested. We have it and will come back to you — nothing goes live in the meantime.',

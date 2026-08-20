@@ -62,6 +62,7 @@ function build(
 
   const notifier = {
     previewReady: vi.fn(),
+    scopeReady: vi.fn(),
     approvalRequested: vi.fn(),
     tasksAssigned: vi.fn(),
     feedbackReplied: vi.fn(),

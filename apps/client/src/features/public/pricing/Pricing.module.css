@@ -1,0 +1,203 @@
+/*
+ * ============================================================================
+ * /pricing
+ * ============================================================================
+ *
+ * Only the blocks this page adds. Everything about the offer itself is `PricingBlock` and
+ * carries its own stylesheet — see `features/public/home/components/pricing/Pricing.module.css`.
+ *
+ * Two names, one file each, and they are different files: this one is scoped to `/pricing`
+ * and lives in a lazily-loaded chunk. CSS Modules hash the class names, so the collision is
+ * only ever a human one.
+ * ============================================================================
+ */
+
+/* ---------------------------------------------------------------- the tax line */
+
+/*
+ * Directly under the lede, on a rule rather than in a panel.
+ *
+ * A panel would read as a warning, and it is not one — tax on a business purchase is
+ * unremarkable and the only failure mode here is not mentioning it. What it needs is to be
+ * unmissable and unalarming at the same time, which is what a hairline and a label do.
+ */
+.taxNote {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: var(--space-hair) solid var(--color-border);
+  max-width: var(--container-narrow);
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.taxLabel {
+  display: block;
+  margin-bottom: var(--space-1);
+  color: var(--color-ink);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  font-size: var(--text-xs);
+}
+
+/* ---------------------------------------------------------------- ownership */
+
+.ownershipList {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-7);
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 48rem) {
+  .ownershipList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+  }
+}
+
+.ownershipItem {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+/*
+ * `em` rather than a rem step, and deliberately so — the icon is optically aligned to the
+ * cap height of the title beside it, and a rem nudge is correct at exactly one font size.
+ * `tokens.test.ts` allows font-relative spacing for this reason.
+ */
+.ownershipIcon {
+  flex: none;
+  margin-top: 0.15em;
+  color: var(--color-accent-text);
+}
+
+.ownershipTitle {
+  font-weight: var(--weight-semibold);
+}
+
+.ownershipDetail {
+  margin-top: var(--space-1);
+  color: var(--color-ink-muted);
+  line-height: var(--leading-relaxed);
+}
+
+/*
+ * The closing sentence carries the whole block, so it is set at reading size rather than at
+ * the muted note size the four items above use. It is the one about leaving.
+ */
+.ownershipClosing {
+  margin-top: var(--space-7);
+  max-width: var(--container-narrow);
+  line-height: var(--leading-relaxed);
+}
+
+/* ---------------------------------------------------------------- how paying works */
+
+.termsGrid {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-7);
+}
+
+@media (min-width: 48rem) {
+  .termsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.termCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.termQuestion {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  text-wrap: balance;
+}
+
+.termAnswer {
+  flex: 1;
+  color: var(--color-ink-muted);
+  line-height: var(--leading-relaxed);
+}
+
+/*
+ * `margin-top: auto` on a flex column, so the link sits on the card's floor whatever the
+ * answer above it is worth. Five cards of different lengths with the link floating at five
+ * different heights reads as five different kinds of thing.
+ */
+.termLink {
+  margin-top: auto;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.termsFootnote {
+  margin-top: var(--space-6);
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+/* ---------------------------------------------------------------- the objections */
+
+.objections {
+  margin-top: var(--space-7);
+}
+
+.objection + .objection {
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: var(--space-hair) solid var(--color-border);
+}
+
+/*
+ * The objection is set in the reader's voice and the answer in ours, so the two are
+ * distinguished by weight rather than by a quotation mark — a `<dt>` styled as a quote reads
+ * as a testimonial, which is the last thing an objection should look like.
+ */
+.objectionQuestion {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  text-wrap: balance;
+}
+
+.objectionAnswer {
+  margin-top: var(--space-3);
+  margin-inline-start: 0;
+  color: var(--color-ink-muted);
+  line-height: var(--leading-relaxed);
+}
+
+/* ---------------------------------------------------------------- the close */
+
+.closeActions {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-7);
+}
+
+@media (min-width: 48rem) {
+  .closeActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-7);
+  }
+}
+
+.closeAction {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.closeNote {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}

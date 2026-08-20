@@ -25,7 +25,7 @@ import { WhatYoureBuyingSection } from '../home/components/WhatYoureBuyingSectio
 import { DifferentiatorSection } from '../home/components/DifferentiatorSection';
 import { EntrySection } from '../home/components/EntrySection';
 import { OfferStack } from '../home/components/OfferStack';
-import { PricingBlock } from '../home/components/PricingBlock';
+import { PricingBlock } from '../home';
 import { FaqList } from '../faq/FaqList';
 import styles from './Services.module.css';
 

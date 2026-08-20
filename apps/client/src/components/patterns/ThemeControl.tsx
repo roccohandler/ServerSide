@@ -6,16 +6,25 @@ import styles from './ThemeControl.module.css';
  * THE APPEARANCE CONTROL
  * ============================================================================
  *
- * Three options and a native `<select>`, which is a smaller decision than it looks.
+ * Two options and a native `<select>`, which is a smaller decision than it looks.
+ *
+ * ## Why two, and not the three it had
+ *
+ * The third was *Match my system*, and it was the default. It went when the
+ * `prefers-color-scheme` media query went — DECISION 036 — because with no media query every
+ * value of it resolves to light, and a control offering a choice that changes nothing is
+ * worse than one option fewer. The reasoning for the default itself is in `tokens.css`; the
+ * consequence here is that light is now simply what the site is, and this control is the way
+ * out of it rather than the way between two equals.
  *
  * ## Why not a switch
  *
- * `Switch` exists in `@jobforge/ui` and it is the wrong control here, because a switch has
- * two positions and this has three. The third — *match my system* — is the default, the one
- * most people want, and the only one that follows a reader from day into evening without
- * them touching anything. A two-position switch forces everybody into an explicit choice
- * they then have to remember to unmake, and there is no position on it that means "stop
- * overriding me".
+ * `Switch` exists in `@jobforge/ui` and the option count no longer rules it out, but two
+ * things still do. A switch is a control for turning a thing *on*, and neither light nor dark
+ * is the "on" one — labelling it "Dark mode" makes light the absence of a feature, which is
+ * backwards here. And it would cost eager CSS in the footer of every page for a control the
+ * `SelectField` below renders for free, on a payload budget with under a kilobyte of
+ * headroom. Both reasons are about this site rather than about switches.
  *
  * ## Why a native select rather than a segmented control
  *
@@ -45,7 +54,6 @@ import styles from './ThemeControl.module.css';
  */
 
 const OPTIONS: readonly { value: Theme; label: string }[] = [
-  { value: 'system', label: 'Match my system' },
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
 ];

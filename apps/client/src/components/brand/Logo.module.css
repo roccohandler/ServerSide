@@ -25,10 +25,22 @@
  * On a charcoal band the stamp inverts rather than disappearing: the tile takes the
  * cream and the JF is cut back to charcoal. The ember bar is the one element that never
  * changes — it is the fixed point the whole identity is built around.
+ *
+ * The two tokens are the ones that hold their value in **both** palettes, and picking them
+ * by hand is the whole content of this rule. It read `--color-page` on `--color-brand`, which
+ * is the same pair described the same way and was right by coincidence: on the light palette
+ * page-is-cream and brand-is-charcoal. Both invert. So for a reader on the dark palette the
+ * tile resolved to `#15171C` on a `#0B0D11` header — **1.08:1, the tile vanished** — and the
+ * mark rendered as a cream letterform floating on the band with no stamp behind it, in the
+ * header and the footer of every page.
+ *
+ * `--color-ink-inverse` is cream in both palettes because it means "text on a charcoal band",
+ * and `--color-surface-dark` is charcoal in both because it means "the band". A band is still
+ * a band at night; this rule now says so in tokens that are too.
  */
 .onDark {
-  --mark-tile: var(--color-page);
-  --mark-cut: var(--color-brand);
+  --mark-tile: var(--color-ink-inverse);
+  --mark-cut: var(--color-surface-dark);
   --mark-bar: var(--color-accent);
 }
 

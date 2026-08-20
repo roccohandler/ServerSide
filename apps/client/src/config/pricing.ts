@@ -438,6 +438,56 @@ export const capacity = {
   concurrentBuilds: 1,
 } as const;
 
+/* ------------------------------------------------------------------ sales tax */
+
+/**
+ * ============================================================================
+ * WASHINGTON SALES TAX — AND WHY THERE IS NO RATE IN THIS FILE
+ * ============================================================================
+ *
+ * Washington's ESSB 5814 took effect on **1 October 2025** and moved custom website
+ * development — and the support and consulting sold alongside it — into the definition of a
+ * taxable retail sale. The build is taxable. The monthly service almost certainly is. See
+ * DECISION 037.
+ *
+ * ## The rule this file now has to keep: a tax rate is not a price
+ *
+ * Everything else in this module is a *commercial commitment* — a figure the business chose,
+ * that appears on the page, that `sanctionedFigures()` licenses and `content.test.ts` sweeps
+ * for. A tax rate is none of those things. It is set by jurisdictions this business does not
+ * control, it **varies by the customer's address** inside a service area that spans dozens of
+ * them, and it changes on somebody else's schedule.
+ *
+ * So this block states **that** tax applies and what the line reads. It states no rate and no
+ * figure, `sanctionedFigures()` does not grow, and the currency sweep keeps meaning exactly
+ * what it meant. Stripe Tax computes the amount at checkout, because the amount depends on an
+ * address the site does not have until then.
+ *
+ * A `rate: 0.101` here would be wrong in three ways at once: wrong for most addresses, stale
+ * within a year, and — the expensive one — it would put a number on a page that a customer
+ * could add to the price and be charged something different.
+ *
+ * ## `applies` is not a switch for collecting
+ *
+ * It controls whether the site *says* tax is extra, which is true whether or not collection
+ * has been turned on. Registering with the Department of Revenue and enabling Stripe Tax are
+ * the owner's, and the copy is honest before either happens. What would not be honest is the
+ * reverse: charging tax on a page that does not mention it.
+ * ============================================================================
+ */
+export const salesTax = {
+  /** Whether the published prices are exclusive of tax. See DECISION 037. */
+  applies: true,
+  /**
+   * The line rendered beside a price. Deliberately "applicable" rather than a rate — the
+   * combined rate differs across the service area and the customer's own address decides it.
+   */
+  note: 'Prices are exclusive of Washington sales tax, which is added at checkout.',
+  /** The longer version, for the pricing page and the terms. */
+  explanation:
+    'Washington treats website development as a taxable retail sale. Sales tax is calculated on your business address when you pay, and it appears as a separate line — so the price above is what the work costs, and the tax is what the state charges on it.',
+} as const;
+
 /* ------------------------------------------------------------------ the recurring plan */
 
 /**

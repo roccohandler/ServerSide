@@ -33,6 +33,7 @@ import {
   conversion,
   guarantee,
   launch,
+  launchStandard,
   marketComparison,
   offerStack,
   prices,
@@ -52,7 +53,11 @@ import { testimonials } from './testimonials';
 import { evidence } from './evidence';
 import { audit } from './audit';
 import { audience } from './home';
-import { privacyContent } from './legal';
+import { legalNotice, privacyContent, termsContent } from './legal';
+import { pricingPage } from './pricingPage';
+import { blueprint, blueprintQuestions } from './blueprint';
+import { jobValueNote } from '../features/public/blueprint/rules/blueprintRules';
+import { salesTax } from '../config/pricing';
 import { playbook } from './playbook';
 import { ADVERTISING_BENCHMARK_LABEL, industries } from './industries';
 import { teardown } from './teardown';
@@ -87,7 +92,75 @@ const content = {
   capabilities,
   capabilityIntegrations,
   capabilityPage,
+  /*
+   * `legal` left the barrel on 2026-08-19 when its two routes were split — see the note in
+   * `content/index.ts`. It is imported here explicitly for exactly the reason the four above
+   * are: a module missing from the corpus is silently exempt from the currency sweep, the
+   * forbidden-claim sweep and the placeholder sweep, and the terms page is the last place on
+   * this site where an unswept price figure should be allowed to appear.
+   */
+  privacyContent,
+  termsContent,
+  legalNotice,
+  /*
+   * `/pricing`'s own copy, outside the barrel because the route is lazy. It is in the corpus
+   * for the sharpest version of the reason the others are: this is the page that states money,
+   * and the currency sweep is what stops a figure being typed here that disagrees with
+   * `config/pricing.ts`. A pricing page exempt from the pricing guard would be the funniest
+   * possible place for this to go wrong.
+   */
+  pricingPage,
+  blueprint,
+  blueprintQuestions,
 };
+
+/*
+ * ============================================================================
+ * EVERY CLIENT SOURCE FILE, READ ONCE
+ * ============================================================================
+ *
+ * Two guards in this file need the whole tree: the dead-CSS sweep, which asks which
+ * components reference a class, and the support-address sweep, which asks whether an email
+ * is written out anywhere but the one file that declares it.
+ *
+ * Memoised rather than read per test, and the reason is measured rather than tidy. There are
+ * 363 files here, the repository lives in a OneDrive-synced directory, and `test:run` puts 96
+ * suites on the machine at once — under that load a read costs ~36ms rather than ~1ms. A
+ * second full walk was enough to push a *neighbouring* suite's filesystem test past its five
+ * second timeout, which is a failure with no relationship at all to the thing that caused it.
+ *
+ * If a third guard needs the tree, it uses this. It does not open the directory again.
+ * ============================================================================
+ */
+interface SourceFile {
+  readonly path: string;
+  readonly text: string;
+}
+
+let sourceFileCache: readonly SourceFile[] | null = null;
+
+function clientSourceFiles(): readonly SourceFile[] {
+  if (sourceFileCache) return sourceFileCache;
+
+  const collect = (dir: string): SourceFile[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        /*
+         * `dist` and `node_modules` only. Deliberately **not** a name-based skip list — see
+         * the note in CLAUDE.md about `public`, where skipping a directory to avoid static
+         * assets silently stopped thirty-two stylesheets being checked at all.
+         */
+        return entry.name === 'node_modules' || entry.name === 'dist' ? [] : collect(path);
+      }
+      return /\.(tsx?|css|html)$/.test(entry.name)
+        ? [{ path, text: readFileSync(path, 'utf8') }]
+        : [];
+    });
+
+  sourceFileCache = collect(join(import.meta.dirname, '..'));
+  return sourceFileCache;
+}
 
 /*
  * Guards on the content layer.
@@ -564,6 +637,12 @@ describe('the site configuration', () => {
    * the ask — the form is the page. So the fragment is not merely unnecessary there, it
    * would be a link to a section of a page with one section.
    *
+   * DECISION 043 moved it again, to `/blueprint`, and the property is unchanged: question
+   * one is on screen the moment the page renders, with nothing above it to scroll past. Both
+   * are **single-purpose pages where the ask is the page**, which is what this test has always
+   * been about — so the allowance is a set of those rather than one route, and adding to it
+   * is the deliberate act the equality check used to force.
+   *
    * The fallback still points at the contact form and still needs its fragment, because
    * that page genuinely is a page holding a form. Both halves are asserted rather than the
    * check being deleted: the failure it exists to catch — a button pointed at the top of a
@@ -571,13 +650,16 @@ describe('the site configuration', () => {
    * ==========================================================================
    */
   it('lands the primary action on the ask rather than on a page holding one', () => {
+    /** Pages whose entire content is the ask. Adding one is a decision, which is the point. */
+    const asksAreTheWholePage: readonly string[] = [routes.getAssessment, routes.blueprint];
+
     const primary = site.cta.primary.to;
-    const isDedicatedPage = primary === routes.getAssessment;
+    const isDedicatedPage = asksAreTheWholePage.includes(primary);
 
     expect(
       isDedicatedPage || primary.includes(`#${sections.request}`),
-      `\`${primary}\` is neither the dedicated assessment page nor a link to the form on the ` +
-        'page it lands on. A primary button has to land on the ask itself.',
+      `\`${primary}\` is neither a page that is nothing but the ask nor a link to the form on ` +
+        'the page it lands on. A primary button has to land on the ask itself.',
     ).toBe(true);
 
     expect(site.cta.primaryFallback.to).toContain(`#${sections.request}`);
@@ -927,6 +1009,34 @@ describe('the prices', () => {
      * rather than exempted by pattern, so adding a second one is a deliberate act.
      */
     '$1',
+    /*
+     * ========================================================================
+     * THE SECOND SET OF FIGURES ABOUT SOMEBODY ELSE'S MONEY
+     * ========================================================================
+     *
+     * The Blueprint's optional job-value question, and the note it produces. Every figure is
+     * a band describing what one of the *reader's own jobs* is worth — never a price this
+     * business charges, and never a prediction of what they will earn (`blueprintRules.test.ts`
+     * asserts the second half).
+     *
+     * **Derived from the question rather than typed here**, which is the same discipline
+     * `sanctionedFigures()` follows and for the same reason: a hand-written list falls behind
+     * the day somebody adds a band, and the first thing that happens then is this guard
+     * failing on a legitimate figure and getting widened rather than fixed.
+     *
+     * Sanctioning them here rather than exempting the module by name matters. A skip-list
+     * entry would take the Blueprint out of the currency sweep entirely — and it is a surface
+     * that talks about money, so it is exactly the surface where an unswept price would do the
+     * most damage. See the note in CLAUDE.md about what happened the last time a source-shaped
+     * name went into a skip list.
+     * ========================================================================
+     */
+    ...(blueprintQuestions
+      .find((question) => question.id === 'jobValue')
+      ?.choices.flatMap((choice) => choice.label.match(/\$[\d,]+/g) ?? []) ?? []),
+    ...(['under-250', '250-1000', '1000-5000', 'over-5000'].flatMap(
+      (band) => jobValueNote({ jobValue: [band] })?.match(/\$[\d,]+/g) ?? [],
+    ) as readonly string[]),
   ]);
 
   /*
@@ -1130,6 +1240,108 @@ describe('the guarantee', () => {
     for (const word of ['ranking', 'more leads', 'revenue', 'roi', 'first page']) {
       expect(copy).not.toContain(word);
     }
+  });
+});
+
+/*
+ * ============================================================================
+ * THE SAME RULE, ON THE SENTENCE THAT IS ACTUALLY READ
+ * ============================================================================
+ *
+ * The guarantee's own no-promised-result test above has been here for a while, and it
+ * was guarding the wrong paragraph. It sweeps the guarantee block — which a reader
+ * reaches most of the way down the page, if at all — while the hero heading is the one
+ * sentence very nearly every visitor reads, and it was outside the sweep entirely. The
+ * most-read line on the site sat outside the guard that exists to protect exactly it.
+ *
+ * ## Why the banned list needed a second half
+ *
+ * The old list bans the vocabulary of a marketing agency: rankings, leads, ROI, first
+ * page. Those are the words somebody writes when they are imitating the companies this
+ * business is positioned against — and they are not the words somebody writes when they
+ * are trying to be *encouraging to a plumber*. That temptation reaches for the trade's
+ * own vocabulary instead: more jobs, more calls, more work, more customers. Both are
+ * promises about a result; only one of them was catchable.
+ *
+ * ## Why a pattern as well as a list
+ *
+ * A substring list only ever catches the phrasings somebody already thought of. The
+ * shape being banned is general — a comparative or a future-indicative verb standing
+ * next to an outcome noun — and stating it as a shape catches the phrasing nobody
+ * predicted, which is the only kind that ever actually ships.
+ *
+ * What is deliberately still allowed is the current heading. "More of the people already
+ * finding you should be calling you" puts its comparative on a share of the traffic they
+ * already have rather than on the business's takings, and its mood is normative rather
+ * than predictive — it says what should happen, not what will. That distinction is the
+ * whole line between describing an outcome and promising one, so the pattern is written
+ * to permit it and a test below pins that it does.
+ * ============================================================================
+ */
+describe('the top of the page', () => {
+  const HERO_COPY = [hero.eyebrow, hero.heading, hero.subheading, hero.differentiator];
+
+  /** Result vocabulary, in both registers: the agency's and the trade's. */
+  const PROMISED_RESULT_WORDS = [
+    'ranking',
+    'more leads',
+    'revenue',
+    'roi',
+    'first page',
+    'more jobs',
+    'more calls',
+    'more customers',
+    'more clients',
+    'more work',
+    'more business',
+    'grow your business',
+    'guaranteed',
+  ];
+
+  /**
+   * A comparative or a future-indicative verb within a short reach of an outcome noun.
+   *
+   * The window is deliberately short. Widening it starts matching sentences where the
+   * two halves belong to different clauses and mean nothing together, and a guard that
+   * cries wolf is a guard somebody eventually deletes.
+   */
+  const PROMISE_SHAPES = [
+    /\b(more|increase[sd]?|double|boost|grow)\b[^.]{0,40}\b(job|call|customer|client|lead|work|revenue|booking)/i,
+    /\b(you'?ll|we will|we get you|guarantee)\b[^.]{0,40}\b(job|call|customer|client|lead|work|revenue)/i,
+  ];
+
+  it('never promises a result in the hero', () => {
+    const copy = HERO_COPY.join(' ').toLowerCase();
+
+    for (const word of PROMISED_RESULT_WORDS) {
+      expect(copy, `the hero promises a result: "${word}"`).not.toContain(word);
+    }
+  });
+
+  it('never states a result as something that will happen', () => {
+    for (const line of HERO_COPY) {
+      for (const shape of PROMISE_SHAPES) {
+        expect(shape.test(line), `this reads as a promise: "${line}"`).toBe(false);
+      }
+    }
+  });
+
+  /*
+   * The rule has to be narrower than "no comparative near an outcome noun", or it bans
+   * the correct sentence along with the wrong ones. These two are the worked examples of
+   * either side of the line, and they exist so that somebody tightening the pattern later
+   * finds out immediately that they have banned the heading the site is built around.
+   */
+  it('permits a normative sentence about traffic the business already has', () => {
+    const permitted = 'More of the people already finding you should be calling you.';
+    for (const shape of PROMISE_SHAPES) {
+      expect(shape.test(permitted)).toBe(false);
+    }
+  });
+
+  it('catches the promise it was written for', () => {
+    const banned = 'We will get you more jobs from your website.';
+    expect(PROMISE_SHAPES.some((shape) => shape.test(banned))).toBe(true);
   });
 });
 
@@ -1533,6 +1745,9 @@ describe('the copy', () => {
       ['audit', audit.send.consent],
       ['welcome', welcome.form.privacyNote],
       ['capabilities', capabilityPage.honesty.body],
+      ['legal', termsContent.sections[0]?.body ?? ''],
+      ['pricingPage', pricingPage.ownership.closing],
+      ['blueprint', blueprint.result.basis],
       ['offer (barrel)', guarantee.lede],
     ];
 
@@ -2611,16 +2826,10 @@ describe('the stylesheets', () => {
    * ==========================================================================
    */
   it('defines no class that nothing renders', () => {
-    function sourceFiles(dir: string): string[] {
-      return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-        const path = join(dir, entry.name);
-        if (entry.isDirectory()) return sourceFiles(path);
-        return /\.tsx?$/.test(entry.name) ? [path] : [];
-      });
-    }
-
     const root = join(import.meta.dirname, '..');
-    const sources = sourceFiles(root).map((file) => readFileSync(file, 'utf8'));
+    const sources = clientSourceFiles()
+      .filter((file) => /\.tsx?$/.test(file.path))
+      .map((file) => file.text);
 
     const dead: string[] = [];
 
@@ -2827,6 +3036,195 @@ describe('the stylesheets', () => {
       dead,
       'A rule inside a narrower media query, written before a later rule of equal ' +
         'specificity in a wider one, never applies at any viewport. Move it after.',
+    ).toEqual([]);
+  });
+});
+
+/*
+ * ============================================================================
+ * THE COMMERCIAL TERMS A BUYER IS OWED BEFORE THEY PAY
+ * ============================================================================
+ *
+ * Five clauses were resolved on 2026-08-19 — DECISIONS 010, 011 and 037, plus the
+ * completion definition and the client-delay policy. Every one of them was, until that day,
+ * a question the site collected $2,450 without answering.
+ *
+ * The reason they need a guard rather than a review is what makes this whole content layer
+ * the shape it is: a clause is one string in one array, and deleting one is a two-character
+ * edit that nothing else notices. The terms page would still render, every other test would
+ * still pass, and the only symptom would arrive months later in a dispute.
+ *
+ * So each test below asserts the *substance* rather than the wording — that a refund clause
+ * says what happens both before and after work starts, that the acceptance clause states a
+ * number of days, that the tax line is present while `salesTax.applies` is true. Wording can
+ * be improved freely. Removing an answer fails the build.
+ * ============================================================================
+ */
+describe('the commercial terms', () => {
+  const byId = (id: string) => termsContent.sections.find((section) => section.id === id);
+  const bodyOf = (id: string) => byId(id)?.body ?? '';
+
+  it('publishes every clause a buyer needs before paying a deposit', () => {
+    for (const id of ['launch', 'tax', 'refunds', 'completion', 'delays', 'ownership']) {
+      expect(byId(id), `the terms no longer publish a "${id}" clause`).toBeDefined();
+    }
+  });
+
+  /*
+   * DECISION 010. The boundary is *work beginning*, not a date — so both halves have to be
+   * stated. A refund clause that only describes one side of its own boundary is the half a
+   * reader assumes is the whole thing, and which half they assume depends on which one they
+   * are hoping for.
+   */
+  it('says what happens to the deposit on both sides of the boundary', () => {
+    const refunds = bodyOf('refunds').toLowerCase();
+
+    expect(refunds).toMatch(/before work begins|before we begin|before work starts/);
+    expect(refunds, 'the refund clause never says what happens once work has started').toMatch(
+      /once work has begun|after work begins|once we have begun/,
+    );
+    expect(
+      refunds,
+      'the clause does not cap the client’s exposure, so "less the fair value of work" is unbounded',
+    ).toMatch(/never more than|no more than|capped/);
+    expect(
+      refunds,
+      'the clause is one-sided: it does not say what happens when the business cannot deliver',
+    ).toContain('we are the reason');
+  });
+
+  /*
+   * DECISION 011. Deemed acceptance is the clause most likely to be softened by a
+   * well-meaning copy edit into something with no number in it — at which point it stops
+   * being a term and becomes a sentiment, and the balance can be held open indefinitely.
+   */
+  it('states a deemed-acceptance window as a countable number of days', () => {
+    const completion = bodyOf('completion');
+
+    expect(
+      completion,
+      'the acceptance clause no longer states a window anybody could count',
+    ).toMatch(/\b(five|ten|fifteen|twenty|\d+)\s+business days\b/i);
+    /*
+     * The safety property, and the reason this test exists at all: deemed acceptance settles
+     * the balance, it does not launch a website. A version of this clause that put a site
+     * live on silence would be publishing something the code does not do and nobody agreed
+     * to.
+     */
+    expect(completion.toLowerCase()).toMatch(/does not put anything live|not put anything live/);
+  });
+
+  /*
+   * "Finished" has to be the published, checkable bar rather than an opinion. The Launch
+   * Standard is eight pass/fail checks the client could verify themselves; naming it here is
+   * what turns it from marketing into a term.
+   */
+  it('defines completion as the published Launch Standard, and counts it correctly', () => {
+    const completion = bodyOf('completion');
+    expect(completion).toContain('Launch Standard');
+
+    /*
+     * The same words-to-numbers shape the service-page and revision-round counts use. A
+     * hand-counted number in rendered copy is a failure this project has already made twice,
+     * and this one would be made in the terms — where being wrong about how many checks
+     * "finished" requires is not a typo.
+     */
+    const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+    const stated = completion.match(new RegExp(`\\b(${words.join('|')})\\s+checks\\b`, 'i'));
+
+    expect(stated, 'the completion clause no longer says how many checks it means').not.toBeNull();
+    expect(words.indexOf((stated?.[1] ?? '').toLowerCase())).toBe(launchStandard.checks.length);
+  });
+
+  /*
+   * DECISION 037. The line has to be present while tax applies — and the *rate* has to stay
+   * out, because it varies by the customer's address and would be wrong for most of them.
+   * A figure here is one a reader could add to the price and then be charged something else.
+   */
+  it('states that tax is extra without stating a rate', () => {
+    if (!salesTax.applies) return;
+
+    const tax = bodyOf('tax');
+    expect(tax.length).toBeGreaterThan(80);
+    expect(tax.toLowerCase()).toContain('sales tax');
+    expect(
+      tax,
+      'a tax rate belongs to the customer’s address, not to this file — see DECISION 037',
+    ).not.toMatch(/\d+(\.\d+)?\s*%/);
+  });
+
+  /*
+   * The delay clause pauses a project. A clause that pauses somebody's project without
+   * confirming their money is safe reads as a forfeiture, which is the opposite of what it
+   * is — and that misreading is far more likely than the clause ever being invoked.
+   */
+  it('confirms nothing is forfeited when a project is paused', () => {
+    const delays = bodyOf('delays').toLowerCase();
+
+    expect(delays).toMatch(/\bthirty days\b|\b30 days\b/);
+    expect(delays).toMatch(/nothing is forfeited|deposit stands|nothing is lost/);
+  });
+});
+
+/*
+ * ============================================================================
+ * THE CATEGORY NOUN, AND THE ADDRESS THAT IS A CONTRACTUAL CHANNEL
+ * ============================================================================
+ *
+ * Two guards from DECISION 038 and DECISION 013. Neither is about taste.
+ * ============================================================================
+ */
+describe('the brand line', () => {
+  /*
+   * DECISION 038. The single defence against being filed as job-management software is that
+   * the word "website" appears beside the business name. `getjobforge.com` sells exactly that
+   * software to exactly these trades, so a tagline that drops the category noun does not
+   * merely get weaker — it becomes indistinguishable from a competitor's.
+   */
+  it('names the category in the tagline', () => {
+    expect(
+      site.tagline.toLowerCase(),
+      'the tagline no longer names the category — see DECISION 038',
+    ).toMatch(/\bwebsites?\b/);
+  });
+
+  /*
+   * The rejected line, recorded as a guard rather than only as prose in the register.
+   *
+   * "We build software to help service-based businesses get more jobs" contains *software*,
+   * contains *jobs*, and omits *website*. It is close to word-for-word what the colliding
+   * product says about itself. A note in a decision document does not stop it being typed
+   * back in six months from now; this does.
+   */
+  it('never describes the business as software', () => {
+    const brandCopy = [site.tagline, site.description, site.seo.defaultTitle].join(' ');
+
+    expect(
+      /\bwe build software\b|\bsoftware (?:that|to) help\b/i.test(brandCopy),
+      'positioning the business as software is the one misread that never self-corrects here',
+    ).toBe(false);
+  });
+
+  /*
+   * DECISION 013. The support address is the channel the response guarantee is measured on,
+   * so it has to be changeable in one edit. It is only changeable in one edit while nothing
+   * anywhere else renders it as a literal — which is a property nobody can maintain by
+   * remembering to.
+   */
+  it('keeps the support address a single configured value', () => {
+    const address = site.contact.supportEmail;
+    if (isPlaceholder(address)) return;
+
+    const offenders = clientSourceFiles()
+      // The one file allowed to hold it, because it is the one that declares it.
+      .filter((file) => !file.path.endsWith(`content${sep}site.ts`))
+      .filter((file) => file.text.includes(address))
+      .map((file) => file.path);
+
+    expect(
+      offenders,
+      'the support address is written out here as well as in content/site.ts, so moving it ' +
+        'to a domain mailbox is no longer one edit',
     ).toEqual([]);
   });
 });

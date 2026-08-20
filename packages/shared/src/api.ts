@@ -296,6 +296,23 @@ export interface ProjectView {
   readonly waitingOnCustomer: boolean;
   readonly progress: { readonly step: number; readonly total: number };
   readonly approval: ApprovalState;
+  /**
+   * The agreed scope and price, once the owner has written one up. DECISION 040.
+   *
+   * Absent means it has not been sent, which the portal renders as "we are still writing this
+   * up" rather than as an empty panel. `acceptedAt` present means the customer has agreed to
+   * **this version** — a replacement always clears it, so the pair can never describe a
+   * document that has since changed.
+   */
+  readonly scope?: ScopeView;
+  /**
+   * Revision rounds used, and the allowance they are used against.
+   *
+   * Both together, always. A count with no denominator is a number nobody can act on, and the
+   * allowance travels from the server rather than being a constant the browser holds — so the
+   * published figure and the one on the customer's screen cannot drift.
+   */
+  readonly revisions: { readonly used: number; readonly included: number };
   readonly approvedAt?: string;
   readonly previewUrl?: string;
   readonly productionUrl?: string;
@@ -311,6 +328,33 @@ export interface ProjectView {
   readonly estimateUpdatedAt?: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+/**
+ * The written agreement, as the customer reads it.
+ *
+ * `acceptedByUserId` is deliberately not here and is not merely omitted — the server builds
+ * this shape field by field, so the account id that proves who accepted stays where it is
+ * useful and never reaches a browser that already knows who it belongs to.
+ *
+ * `priceCents` rather than a formatted string, matching every other figure crossing this
+ * boundary: formatting is the reader's locale's business, and a server that formats currency
+ * is a server guessing where somebody is.
+ */
+export interface ScopeView {
+  /** Increments on every send. Shown, because two people reading different documents with
+   * the same name is the failure the record exists to prevent. */
+  readonly version: number;
+  readonly summary: string;
+  readonly lines: readonly string[];
+  readonly priceCents: number;
+  readonly notes?: string;
+  /** True when accepting this also grants case-study permission — the founding-client condition. */
+  readonly caseStudy: boolean;
+  readonly sentAt: string;
+  /** Present exactly when this version has been accepted. There is no boolean beside it. */
+  readonly acceptedAt?: string;
+  readonly acceptedName?: string;
 }
 
 /* ------------------------------------------------------------------- reports */
@@ -361,6 +405,14 @@ export const TASK_KINDS = [
   'review-preview',
   'approve-website',
   'connect-domain',
+  /**
+   * The one task that arrives after a launch rather than before it.
+   *
+   * Asks a client whose site is now live to keep their Google listing current and to ask a
+   * happy customer for a review — which for a local service business usually does more than
+   * anything on the website itself, and which the site already says out loud.
+   */
+  'review-listing',
   'custom',
 ] as const;
 
@@ -544,6 +596,17 @@ export const CURRENT_ACTION_KINDS = [
   /* Somebody who created an account for an assessment and stopped before the request. */
   'finish-request',
   'start-assessment',
+  /*
+   * The two steps before a build starts. DECISION 040.
+   *
+   * `request-scope` is somebody with an assessment and no project: the next move is a
+   * conversation that produces a written scope, not a payment. `accept-scope` is somebody
+   * whose scope has been written and not yet agreed — the first customer-visible state a
+   * project has, and one that did not exist while a project could only be created by a
+   * payment.
+   */
+  'request-scope',
+  'accept-scope',
   'pay-deposit',
   /* The launch instalment, once the build is going live and the deposit has cleared. */
   'pay-final',
@@ -696,6 +759,19 @@ export interface AdminProjectView {
   readonly status: AdminProjectStatus;
   readonly milestone: ProjectMilestone;
   readonly approval: ApprovalState;
+  /**
+   * The agreed scope, as staff see it. DECISION 040.
+   *
+   * Two fields more than the customer's copy — `sentBy` and `acceptedByUserId` — and the
+   * difference is the point of having two types. The customer already knows who they are and
+   * has no use for an account id; the console is where "who sent this" and "which account
+   * accepted it" are the questions somebody is actually asking.
+   *
+   * This surface serialises `StoredProject` directly rather than through a built view, so the
+   * type describes what genuinely arrives. Anything that must *not* reach staff would have to
+   * be removed on the server, not omitted here.
+   */
+  readonly scope?: AdminScopeView;
   readonly approvedAt?: string;
   readonly previewUrl?: string;
   readonly productionUrl?: string;
@@ -709,6 +785,14 @@ export interface AdminProjectView {
   readonly estimateUpdatedBy?: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+/** The agreed scope with the two staff-only fields. See `AdminProjectView.scope`. */
+export interface AdminScopeView extends ScopeView {
+  /** A name, not a user id — the same argument `estimateUpdatedBy` makes. */
+  readonly sentBy: string;
+  /** Which account accepted. The id, because this one has to be provable. */
+  readonly acceptedByUserId?: string;
 }
 
 /* ------------------------------------------------------------- the worklist */

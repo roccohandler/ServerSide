@@ -6,8 +6,8 @@ import {
   createRecordingEmailService,
 } from '../../testing/fakes.js';
 import type { StoredUser } from '../auth/index.js';
-import type { StoredProject } from '../projects/index.js';
-import { amountLabel, EXPECTED_AMOUNT_CENTS } from './billing.amounts.js';
+import type { ProjectScope, StoredProject } from '../projects/index.js';
+import { amountLabel, BUILD_PRICE_CENTS, EXPECTED_AMOUNT_CENTS } from './billing.amounts.js';
 import { createBillingService, type BillingPriceIds } from './billing.service.js';
 import { buildCustomerBillingSummary } from './billing.summary.js';
 
@@ -49,6 +49,7 @@ function build() {
 
   const notifier = {
     previewReady: vi.fn(),
+    scopeReady: vi.fn(),
     approvalRequested: vi.fn(),
     tasksAssigned: vi.fn(),
     feedbackReplied: vi.fn(),
@@ -181,6 +182,106 @@ describe('a checkout link the owner sends', () => {
   });
 });
 
+/*
+ * ============================================================================
+ * AN INVOICE, WHICH IS WHAT AN OWNER-SENT PAYMENT SHOULD HAVE BEEN
+ * ============================================================================
+ *
+ * DECISION 041. A Checkout Session expires after 24 hours, so one sent on a Friday afternoon
+ * is dead before Monday — and the client's only symptom is an expiry page for a payment they
+ * were trying to make.
+ *
+ * Four properties, and three of them are about money going wrong quietly.
+ * ============================================================================
+ */
+describe('an invoice the owner sends', () => {
+  it('bills the verified Price and nothing this side computed', async () => {
+    const { service, stripe } = build();
+    const project = await agreedProject(service);
+
+    const invoice = await service.createInvoice({
+      projectId: project.id,
+      product: 'build-deposit',
+    });
+
+    expect(invoice.url).toMatch(/^https:\/\//);
+    expect(invoice.emailedTo).toBe('dana@cascadeheating.example');
+
+    const [request] = stripe.invoiceRequests;
+    expect(request?.priceId).toBe('price_deposit');
+    /*
+     * No amount anywhere in the request. The figure comes from the Stripe Price, which
+     * `requireVerifiedPrice` has already checked against the published one — the same
+     * property the Checkout path holds, and the reason neither can produce a wrong charge.
+     */
+    expect(JSON.stringify(request)).not.toContain('245000');
+  });
+
+  /*
+   * The refusal an operator has to be able to act on, and it happens before anything exists.
+   * A mistyped dashboard Price is a loud 503 rather than a wrong figure in a client's inbox —
+   * which on an invoice is considerably worse than on a link, because an invoice is a document
+   * with a number that has to be credited rather than a URL that can be ignored.
+   */
+  it('raises nothing when Stripe disagrees with the published price', async () => {
+    const { service, stripe } = build();
+    const project = await agreedProject(service);
+
+    stripe.setPriceAmount('price_deposit', 200_000);
+
+    await expect(
+      service.createInvoice({ projectId: project.id, product: 'build-deposit' }),
+    ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
+
+    expect(stripe.invoiceRequests).toHaveLength(0);
+  });
+
+  /*
+   * The published terms say in five places that Growth Partner starts on launch day *only if
+   * the client chooses it*. `createCheckoutSession` refuses to *email* a subscription link;
+   * this refuses to create the thing at all, because an invoice with a due date is a
+   * considerably stronger ask than a URL somebody can ignore.
+   */
+  it('refuses to invoice the monthly plan', async () => {
+    const { service, stripe } = build();
+    const project = await agreedProject(service);
+
+    await expect(
+      service.createInvoice({ projectId: project.id, product: 'growth-partner-monthly' }),
+    ).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+
+    expect(stripe.invoiceRequests).toHaveLength(0);
+  });
+
+  /*
+   * One customer, not two. An invoice cannot bill a bare address the way Checkout can, so this
+   * path resolves one — and resolving it from the project's stored id when there is one is
+   * what stops the owner-sent path minting a second Stripe customer for a returning payer.
+   */
+  it('bills the customer the project already has, without looking one up', async () => {
+    const { service, repository, stripe } = build();
+    const project = await agreedProject(service);
+    await repository.updateProject(project.id, { stripeCustomerId: 'cus_existing' });
+
+    await service.createInvoice({ projectId: project.id, product: 'build-final' });
+
+    expect(stripe.invoiceRequests[0]?.customerId).toBe('cus_existing');
+    expect(stripe.customerLookups).toHaveLength(0);
+  });
+
+  it('resolves and remembers a customer the first time', async () => {
+    const { service, repository, stripe } = build();
+    const project = await agreedProject(service);
+
+    await service.createInvoice({ projectId: project.id, product: 'build-deposit' });
+
+    expect(stripe.customerLookups).toHaveLength(1);
+
+    const stored = await repository.findProjectById(project.id);
+    expect(stored?.stripeCustomerId).toBe(stripe.invoiceRequests[0]?.customerId);
+  });
+});
+
 /* ------------------------------------------------------- what may be bought, and when */
 
 function makeUser(overrides: Partial<StoredUser> = {}): StoredUser {
@@ -264,5 +365,103 @@ describe('when the launch instalment may be bought', () => {
     expect(availabilityFor(makeProject({ milestone: 'live', status: 'launched' })).final).toBe(
       true,
     );
+  });
+});
+
+/**
+ * An accepted scope at the published price — the state a customer is in when the deposit is
+ * legitimately theirs to pay. DECISION 040.
+ *
+ * A helper rather than an inline literal because every deposit test needs it now, and because
+ * the two fields that matter (`acceptedAt` and `priceCents`) are exactly the two a test would
+ * otherwise get subtly wrong while still passing.
+ */
+function acceptedScope(overrides: Partial<ProjectScope> = {}): ProjectScope {
+  return {
+    version: 1,
+    summary: 'A six-page website for Cascade Heating.',
+    lines: ['Home, about and contact', 'Six service pages'],
+    priceCents: BUILD_PRICE_CENTS,
+    sentAt: new Date('2026-01-01T00:00:00.000Z'),
+    sentBy: 'Maxwell Cuenca',
+    acceptedAt: new Date('2026-01-02T00:00:00.000Z'),
+    acceptedByUserId: 'user-1',
+    acceptedName: 'Dana Reyes',
+    ...overrides,
+  };
+}
+
+describe('when the deposit may be bought', () => {
+  it('is offered once an accepted scope exists and the build is unpaid', () => {
+    expect(
+      availabilityFor(
+        makeProject({ depositStatus: 'pending', status: 'agreed', scope: acceptedScope() }),
+      ).deposit,
+    ).toBe(true);
+  });
+
+  /*
+   * ==========================================================================
+   * RULE #35, ENFORCED BY THE SERVER RATHER THAN INTENDED BY THE BUSINESS
+   * ==========================================================================
+   *
+   * `docs/business-offer.md` has always said the scope is agreed in writing before any
+   * payment, and this button was the reason that was aspirational — a customer could pay
+   * $2,450 against nothing anybody had written down.
+   *
+   * Three states, three refusals, and the third is the one that is easy to leave out.
+   * ==========================================================================
+   */
+  it('is refused when no scope has been sent', () => {
+    expect(
+      availabilityFor(makeProject({ depositStatus: 'pending', status: 'agreed' })).deposit,
+    ).toBe(false);
+  });
+
+  it('is refused when a scope has been sent but not accepted', () => {
+    const sent = acceptedScope();
+    const { acceptedAt: _at, acceptedByUserId: _by, acceptedName: _name, ...unaccepted } = sent;
+
+    expect(
+      availabilityFor(
+        makeProject({ depositStatus: 'pending', status: 'agreed', scope: unaccepted }),
+      ).deposit,
+    ).toBe(false);
+  });
+
+  /*
+   * The one that protects the customer rather than the business: they accepted one figure and
+   * Checkout would charge another. A bespoke quote is a perfectly normal thing for the owner
+   * to send — it is settled by an invoice (DECISION 041), not by the standard Checkout price,
+   * and the button being absent is what makes that the only available path.
+   */
+  it('is refused when the accepted price is not the price Stripe would charge', () => {
+    expect(
+      availabilityFor(
+        makeProject({
+          depositStatus: 'pending',
+          status: 'agreed',
+          scope: acceptedScope({ priceCents: BUILD_PRICE_CENTS + 100_000 }),
+        }),
+      ).deposit,
+    ).toBe(false);
+  });
+
+  it('is refused once it has been paid', () => {
+    expect(availabilityFor(makeProject()).deposit).toBe(false);
+  });
+
+  /*
+   * A cancelled project keeps an unpaid deposit forever, so the count alone left the
+   * button sitting there indefinitely — inviting payment for work that has been called
+   * off. Taking that money would be worse than refusing it; starting again is a new
+   * project, which the owner creates.
+   */
+  it('is refused on a cancelled project, however unpaid it is', () => {
+    expect(
+      availabilityFor(
+        makeProject({ depositStatus: 'pending', status: 'cancelled', scope: acceptedScope() }),
+      ).deposit,
+    ).toBe(false);
   });
 });

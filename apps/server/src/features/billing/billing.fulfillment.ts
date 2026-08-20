@@ -74,6 +74,8 @@ export interface BillingFulfillment {
     readonly stripeCustomerId?: string | undefined;
     /** How a later refund finds its project. Present on the two one-off payments. */
     readonly paymentIntentId?: string | undefined;
+    /** Present on the two Growth Partner products. How the plan finds its project. */
+    readonly subscriptionId?: string | undefined;
   }): Promise<void>;
   /**
    * A signed-in customer sent themselves to Stripe Checkout. **Not evidence of a
@@ -92,6 +94,35 @@ export interface BillingFulfillment {
   onSubscriptionPaymentFailed(params: {
     readonly userId: string;
     readonly projectId: string;
+  }): Promise<void>;
+  /**
+   * A build payment that will not arrive — `checkout.session.async_payment_failed`.
+   *
+   * ## Why this is a second method rather than a branch on the one above
+   *
+   * The comment on `onSubscriptionPaymentFailed` says there is deliberately no general
+   * `onPaymentFailed` because only one of Stripe's three failure events is the customer's to
+   * act on. That was true of two of them and wrong about this one, which is the *most*
+   * actionable failure this system has: an async payment is usually a bank debit, it does not
+   * retry itself, and there is no customer sitting on a Checkout page to notice.
+   *
+   * They got nothing. The event wrote `failed` into the project and emailed the owner, and the
+   * person whose payment had not arrived had no entry in their history, no message, and a
+   * billing page that went on offering the button as though nothing had happened.
+   *
+   * So: a second method, because the two say genuinely different sentences to genuinely
+   * different people. `payment_intent.payment_failed` still calls neither — a declined card
+   * inside an open Checkout page is somebody about to try another one.
+   *
+   * `userId` is optional, unlike every sibling here: an owner-sent link can be paid by a
+   * client who has no account yet, and there is no history to write into for somebody who has
+   * none. The email still goes, because it is addressed to a person rather than to an account.
+   */
+  onBuildPaymentFailed(params: {
+    readonly projectId: string;
+    readonly product: BillingProduct;
+    readonly userId?: string | undefined;
+    readonly to: { readonly email: string; readonly name: string };
   }): Promise<void>;
   /** The subscription moved to a different state. Only ever called on an actual move. */
   onSubscriptionStatusChanged(params: {
@@ -129,6 +160,9 @@ export const noopBillingFulfillment: BillingFulfillment = {
   async onSubscriptionPaymentFailed() {
     /* intentionally nothing */
   },
+  async onBuildPaymentFailed() {
+    /* intentionally nothing */
+  },
   async onSubscriptionStatusChanged() {
     /* intentionally nothing */
   },
@@ -159,6 +193,34 @@ const SUBSCRIPTION_PAYMENT_FAILED_SUMMARY =
   'A Growth Partner payment did not go through. You can update your card on your billing page.';
 
 /**
+ * What a customer is told when a build payment does not arrive.
+ *
+ * Written as *what happens next* rather than as what went wrong. These are asynchronous
+ * payments — a bank debit, almost always — and one failing is usually the bank's decision
+ * rather than anything the customer did, so "your payment was declined" is both unhelpful and
+ * often untrue. What they need to know is that nothing was taken and the button is still
+ * there.
+ *
+ * Two strings rather than one interpolated, because the two instalments mean different things
+ * to the person reading: one is the project not starting, and the other is a website not going
+ * live. A single sentence covering both would have to be vague about which.
+ */
+const BUILD_PAYMENT_FAILED_SUMMARY: Readonly<Record<BillingProduct, string>> = {
+  'build-deposit':
+    'The deposit payment did not come through, so the build has not started yet. Nothing was taken — you can try again from your billing page.',
+  'build-final':
+    'The launch payment did not come through. Nothing was taken, and the site is held until it clears — you can try again from your billing page.',
+  /*
+   * Unreachable in practice: `checkout.session.async_payment_failed` is a one-off-payment
+   * event and a subscription failure arrives as `invoice.payment_failed`, which has its own
+   * handler and its own sentence above. Present because `Record` makes it a compile error to
+   * omit, which is a better guard than a partial lookup that would silently write nothing.
+   */
+  'growth-partner-monthly': SUBSCRIPTION_PAYMENT_FAILED_SUMMARY,
+  'growth-partner-annual': SUBSCRIPTION_PAYMENT_FAILED_SUMMARY,
+};
+
+/**
  * The four states worth telling a customer about, in their words.
  *
  * `none` is absent on purpose, and the absence is load-bearing. It is what this application
@@ -181,7 +243,13 @@ export function createBillingFulfillment(
   const notifier = dependencies.notifier ?? noopNotifier;
 
   return {
-    async onPaymentSucceeded({ userId, product, stripeCustomerId, paymentIntentId }) {
+    async onPaymentSucceeded({
+      userId,
+      product,
+      stripeCustomerId,
+      paymentIntentId,
+      subscriptionId,
+    }) {
       try {
         const user = await authRepository.findUserById(userId);
         if (!user) {
@@ -232,9 +300,34 @@ export function createBillingFulfillment(
         }
 
         /*
-         * Only the deposit starts a build. The subscription is a payment against a project
-         * that already exists, and treating it as an activation would create a second project
-         * on launch day.
+         * ================================================================
+         * GROWTH PARTNER, BOUGHT BY THE CUSTOMER RATHER THAN AGAINST A LINK
+         * ================================================================
+         *
+         * Same shape as the balance above, and it was missing for the same reason: the
+         * owner-link path carries a `projectId` and `applyCheckoutSession` writes the
+         * subscription onto the named project, while a customer subscribing from their own
+         * billing page can only name an account.
+         *
+         * Left unattached, the plan is paid for and invisible: the project's
+         * `subscriptionStatus` stays `none`, every later `customer.subscription.*` and
+         * `invoice.*` event logs `billing.webhook_unknown_subscription` because nothing
+         * maps the id to a project, and the billing page keeps offering a plan they hold —
+         * so a second purchase is a click away.
+         * ================================================================
+         */
+        if (product === 'growth-partner-monthly' || product === 'growth-partner-annual') {
+          await projectService.attachSubscription({
+            ownerUserId: user.id,
+            subscriptionId,
+            stripeCustomerId,
+          });
+          return;
+        }
+
+        /*
+         * Only the deposit starts a build. Treating anything else as an activation would
+         * create a second project on launch day.
          */
         if (product !== 'build-deposit') return;
 
@@ -244,10 +337,11 @@ export function createBillingFulfillment(
          */
         const assessment = await assessmentService.findLatestForUser(user.id);
 
-        const { project, created } = await projectService.activateForCustomer({
+        const { project, created, duplicate } = await projectService.activateForCustomer({
           owner: { id: user.id, email: user.email, name: user.name },
           businessName: assessment?.businessName ?? user.businessName ?? user.name,
           assessmentId: assessment?.id,
+          paymentIntentId,
         });
 
         logger.info('billing.fulfillment_completed', {
@@ -255,6 +349,45 @@ export function createBillingFulfillment(
           projectId: project.id,
           created,
         });
+
+        /*
+         * ==================================================================
+         * A SECOND DEPOSIT ON A PROJECT ALREADY PAID FOR
+         * ==================================================================
+         *
+         * `available.deposit` is checked when the Checkout session is *created*, so two tabs
+         * opened before either is paid both get a valid session and both can complete. State
+         * converges — the project ends up paid — and Stripe has taken the money twice with
+         * nothing anywhere noticing.
+         *
+         * Immediate rather than digest, and it is the only owner alert in this file: money
+         * that has to go back is time-sensitive in a way nothing else here is, and a customer
+         * who spots the second charge before we do has a considerably worse morning than one
+         * who gets an unprompted refund.
+         *
+         * **The refund is deliberately not automatic.** It is money moving, the shape that
+         * produced it is close enough to a legitimate second purchase to be worth a look, and
+         * an automated reversal of a real payment is a far worse failure than a delayed one.
+         * The PaymentIntent is named so the owner can find it in Stripe in one search.
+         * ==================================================================
+         */
+        if (duplicate) {
+          logger.error('billing.duplicate_deposit', { userId: user.id, projectId: project.id });
+
+          await notifier.owner({
+            kind: 'owner.duplicate_payment',
+            subject: `Charged twice — ${project.businessName}`,
+            heading: 'A deposit was paid twice',
+            lines: [
+              `${project.businessName} has paid the deposit on a project that was already settled.`,
+              paymentIntentId
+                ? `The second charge is ${paymentIntentId}. Refund it in Stripe.`
+                : 'Find the second charge in Stripe and refund it.',
+              'This happens when two checkout tabs are opened before either is paid. Nothing is refunded automatically.',
+            ],
+            replyTo: project.email,
+          });
+        }
       } catch (error) {
         // Deliberately swallowed. See the note at the top of this file.
         logger.error('billing.fulfillment_failed', { userId, product, ...describeError(error) });
@@ -276,6 +409,37 @@ export function createBillingFulfillment(
         audience: 'customer',
         userId,
       });
+    },
+
+    async onBuildPaymentFailed({ projectId, product, userId, to }) {
+      /*
+       * The customer's own history first, because it is the durable half — an email is read
+       * once and a billing page is read whenever they wonder.
+       *
+       * Skipped when there is no account, which is a real state: an owner-sent link can be
+       * paid by somebody who has not signed up. There is nowhere to write a history for a
+       * person who has none, and the email below still reaches them.
+       */
+      if (userId) {
+        await activity.record({
+          type: 'billing.payment_failed',
+          summary: BUILD_PAYMENT_FAILED_SUMMARY[product],
+          audience: 'customer',
+          projectId,
+          userId,
+        });
+      }
+
+      /*
+       * And the message. `paymentFailed` is the existing template and it fits without a
+       * change: it says a payment did not go through and points at the billing page, which is
+       * exactly the sentence here — the button is still there and pressing it again is the
+       * whole remedy.
+       *
+       * It carries no business name, which is right for the same reason it is right on a
+       * subscription failure: this is billed to a person.
+       */
+      await notifier.paymentFailed({ to });
     },
 
     async onSubscriptionPaymentFailed({ userId, projectId }) {

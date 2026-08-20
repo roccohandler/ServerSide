@@ -61,9 +61,22 @@
  * `--space-2` would make the bezel uniform and the illusion collapse. `styles/tokens.test.ts`
  * exempts this file by name for exactly this reason.
  */
+/*
+ * The casing is `--color-surface-dark`, not `--color-ink`, and that is a bug fix rather than
+ * a preference.
+ *
+ * `--color-ink` means "the colour text is", so it follows the ground: charcoal on the light
+ * page, **cream** on the dark one. A phone is hardware. It was charcoal for a reader on a
+ * light machine and a cream slab around a white screenshot for a reader on a dark one, on the
+ * hero, and nothing caught it — `styles/tokens.test.ts` measures a rule that states a
+ * foreground *and* a background, and this rule paints only a background.
+ *
+ * `--color-surface-dark` is the token for a surface that stays dark in both palettes, which
+ * is exactly what a device shell is.
+ */
 .phone {
   padding: 6px;
-  background: var(--color-ink);
+  background: var(--color-surface-dark);
   border-radius: 22px;
   box-shadow: var(--shadow-lg);
 }

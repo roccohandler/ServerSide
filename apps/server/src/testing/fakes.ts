@@ -21,7 +21,11 @@ import type {
   StoredGuaranteeCredit,
   StoredProject,
 } from '../features/billing/billing.types.js';
-import type { CheckoutSessionRequest, StripeClient } from '../features/billing/stripe.client.js';
+import type {
+  CheckoutSessionRequest,
+  InvoiceRequest,
+  StripeClient,
+} from '../features/billing/stripe.client.js';
 import type { VerifiedStripeEvent } from '../features/billing/billing.types.js';
 import type { EmailMessage, EmailService } from '../infrastructure/email/email.service.js';
 
@@ -527,6 +531,16 @@ export interface FakeStripeClient extends StripeClient {
     description: string;
   }[];
   readonly subscriptionRefunds: { subscriptionId: string; amountCents: number }[];
+  /**
+   * Every invoice the owner path raised. DECISION 041.
+   *
+   * Recorded rather than counted, because the assertions that matter are about *what was
+   * asked for* — that the price came from the verified Price and not from a figure somebody
+   * passed, and that the demonstration project reached this array zero times.
+   */
+  readonly invoiceRequests: InvoiceRequest[];
+  /** Addresses `ensureCustomer` was asked about, so "did it search before creating" is testable. */
+  readonly customerLookups: { email: string; name?: string | undefined }[];
 }
 
 export function createFakeStripeClient(): FakeStripeClient {
@@ -534,6 +548,9 @@ export function createFakeStripeClient(): FakeStripeClient {
   const portalRequests: { customerId: string; returnUrl: string }[] = [];
   const balanceCredits: FakeStripeClient['balanceCredits'] = [];
   const subscriptionRefunds: FakeStripeClient['subscriptionRefunds'] = [];
+  const invoiceRequests: InvoiceRequest[] = [];
+  const customerLookups: FakeStripeClient['customerLookups'] = [];
+  let nextInvoice = 1;
   const priceAmounts = new Map<string, { unitAmountCents: number | null; currency: string }>();
   let failVerification = false;
   let checkoutError: Error | null = null;
@@ -542,6 +559,8 @@ export function createFakeStripeClient(): FakeStripeClient {
 
   const client: FakeStripeClient = {
     checkoutRequests,
+    invoiceRequests,
+    customerLookups,
     portalRequests,
     balanceCredits,
     subscriptionRefunds,
@@ -581,6 +600,22 @@ export function createFakeStripeClient(): FakeStripeClient {
       const amount = priceAmounts.get(priceId);
       if (!amount) throw new Error(`No amount configured on the fake for "${priceId}".`);
       return amount;
+    },
+
+    /*
+     * Returns a stable id per address, so "the same client twice produces one customer" is a
+     * property a test can assert rather than a comment. That is the whole reason the real one
+     * searches before creating.
+     */
+    async ensureCustomer(params: { email: string; name?: string | undefined }) {
+      customerLookups.push(params);
+      return { id: `cus_${params.email.replace(/[^a-z0-9]/gi, '_')}` };
+    },
+
+    async createAndSendInvoice(request: InvoiceRequest) {
+      invoiceRequests.push(request);
+      const id = `in_test_${nextInvoice++}`;
+      return { id, url: `https://invoice.stripe.example/${id}`, number: `JF-${id}` };
     },
 
     async createBillingPortalSession(params: { customerId: string; returnUrl: string }) {

@@ -8,7 +8,13 @@ import {
 } from '../../../config/routes';
 import { useDocumentMeta } from '../../../hooks/useDocumentMeta';
 import type { ApiFailure, ApiResult, ProjectView } from '@jobforge/shared';
-import { addComment, approveProject, completeTask, requestChanges } from '../services/appApi';
+import {
+  acceptScope,
+  addComment,
+  approveProject,
+  completeTask,
+  requestChanges,
+} from '../services/appApi';
 import { AppError, AppLoading } from '../../../components/patterns/AppState';
 import { Tabs } from '@jobforge/ui';
 import { Notice } from '../../../components/patterns/Notice';
@@ -26,6 +32,7 @@ import { TaskList } from './TaskList';
 import { FilesPanel } from './FilesPanel';
 import { FeedbackThread } from './FeedbackThread';
 import { ApprovalPanel } from './ApprovalPanel';
+import { ScopePanel } from './ScopePanel';
 import { PreviewPanel } from './PreviewPanel';
 import styles from './Project.module.css';
 
@@ -180,6 +187,21 @@ export function ProjectPage({ tab = 'overview' }: ProjectPageProps) {
 
       {tab === 'overview' ? (
         <div className={styles['sections']}>
+          {/*
+           * First, above the preview, and that ordering is the point rather than a layout
+           * choice: until the scope is agreed nothing else on this page can happen — the
+           * deposit is not offered, so the build has not started, so there is no preview to
+           * look at. A panel about what is being built belongs above a panel about how it is
+           * going.
+           *
+           * It stays on the page after acceptance rather than disappearing, because the
+           * record of what was agreed and when is the half that matters three months later.
+           */}
+          <ScopePanel
+            project={project}
+            busy={isMutating}
+            onAccept={() => run(() => acceptScope(project.id), workspace.announce.scopeAccepted)}
+          />
           <PreviewPanel project={project} deployments={deployments} />
           <ApprovalPanel
             project={project}

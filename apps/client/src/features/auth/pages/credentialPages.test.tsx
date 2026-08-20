@@ -1078,7 +1078,28 @@ describe('the email confirmation link', () => {
 
     const outcome = await screen.findByRole('alert');
     expect(outcome).toHaveTextContent(/that link did not work/i);
-    expect(outcome).toHaveFocus();
+
+    /*
+     * ======================================================================
+     * `waitFor` ON THE FOCUS, FOR THE REASON THE DASHBOARD TEST NEEDED IT
+     * ======================================================================
+     *
+     * This read `expect(outcome).toHaveFocus()` directly after the query above, and it flaked
+     * under the full suite while passing every time this file was run alone.
+     *
+     * The cause is an ordering rather than a slow machine, and it is the same one
+     * `DashboardPage.test.tsx` hit: `findByRole` resolves the moment the alert is in the
+     * document, and the focus move happens in an effect React flushes *after* that commit. On
+     * an idle machine the two land in the same tick and the assertion is accidentally right.
+     *
+     * The assertion itself is unchanged and still matters — moving focus to the alert is the
+     * only thing that tells a screen-reader user the link they followed is dead, and a
+     * regression that stopped moving it would still fail here.
+     * ======================================================================
+     */
+    await waitFor(() => {
+      expect(outcome).toHaveFocus();
+    });
   });
 });
 

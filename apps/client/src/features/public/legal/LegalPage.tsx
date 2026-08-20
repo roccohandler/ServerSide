@@ -1,4 +1,4 @@
-import { legalNotice } from '../../../content';
+import { legalNotice } from '../../../content/legal';
 import { useDocumentMeta } from '../../../hooks/useDocumentMeta';
 import { Container, Section, SectionHeading } from '@jobforge/ui';
 import { EmailLink, PhoneLink } from '../../../components/marketing/ContactLink';
@@ -36,8 +36,17 @@ export function LegalPage({ meta, heading, intro, sections }: LegalPageProps) {
 
           <p className={styles['notice']}>{legalNotice}</p>
 
+          {/*
+           * `id` on the section, not only `key`.
+           *
+           * Every section here already had a stable identifier and none of it reached the
+           * document, so `#refunds` and `#completion` resolved to nothing — which mattered
+           * the moment another page needed to send somebody to one clause of a page with
+           * fourteen. `/pricing` links into four of them, and "read the refund policy" that
+           * drops a reader at the top of a terms page is an instruction to go and find it.
+           */}
           {sections.map((section) => (
-            <section key={section.id} className={styles['section']}>
+            <section key={section.id} id={section.id} className={styles['section']}>
               <h2 className={styles['sectionHeading']}>{section.heading}</h2>
               <p className={styles['body']}>{section.body}</p>
             </section>

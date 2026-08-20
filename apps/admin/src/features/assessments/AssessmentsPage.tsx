@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { Badge, Button, TextAreaField, useResource } from '@jobforge/ui';
+import { useState } from 'react';
+import { Badge, Button, TextAreaField } from '@jobforge/ui';
 import type { AdminAssessmentView, AssessmentFindingSeverity } from '@jobforge/shared';
 import { ASSESSMENT_FINDING_SEVERITIES } from '@jobforge/shared';
 import { Notice } from '../../components/Notice';
@@ -9,6 +9,8 @@ import {
   fetchAssessmentQueue,
   saveAssessmentReport,
 } from '../../lib/endpoints';
+import { ShowMore } from '../../components/ShowMore';
+import { usePagedResource } from '../../hooks/usePagedResource';
 import { useTitle } from '../../hooks/useTitle';
 import { formatDate } from '../../utils/formatDate';
 import styles from '../projects/Projects.module.css';
@@ -269,8 +271,27 @@ export function AssessmentsPage() {
 
   const [selected, setSelected] = useState<string | null>(null);
 
-  const load = useCallback((signal?: AbortSignal) => fetchAssessmentQueue(50, signal), []);
-  const { data, failure, isLoading, reload } = useResource('assessment-queue', load);
+  /*
+   * ==========================================================================
+   * THE FIFTY-FIRST PERSON WAITING WAS INVISIBLE
+   * ==========================================================================
+   *
+   * This asked for fifty and rendered them. The endpoint has returned `hasMore` since it was
+   * written, and nothing here read it — so a queue with fifty-one people in it looked
+   * identical to a queue with fifty, on the one screen in this console whose entire subject is
+   * *who has been waiting longest for the thing the front page promised*.
+   *
+   * Oldest-first ordering is what made it dangerous rather than merely incomplete: the rows
+   * that fell off the end were the ones that had been waiting the longest.
+   *
+   * `usePagedResource` and `ShowMore` already existed and are used by four other lists here.
+   * This screen is now the fifth.
+   * ==========================================================================
+   */
+  const { data, failure, isLoading, reload, showMore, loadingMore } = usePagedResource(
+    'assessment-queue',
+    fetchAssessmentQueue,
+  );
 
   if (failure) return <Failure failure={failure} onRetry={reload} />;
   if (isLoading || !data) return <Loading label="Loading the assessment queue" />;
@@ -308,6 +329,14 @@ export function AssessmentsPage() {
           ))}
         </ul>
       )}
+
+      <ShowMore
+        showing={waiting.length}
+        hasMore={data.hasMore}
+        busy={loadingMore}
+        onShowMore={showMore}
+        noun="requests"
+      />
 
       {open ? (
         <Editor

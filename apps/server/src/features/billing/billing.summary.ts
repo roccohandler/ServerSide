@@ -1,5 +1,10 @@
 import type { StoredUser } from '../auth/index.js';
-import { milestoneIndex, type StoredProject } from '../projects/index.js';
+import {
+  milestoneIndex,
+  scopeAllowsSelfServeDeposit,
+  type StoredProject,
+} from '../projects/index.js';
+import { BUILD_PRICE_CENTS } from './billing.amounts.js';
 
 /*
  * ============================================================================
@@ -134,10 +139,35 @@ export function buildCustomerBillingSummary(params: {
     },
     available: {
       /*
+       * ======================================================================
+       * THE DEPOSIT, AND THE THREE THINGS THAT HAVE TO BE TRUE
+       * ======================================================================
+       *
        * The deposit is offered until it is paid. Offering it afterwards would let
        * somebody buy the same build twice, which Stripe would happily take money for.
+       *
+       * A cancelled project is the other end of the same rule. It has an unpaid deposit
+       * forever, so on the count alone the button would sit there indefinitely inviting
+       * payment for work that has been called off — and taking it would be worse than
+       * refusing it. Starting again is a new project, which the owner creates.
+       *
+       * **The third is the scope, and it is what makes rule #35 real.** `business-offer.md`
+       * has always said the scope is agreed in writing before any payment, and this button
+       * was the reason that was aspirational: a customer could pay $2,450 against nothing
+       * written down by anybody. `scopeAllowsSelfServeDeposit` requires both an acceptance
+       * *and* that the figure they accepted is the figure Stripe will charge — a bespoke
+       * quote is a perfectly normal thing to send, and it is settled by an invoice rather
+       * than by the standard Checkout price. See DECISION 040 and `scope.types.ts`.
+       *
+       * This is the payload rather than the client's decision. An unaccepted scope means the
+       * button is *absent*, not hidden — and `billing.customer.routes.ts` re-checks the same
+       * rule when a session is asked for, because a browser is never the thing that decides.
+       * ======================================================================
        */
-      deposit: !depositPaid,
+      deposit:
+        !depositPaid &&
+        newest?.status !== 'cancelled' &&
+        scopeAllowsSelfServeDeposit(newest?.scope, BUILD_PRICE_CENTS),
       /*
        * ======================================================================
        * THE SECOND HALF, AND THE THREE CONDITIONS THAT ARE THE WHOLE SAFETY PROPERTY

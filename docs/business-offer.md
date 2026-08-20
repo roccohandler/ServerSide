@@ -114,334 +114,36 @@ build on any figure the config did not produce.
 | Deposit (half, derived)       | **$2,450** |
 | Launch payment (other half)   | **$2,450** |
 
-### Conversion Fix — scope published, price awaiting the owner
+### Conversion Fix — WITHDRAWN (DECISION 014)
+
+Added 2026-08-13 by the offer redesign, and withdrawn on 2026-08-16. It existed for the middle
+branch of `recommendedAction()` — a site scoring roughly 65–85%, whose bones are fine — and it
+was a good answer to a real problem: that branch used to end at the words "quoted per site",
+handing the best-qualified visitor on the site a diagnosis and a full stop.
+
+**What it never got was a price.** `pricePublished` shipped `false` and stayed false, so the
+site published a product it could not quote, in a bounded scope written against a figure
+nobody had agreed. DECISION 014 asked for the figure; the answer was to withdraw the product.
+
+**The dead end did not come back**, which is the part that mattered. The `fix` branch still
+recommends targeted work rather than a rebuild — it points at the free assessment now, framed
+for somebody whose site is basically sound, and the scope and the figure come out of that.
+Which is what would have happened anyway: no fix was ever going to be quoted without looking
+at the real site.
+
+Nothing named `conversionFix` remains in `config/pricing.ts`, and the currency sweep in
+`content.test.ts` now fails the build on any copy still quoting a fix price — the guard doing
+its job on the way out rather than the way in.
+
+This section is kept rather than deleted because "why is there no second product for the
+middle band?" is a question somebody will ask of this document, and the answer is a decision
+rather than an omission.
 
-Added 2026-08-13 by the offer redesign, because `recommendedAction()` sends a site scoring
-roughly 65–85% to targeted work and the site's answer to that reader was the phrase "quoted
-per site" — a dead end in front of the best-qualified visitor it gets.
-
-| Item            | Value                                                             |
-| --------------- | ----------------------------------------------------------------- |
-| Scope           | **Published** — `conversionFix.includes` (9 items)                |
-| Boundary        | **Published** — `conversionFix.excludes` (4 items)                |
-| Timeline        | Typically 1–2 weeks from access and approvals                     |
-| Revision policy | Two rounds — deliberately the same phrase and number as the build |
-| Price           | **NOT PUBLISHED.** `pricePublished: false`, recommended `$1,900`  |
-
-While `pricePublished` is false: no figure renders anywhere, `sanctionedFigures()` does not
-sanction one, and the copy says the figure is scoped from the free website assessment. **See
-DECISION 014** — the flag is the owner's, not an implementation detail.
-
-### Growth Partner, after launch — optional
-
-| Item             | Value                                                      |
-| ---------------- | ---------------------------------------------------------- |
-| Monthly          | **$299/month**                                             |
-| Annual prepay    | **$2,990/year**                                            |
-| Lead deliverable | **Website Performance Report**, monthly — see DECISION 015 |
-
-### Year-one economics, published on the site
-
-| Path                     | First-year total                       |
-| ------------------------ | -------------------------------------- |
-| Website only             | **$4,900** one-time                    |
-| Website + Growth Partner | **$8,488** ($4,900 + $299 × 12 months) |
-
-- **Growth Partner is a separate purchase, made after the project and never a condition
-  of it.** The site says so out loud (`carePricing.optOut`, `carePricing.choice`, the
-  hero's own price block).
-- Tax is not mentioned on the site. The written agreement governs.
-- Rescue work on an existing site, and onboarding a site built by somebody else, are
-  **quoted per site**. Larger build scope (several service areas, integrations, bespoke
-  functionality) is **quoted in writing before anything starts**. No figure is published
-  for any of these.
-
----
-
-## 3a. Founding-client pricing — the conditions that make it truthful
-
-The FTC's Guides Against Deceptive Pricing (**16 CFR 233.1**) permit a former-price
-comparison only where the former price was an actual, bona fide price, offered publicly on
-a regular basis, for a reasonably substantial period. **This business has never charged the
-standard price.** It is a rate card being established now.
-
-So the site does the following, and must keep doing it:
-
-- The higher figure is labelled **"Standard project price"**. Never "was", "normally",
-  "regularly", "reduced from" or "used to be" — a test in `content.test.ts` fails the build
-  on all of them.
-- It is **never rendered with a strike-through** — tests fail the build on `<s>`, `<del>`,
-  `<strike>` on both pricing surfaces.
-- **Every surface that publishes the founding price publishes the condition with it.**
-  Both pricing surfaces render from one shared component (`PricingBlock`), so they cannot
-  disagree; the hero and the entry paths carry the qualification in their own copy.
-- The saving is **derived** as standard − founding, never typed.
-- The discount has a **real condition**: permission to document the work as a case study,
-  stated beside the price and repeated on the terms page.
-- **There is no deadline, no countdown, no timer — and no live counter.** The previous
-  "10 of 10 still open" string was removed: a hand-maintained availability claim is one
-  missed edit from a false statement. The cap of ten is stated in the condition copy;
-  `foundingOffer.taken` is edited by hand as agreements are signed, and at ten the
-  founding price disappears from the site automatically.
-
-**Three things still require the owner's confirmation** — see §17.
-
----
-
-## 3b. What is NOT claimed
-
-No per-component dollar "values" are published — no "Conversion Strategy: $1,500 value"
-stack. There is no defensible basis for those numbers. The four "included, not sold
-separately" items (Website Conversion Blueprint, Local Presence Check, Conversion Tracking
-Setup, Service Page Framework) are framed by the obstacle each removes, not by an invented
-price.
-
----
-
-## 3c. Scarcity
-
-The only limitation the site publishes is the real one: **one website build at a time**
-(`capacity.concurrentBuilds = 1`), stated as the reason the 2–4 week timeline is keepable.
-A test fails the build on any counter-style scarcity claim ("N of M still open", "only N
-spots").
-
----
-
-## 4. Recurring terms (Growth Partner)
-
-| Term                 | Value                                        |
-| -------------------- | -------------------------------------------- |
-| Optional             | **Always.** Never a condition of the build.  |
-| Minimum commitment   | 3 months from launch                         |
-| After the minimum    | Month-to-month                               |
-| Cancellation notice  | 30 days                                      |
-| Annual contract      | **None.** Never introduce one.               |
-| Billing starts       | Launch day — **only if the plan was chosen** |
-| Annual prepay refund | Unused whole months at the $299 monthly rate |
-
-The published terms are **grouped by purchase** (`commercialTerms.groups`): the build's
-terms and the plan's terms never appear in one flat list, because that is how a plan
-minimum once read as a build minimum. A test enforces the grouping.
-
-**Without Growth Partner:** the hosting and domain accounts are already in the client's
-name; they pay those providers directly and get the logins and a walkthrough at launch.
-The site answers this explicitly (FAQ `self-hosting`).
-
----
-
-## 5. Payment
-
-Collected through **Stripe**, after scope is agreed in writing and never before:
-
-1. **Deposit** — half the project fee (**$2,450** at founding pricing) via a Stripe
-   Checkout link the owner sends. Success lands on `/welcome`, which explains what
-   happens next and collects onboarding materials.
-2. **Launch payment** — the other half, on the day the site goes live, via a second link.
-3. **Growth Partner** — if chosen, a Stripe subscription ($299/mo or $2,990/yr) starting
-   on launch day.
-
-Payment state is advanced **only by verified Stripe webhooks** — never by a browser
-reaching a success page. There is no public checkout; every payment follows a written
-agreement. See §16 for where this lives, and README for the Stripe setup checklist.
-
----
-
-## 6. Build scope
-
-| Item            | Value                                                           |
-| --------------- | --------------------------------------------------------------- |
-| Timeline        | **2–4 weeks** from receiving the required materials             |
-| Revision rounds | **2**, within the agreed scope                                  |
-| Service pages   | **Up to 6**, plus home, about and contact                       |
-| Ownership       | Domain, hosting and content in the client's name from the start |
-
-One count, everywhere: `buildScope` in `config/pricing.ts` is the single source for the
-service-page and revision-round quantities, and a words-to-numbers test fails the build on
-any copy that states a different figure. (The previous model published four, six and eight
-service pages at once.)
-
-A revision round is a consolidated set of requested changes submitted together. New pages,
-new functionality, new services or a materially changed brief after sign-off are new scope
-and are quoted before that work begins.
-
-**There is no unlimited-revisions promise anywhere, and a test enforces that.**
-
-The published process is: free assessment → scope, price and agreement → deposit →
-Week 1 strategy and design → Week 2 build → Week 3 review and polish → Week 4 launch →
-**your choice** (run it yourself, or Growth Partner). The last beat is a choice, not a
-step — a test fails the build if any copy schedules the plan unconditionally.
-
----
-
-## 7. Growth Partner scope
-
-**The order below is a commercial commitment, not a presentation choice**, and a test asserts
-it (`content.test.ts` → "leads the recurring scope with measurement and ends it with
-upkeep"). The scope lives in `carePricing.plan.groups` as an ordered array for exactly that
-reason: which group comes first decides what a buyer believes the fee is for.
-
-**1. Every month, first — measure:**
-
-- The **Website Performance Report**: what the website produced, whether it moved, what we
-  changed and why, and what we are looking at next
-- Calls and quote requests counted as real events rather than estimated
-- Measured against the baseline recorded at launch
-
-**2. Every month, from what the measurement shows — improve:**
-
-- Conversion and user-experience improvements on the pages that bring in the most work
-- Calls to action, forms and service pages refined where the numbers point
-- Speed and mobile experience monitored
-- A/B testing where traffic supports a meaningful result; a considered improvement, called
-  that, where it does not
-
-**3. As the business changes — keep current:**
-
-- Content, service and photo changes on request
-- Business information, hours and service area kept true
-- A seasonal refresh each quarter
-
-**4. Continuously — the floor.** Published _as_ the floor, in those words
-(`carePricing.plan.floorNote`), because plenty of companies will keep a website online for a
-fraction of this fee and a page presenting upkeep as the headline invites that comparison:
-
-- Hosting, certificates, backups, security and software updates
-- Uptime and form-delivery monitoring, bug fixes
-
-Each quarter:
-
-| Item               | Quantity                                        |
-| ------------------ | ----------------------------------------------- |
-| Seasonal refreshes | **4 per year** (~quarterly, timed to the trade) |
-
-When needed:
-
-| Item                     | Quantity                                                    |
-| ------------------------ | ----------------------------------------------------------- |
-| Campaign landing pages   | **Up to 1 per calendar month**                              |
-| Campaign copy alignments | **Up to 2 per calendar month**                              |
-| Active A/B tests         | **1 at a time**, where traffic supports a meaningful result |
-
-Unused monthly allowances do not accumulate. Anything beyond them is quoted before it is
-built, never added to a bill afterwards. Nothing is described as unlimited, because
-nothing is.
-
-**Hosting and domain renewal costs are inside the $299.** The accounts are registered in
-the client's name; the business pays the bills while the plan is active, and billing
-reverts to the client if it ends.
-
-### Explicitly excluded
-
-- Managing advertising accounts, budgets, bidding or media buying
-- Any promise about rankings, leads, traffic, revenue or ROI
-
----
-
-## 8. A/B testing policy
-
-Unchanged: formal tests run only where traffic supports a meaningful result, one at a
-time, no published traffic floor, and evidence-based improvement — called what it is —
-in the months (most months, for most local businesses) where traffic is too thin.
-
----
-
-## 9. Response guarantee
-
-`responseGuarantee` in `apps/client/src/content/growth.ts`. **Live** (`enabled: true`).
-Unchanged by the simplification:
-
-| Term                    | Value                                                            |
-| ----------------------- | ---------------------------------------------------------------- |
-| Window                  | **24 business hours**                                            |
-| Business hours          | **Monday–Friday, 8am–6pm Pacific** (from `site.contact.hours`)   |
-| Excluded from the clock | Weekends and US federal holidays — they pause it                 |
-| Qualifying channels     | The website support form; the designated business email          |
-| Remedy                  | **That month's $299 management fee waived in full**              |
-| Applied                 | **Automatically.** The client never has to notice, chase or ask. |
-
-It guarantees a response, never a resolution; it guarantees nothing about leads, rankings,
-sales, traffic or revenue, and the site says so directly underneath the promise.
-
----
-
-## 10. Launch guarantees
-
-Four instruments, all about work rather than results, presented under one FAQ answer
-(`what-guaranteed`) and their own sections:
-
-1. **Built to what we agreed** — work continues until the written requirements are met.
-2. **The Launch Standard** — the site does not launch until it passes the published
-   eight-check standard, each check verifiable by the client on launch day.
-3. **If I break it, I fix it** — at no additional charge.
-4. **The response guarantee** (Growth Partner only) — §9.
-
-Never convert any of these into a revenue, lead, ranking or ROI guarantee.
-
-### Future performance guarantee — deliberately NOT implemented
-
-Once real client data exists, a conditional performance guarantee could be evaluated:
-defined baseline conversion metric, measurement methodology, traffic threshold,
-measurement period, qualified-conversion definition, exclusions, and a remedy such as
-continued optimisation at no management fee until an agreed threshold is reached. **Do not
-publish anything like this now** — there is no evidence base to responsibly promise any
-conversion figure, and the site's whole credibility position depends on not doing so.
-
----
-
-## 11. Cancellation
-
-- The client keeps the website, the domain, the hosting account and the content — they
-  were always in the client's name.
-- Billing for hosting and domain renewals reverts to the client; the accounts stay where
-  they are, only the payment method changes. **Hosting becomes the client's cost to pay
-  directly** — stated on the site, not discovered afterwards.
-- Campaign landing pages remain part of the client's website.
-- Any active A/B test is ended and the designated version left live.
-- Prepaid annual months that were not used are refunded at $299/month.
-
----
-
-## 12. The three ways in
-
-`entryPaths` in `apps/client/src/content/entry.ts`.
-
-| Situation                      | Response                        | Price           | Then                             |
-| ------------------------------ | ------------------------------- | --------------- | -------------------------------- |
-| Needs a website built          | The build                       | **$4,900**      | Growth Partner optional, $299/mo |
-| Has a site that is not working | Fix rather than replace         | Quoted per site | Growth Partner optional, $299/mo |
-| Wants their existing site run  | One-time onboarding audit + fix | Quoted per site | Growth Partner, $299/mo          |
-
-Every path describes the plan as the optional choice it is. Managing a site the business
-did not build always begins with a paid onboarding.
-
----
-
-## 13. What is never claimed
-
-Unchanged, and test-enforced: no guaranteed leads/rankings/revenue/customers/sales/
-traffic/ROI; no "#1 on Google"; no invented testimonial, client, review count, case study
-or statistic (**there are no clients yet, and the site says so**); no measured result
-attached to a demonstration; no "24/7" anything; no unlimited revisions; no analytics
-claims while no provider is configured. Additionally, post-simplification: no
-counter-style scarcity, no recurring deliverable inside a one-time list, no build
-deliverable inside the plan's lists, and no page/revision/minimum count that disagrees
-with the config.
-
----
-
-## 14. Free resources
-
-One hierarchy, three things: an **offer** — the free website assessment, the primary CTA
-everywhere; a **tool** — the **Website Score** at `/audit`, labelled "Score your site" in
-navigation; and a **resource** — the **PlayBook**, free in full, with the workbook sent by
-email by hand.
-
-A fourth thing was added by the capability layer and is deliberately not a fourth free offer:
 **`/what-your-website-can-do`** asks for nothing and offers nothing. It is reference material —
 see §18.
 
 The audit's recommendation has three honest branches (`recommendedAction`): below ~65% → the
-build; 65–85% → **Conversion Fix**, whose scope is published and whose price is owner-gated;
+build; 65–85% → a **free review of the real site**, then targeted work quoted in writing;
 above ~85% → "you probably do not need a rebuild", with a second-opinion CTA.
 
 ---
@@ -452,62 +154,62 @@ Authoritative. Treat as the current business model unless the owner explicitly s
 otherwise. Rewritten 2026-08-13 — the previous register described the pre-simplification
 model and had drifted from the live site.
 
-| #   | Decision                           | Value                                                                                                                                                              |
-| --- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | Build price (standard)             | $7,500 one-time (product: **Customer Conversion Build**)                                                                                                           |
-| 2   | Build price (founding client)      | $4,900 one-time, condition: case-study permission                                                                                                                  |
-| 3   | Founding cap                       | 10 projects; `taken` edited by hand; no live counter                                                                                                               |
-| 4   | Launch payment                     | $2,450 deposit, $2,450 at launch (derived halves)                                                                                                                  |
-| 5   | Growth Partner                     | $299/month — **optional, always**                                                                                                                                  |
-| 6   | Annual prepay                      | $2,990/year, secondary to monthly                                                                                                                                  |
-| 7   | Growth Partner Plus                | **Removed** 2026-08-13                                                                                                                                             |
-| 8   | Foundation / Dominate tiers        | **Removed** 2026-08-13                                                                                                                                             |
-| 9   | Minimum term (plan only)           | 3 months, from launch day                                                                                                                                          |
-| 10  | After the minimum                  | Month-to-month                                                                                                                                                     |
-| 11  | Cancellation notice                | 30 days                                                                                                                                                            |
-| 12  | Annual contract                    | None                                                                                                                                                               |
-| 13  | Annual refund on cancellation      | Pro-rata at $299/month                                                                                                                                             |
-| 14  | Plan billing starts                | Launch day, only if chosen                                                                                                                                         |
-| 15  | Launch revisions                   | 2 rounds (`buildScope.revisionRounds`)                                                                                                                             |
-| 16  | Service pages included             | Up to 6, plus home/about/contact (`buildScope`)                                                                                                                    |
-| 17  | Launch timeline                    | 2–4 weeks after materials received                                                                                                                                 |
-| 18  | Seasonal refreshes                 | 4 per year                                                                                                                                                         |
-| 19  | Campaign landing pages             | Up to 1 per month                                                                                                                                                  |
-| 20  | Campaign copy alignments           | Up to 2 per month                                                                                                                                                  |
-| 21  | A/B testing                        | Where traffic supports it; 1 at a time; no published floor                                                                                                         |
-| 22  | Response guarantee                 | 24 business hours; month's fee waived; automatic                                                                                                                   |
-| 23  | Business hours                     | Mon–Fri, 8am–6pm Pacific                                                                                                                                           |
-| 24  | Hosting and domain costs           | Inside the $299 while the plan runs; client pays directly otherwise                                                                                                |
-| 25  | Ownership                          | Client retains website and domain throughout                                                                                                                       |
-| 26  | Ad management                      | Excluded                                                                                                                                                           |
-| 27  | Ranking / lead / revenue guarantee | None, ever                                                                                                                                                         |
-| 28  | Scarcity                           | One build at a time; no counters, no timers                                                                                                                        |
-| 29  | Primary market                     | Greater Seattle; remote work accepted anywhere                                                                                                                     |
-| 30  | Managing a site built elsewhere    | Yes, after a paid onboarding                                                                                                                                       |
-| 31  | Rescuing an existing site          | Quoted per site                                                                                                                                                    |
-| 32  | Larger build scope                 | Quoted in writing before anything starts                                                                                                                           |
-| 33  | Payments                           | Stripe: deposit link → launch link → optional subscription                                                                                                         |
-| 34  | Payment state                      | Advanced only by verified Stripe webhooks                                                                                                                          |
-| 35  | Public checkout                    | None — scope is agreed in writing before any payment                                                                                                               |
-| 36  | Year-one cost                      | Published: $4,900 alone, $8,488 with the plan                                                                                                                      |
-| 37  | Enquiry retention                  | 24 months after last meaningful contact                                                                                                                            |
-| 38  | Onboarding data                    | Collected on /welcome after deposit; stored + emailed                                                                                                              |
-| 39  | Analytics provider                 | None configured; event seam only                                                                                                                                   |
-| 40  | Testimonials                       | None, because there are no clients yet                                                                                                                             |
-| 41  | Voice                              | First person plural — JobForge speaks as the company (2026-08-13; was first person singular). Founder-run reality stated plainly on /about                         |
-| 42  | Audit nav label                    | "Score your site"; the tool is named **Website Score** (DECISION 016)                                                                                              |
-| 43  | Conversion Fix                     | Scope + boundary published; **price owner-gated** (`pricePublished: false`, recommended $1,900) — DECISION 014                                                     |
-| 44  | Website Performance Report         | Monthly, for every Growth Partner client. Measurement + explanation + improvement work; **never a promise the number rises** — DECISION 015                        |
-| 45  | Enquiry baseline                   | Recorded in writing on launch day, as a build deliverable                                                                                                          |
-| 46  | Day-30 report                      | Written, to every build client, whether or not they take Growth Partner                                                                                            |
-| 47  | Recurring scope order              | measure → improve → current → floor → on request. Test-enforced; the order is the claim                                                                            |
-| 48  | Guarantees                         | Four: built-to-agreement, the Launch Standard, **measurement and reporting**, if-we-break-it-we-fix-it                                                             |
-| 49  | Market comparison                  | Published, generic. **No provider or platform may be named in it** — test-enforced                                                                                 |     |
-| 50  | The capability library             | Published at `/what-your-website-can-do`. Every entry labelled `included-build`, `included-partner`, `additional-scope`, `roadmap` or `not-offered` — DECISION 017 |
-| 51  | Eleven quotable extras             | Real, deliverable, **in neither price**, quoted before work starts. None has been built for a client yet, and `maturity` says which are specified-only             |
-| 52  | Four stated directions             | SMS alerts, automated review requests, job-software handoff, invoice links. **Not sellable.** The page says nobody will suggest otherwise on a call                |
-| 53  | Two public refusals                | Accounting connection and an assistant chat window. Listed **with the reasoning**, because the reasoning is more useful than the omission                          |
-| 54  | Trades taxonomy                    | Twelve, one list, `config/trades.ts`. Six have no page and are audit options only — DECISION 018                                                                   |
+| #   | Decision                           | Value                                                                                                                                                                            |
+| --- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Build price (standard)             | $7,500 one-time (product: **Customer Conversion Build**)                                                                                                                         |
+| 2   | Build price (founding client)      | $4,900 one-time, condition: case-study permission                                                                                                                                |
+| 3   | Founding cap                       | 10 projects; `taken` edited by hand; no live counter                                                                                                                             |
+| 4   | Launch payment                     | $2,450 deposit, $2,450 at launch (derived halves)                                                                                                                                |
+| 5   | Growth Partner                     | $299/month — **optional, always**                                                                                                                                                |
+| 6   | Annual prepay                      | $2,990/year, secondary to monthly                                                                                                                                                |
+| 7   | Growth Partner Plus                | **Removed** 2026-08-13                                                                                                                                                           |
+| 8   | Foundation / Dominate tiers        | **Removed** 2026-08-13                                                                                                                                                           |
+| 9   | Minimum term (plan only)           | 3 months, from launch day                                                                                                                                                        |
+| 10  | After the minimum                  | Month-to-month                                                                                                                                                                   |
+| 11  | Cancellation notice                | 30 days                                                                                                                                                                          |
+| 12  | Annual contract                    | None                                                                                                                                                                             |
+| 13  | Annual refund on cancellation      | Pro-rata at $299/month                                                                                                                                                           |
+| 14  | Plan billing starts                | Launch day, only if chosen                                                                                                                                                       |
+| 15  | Launch revisions                   | 2 rounds (`buildScope.revisionRounds`)                                                                                                                                           |
+| 16  | Service pages included             | Up to 6, plus home/about/contact (`buildScope`)                                                                                                                                  |
+| 17  | Launch timeline                    | 2–4 weeks after materials received                                                                                                                                               |
+| 18  | Seasonal refreshes                 | 4 per year                                                                                                                                                                       |
+| 19  | Campaign landing pages             | Up to 1 per month                                                                                                                                                                |
+| 20  | Campaign copy alignments           | Up to 2 per month                                                                                                                                                                |
+| 21  | A/B testing                        | Where traffic supports it; 1 at a time; no published floor                                                                                                                       |
+| 22  | Response guarantee                 | 24 business hours; month's fee waived; automatic                                                                                                                                 |
+| 23  | Business hours                     | Mon–Fri, 8am–6pm Pacific                                                                                                                                                         |
+| 24  | Hosting and domain costs           | Inside the $299 while the plan runs; client pays directly otherwise                                                                                                              |
+| 25  | Ownership                          | Client retains website and domain throughout                                                                                                                                     |
+| 26  | Ad management                      | Excluded                                                                                                                                                                         |
+| 27  | Ranking / lead / revenue guarantee | None, ever                                                                                                                                                                       |
+| 28  | Scarcity                           | One build at a time; no counters, no timers                                                                                                                                      |
+| 29  | Primary market                     | Greater Seattle; remote work accepted anywhere                                                                                                                                   |
+| 30  | Managing a site built elsewhere    | Yes, after a paid onboarding                                                                                                                                                     |
+| 31  | Rescuing an existing site          | Quoted per site                                                                                                                                                                  |
+| 32  | Larger build scope                 | Quoted in writing before anything starts                                                                                                                                         |
+| 33  | Payments                           | Stripe: deposit link → launch link → optional subscription                                                                                                                       |
+| 34  | Payment state                      | Advanced only by verified Stripe webhooks                                                                                                                                        |
+| 35  | Public checkout                    | None — scope is agreed in writing before any payment                                                                                                                             |
+| 36  | Year-one cost                      | Published: $4,900 alone, $8,488 with the plan                                                                                                                                    |
+| 37  | Enquiry retention                  | 24 months after last meaningful contact                                                                                                                                          |
+| 38  | Onboarding data                    | Collected on /welcome after deposit; stored + emailed                                                                                                                            |
+| 39  | Analytics provider                 | None configured; event seam only                                                                                                                                                 |
+| 40  | Testimonials                       | None, because there are no clients yet                                                                                                                                           |
+| 41  | Voice                              | First person plural — JobForge speaks as the company (2026-08-13; was first person singular). Founder-run reality stated plainly on /about                                       |
+| 42  | Audit nav label                    | "Score your site"; the tool is named **Website Score** (DECISION 016)                                                                                                            |
+| 43  | Conversion Fix                     | **WITHDRAWN 2026-08-16.** It never got a price, so the site was publishing a product it could not quote. The audit’s middle branch offers the free review instead — DECISION 014 |
+| 44  | Website Performance Report         | Monthly, for every Growth Partner client. Measurement + explanation + improvement work; **never a promise the number rises** — DECISION 015                                      |
+| 45  | Enquiry baseline                   | Recorded in writing on launch day, as a build deliverable                                                                                                                        |
+| 46  | Day-30 report                      | Written, to every build client, whether or not they take Growth Partner                                                                                                          |
+| 47  | Recurring scope order              | measure → improve → current → floor → on request. Test-enforced; the order is the claim                                                                                          |
+| 48  | Guarantees                         | Four: built-to-agreement, the Launch Standard, **measurement and reporting**, if-we-break-it-we-fix-it                                                                           |
+| 49  | Market comparison                  | Published, generic. **No provider or platform may be named in it** — test-enforced                                                                                               |     |
+| 50  | The capability library             | Published at `/what-your-website-can-do`. Every entry labelled `included-build`, `included-partner`, `additional-scope`, `roadmap` or `not-offered` — DECISION 017               |
+| 51  | Eleven quotable extras             | Real, deliverable, **in neither price**, quoted before work starts. None has been built for a client yet, and `maturity` says which are specified-only                           |
+| 52  | Four stated directions             | SMS alerts, automated review requests, job-software handoff, invoice links. **Not sellable.** The page says nobody will suggest otherwise on a call                              |
+| 53  | Two public refusals                | Accounting connection and an assistant chat window. Listed **with the reasoning**, because the reasoning is more useful than the omission                                        |
+| 54  | Trades taxonomy                    | Twelve, one list, `config/trades.ts`. Six have no page and are audit options only — DECISION 018                                                                                 |
 
 ---
 
@@ -517,7 +219,7 @@ model and had drifted from the live site.
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | **All prices, as numbers**            | **`apps/client/src/config/pricing.ts`**                                                                                      |
 | The build outcome groups              | `config/pricing.ts` → `buildOutcomes` (derives `flagship.includes`)                                                          |
-| **Conversion Fix + its price gate**   | **`config/pricing.ts` → `conversionFix`, `fixPriceLabel()`**                                                                 |
+| The audit's three branches            | `config/pricing.ts` → `recommendedAction()` — the middle one offers the free review                                          |
 | The monthly report                    | `content/offer.ts` → `websiteReport`; UI `components/marketing/ReportExample`                                                |
 | Launch → baseline → 30 days → monthly | `content/offer.ts` → `afterLaunch`; UI `AfterLaunchSection`                                                                  |
 | How the two purchases relate          | `content/offer.ts` → `relationship`                                                                                          |

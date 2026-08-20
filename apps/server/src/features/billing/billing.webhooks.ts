@@ -203,6 +203,12 @@ async function applyCheckoutSession(
        * fulfilment port is the only side that can resolve which project it belongs to.
        */
       paymentIntentId: idOf(object['payment_intent']),
+      /*
+       * The subscription the session created, on the two Growth Partner products. Same
+       * argument as the PaymentIntent above: this side names an account, so the fulfilment
+       * port is the only place that can resolve which project the plan belongs to.
+       */
+      subscriptionId: idOf(object['subscription']),
     });
 
     if (notificationRecipient) {
@@ -310,6 +316,40 @@ async function applyAsyncPaymentFailed(
 
   logger.warn('billing.async_payment_failed', { projectId, product });
 
+  /*
+   * ==========================================================================
+   * THE CUSTOMER IS TOLD TOO, AND UNTIL NOW THEY WERE NOT
+   * ==========================================================================
+   *
+   * This wrote `failed` into the project and emailed the *owner*. The customer — the person
+   * whose payment did not arrive, who has no way of knowing, and who is the only one who can
+   * do anything about it — got nothing at all: no entry in their own history, no email, and a
+   * billing page that simply went on offering the button.
+   *
+   * The asymmetry with a subscription failure was the tell. `applySubscriptionPaymentFailed`
+   * has always written a customer activity entry and sent them a message, on the grounds that
+   * a failed card is the one billing event a customer has to *act* on. That reasoning applies
+   * here with more force, not less: a subscription retries itself and this does not.
+   *
+   * ## Why the entry says what it says
+   *
+   * Not "your payment failed" — an async payment (a bank debit, most often) failing is
+   * usually a bank's decision rather than anything the customer did wrong, and the useful
+   * sentence is what happens next rather than what went wrong. The button is still on their
+   * billing page, which is what the entry points at.
+   *
+   * `fulfillment.onBuildPaymentFailed` rather than a `notify` from here, for the reason the
+   * whole fulfilment port exists: this module knows Stripe's event shapes and nothing about
+   * what a customer's history looks like.
+   * ==========================================================================
+   */
+  await ctx.fulfillment.onBuildPaymentFailed({
+    projectId,
+    product,
+    ...(project.ownerUserId ? { userId: project.ownerUserId } : {}),
+    to: { email: project.email, name: project.contactName },
+  });
+
   if (notificationRecipient) {
     await notify(
       buildPaymentFailedEmail({
@@ -323,9 +363,89 @@ async function applyAsyncPaymentFailed(
 
 /** An `invoice.paid` event — a Growth Partner month collected. */
 async function applyInvoicePaid(event: VerifiedStripeEvent, ctx: WebhookContext): Promise<void> {
-  const { repository, logger } = ctx;
-  const subscriptionId = invoiceSubscriptionId(event.data.object);
-  if (!subscriptionId) return;
+  const { repository, notificationRecipient, notify, logger } = ctx;
+  const object = event.data.object;
+  const subscriptionId = invoiceSubscriptionId(object);
+
+  /*
+   * ==========================================================================
+   * TWO KINDS OF INVOICE ARRIVE HERE, AND ONLY ONE USED TO BE HANDLED
+   * ==========================================================================
+   *
+   * A subscription invoice is raised by Stripe on Growth Partner's schedule and carries a
+   * subscription id. A **one-off build invoice** is raised by the owner (DECISION 041) and
+   * carries none — it carries `metadata.projectId` and `metadata.product`, exactly as an
+   * owner-sent Checkout session does.
+   *
+   * This method returned early on the missing subscription id, so a paid build invoice
+   * settled nothing: the money cleared at Stripe, the project stayed `pending`, the portal
+   * went on offering the button and the console went on showing an unpaid build. The only
+   * place the payment existed would have been Stripe's dashboard.
+   *
+   * The field writes below are `applyCheckoutSession`'s, deliberately identical — the two
+   * paths are two ways of asking for the same money and must leave the same state. What is
+   * *not* copied is the "which session" bookkeeping: an invoice is its own record.
+   * ==========================================================================
+   */
+  if (!subscriptionId) {
+    const metadata = metadataOf(object);
+    const projectId = metadata['projectId'];
+    const product = metadata['product'];
+
+    if (!projectId || !isBillingProduct(product)) {
+      logger.warn('billing.webhook_missing_metadata', { eventId: event.id });
+      return;
+    }
+
+    const project = await repository.findProjectById(projectId);
+    if (!project) {
+      logger.warn('billing.webhook_unknown_project', { eventId: event.id, projectId });
+      return;
+    }
+
+    /*
+     * Idempotent. Stripe delivers at least once and an invoice can be marked paid more than
+     * once in a reconciliation; a project already settled is left exactly as it is, and no
+     * second receipt goes out.
+     */
+    const settled =
+      product === 'build-deposit'
+        ? project.depositStatus === 'paid'
+        : project.finalStatus === 'paid';
+
+    if (settled) {
+      logger.info('billing.invoice_paid_already_settled', { projectId, product });
+      return;
+    }
+
+    const customerId = idOf(object['customer']);
+
+    const updated = await repository.updateProject(projectId, {
+      ...(customerId ? { stripeCustomerId: customerId } : {}),
+      ...(product === 'build-deposit'
+        ? {
+            depositStatus: 'paid' as const,
+            /* The deposit is what puts a project on the schedule. */
+            ...(project.status === 'agreed' ? { status: 'deposit-paid' as const } : {}),
+          }
+        : {}),
+      ...(product === 'build-final' ? { finalStatus: 'paid' as const } : {}),
+    });
+
+    logger.info('billing.invoice_payment_recorded', { projectId, product });
+
+    if (updated && notificationRecipient) {
+      await notify(
+        buildPaymentReceivedEmail({
+          project: updated,
+          product,
+          recipient: notificationRecipient,
+        }),
+      );
+    }
+
+    return;
+  }
 
   const project = await repository.findProjectBySubscriptionId(subscriptionId);
   if (!project) return;
@@ -528,6 +648,73 @@ async function applyChargeRefunded(event: VerifiedStripeEvent, ctx: WebhookConte
 }
 
 /**
+ * A `charge.dispute.created` event — somebody has charged back a payment.
+ *
+ * ============================================================================
+ * WHY THIS MARKS NOTHING AND ONLY SHOUTS
+ * ============================================================================
+ *
+ * A dispute is not a refund and not a failure: the money is pulled immediately, but the
+ * issuing bank decides the outcome weeks later and either half can win. Writing
+ * `refunded` here would be recording an outcome nobody has reached yet, and writing
+ * nothing at all — which is what happened before this handler existed — left a build
+ * proceeding on a payment that had been taken back, with the only trace in a Stripe
+ * dashboard nobody had open.
+ *
+ * So: the project keeps its honest state, and the owner is told loudly enough to go and
+ * respond inside the network's window. Evidence lives in the portal — the approval
+ * record, the message threads, the accepted scope — which is the reason those are
+ * recorded there rather than in somebody's inbox.
+ * ============================================================================
+ */
+async function applyDisputeOpened(event: VerifiedStripeEvent, ctx: WebhookContext): Promise<void> {
+  const { repository, notificationRecipient, notify, logger } = ctx;
+  const object = event.data.object;
+  const paymentIntentId = idOf(object['payment_intent']);
+
+  const project = paymentIntentId
+    ? await repository.findProjectByPaymentIntentId(paymentIntentId)
+    : null;
+
+  logger.error('billing.dispute_opened', {
+    eventId: event.id,
+    projectId: project?.id ?? 'unknown',
+  });
+
+  if (notificationRecipient) {
+    await notify(
+      buildPaymentFailedEmail({
+        projectId: project?.id,
+        detail:
+          'A payment has been disputed with the card issuer. The funds have already been withdrawn. Respond in the Stripe dashboard before the deadline it states — the approval record, the accepted scope and the message threads in the portal are the evidence.',
+        recipient: notificationRecipient,
+      }),
+    );
+  }
+}
+
+/**
+ * A `checkout.session.expired` event — a Checkout page was opened and never paid.
+ *
+ * Marks nothing, because nothing happened: no money moved and no state is wrong. It is
+ * recorded so that "I tried to pay and something went odd" has an answer, and so the
+ * abandoned-checkout entry in a customer's history has a visible end rather than sitting
+ * open forever.
+ */
+async function applyCheckoutExpired(
+  event: VerifiedStripeEvent,
+  ctx: WebhookContext,
+): Promise<void> {
+  const metadata = metadataOf(event.data.object);
+
+  ctx.logger.info('billing.checkout_expired', {
+    eventId: event.id,
+    projectId: metadata['projectId'] ?? 'none',
+    product: metadata['product'] ?? 'unknown',
+  });
+}
+
+/**
  * Chooses the handler for one verified event, and nothing else.
  *
  * Deduplication is the caller's job — see `handleWebhookEvent` in `billing.service.ts`.
@@ -560,6 +747,12 @@ export async function interpretWebhookEvent(
 
     case 'charge.refunded':
       return applyChargeRefunded(event, ctx);
+
+    case 'charge.dispute.created':
+      return applyDisputeOpened(event, ctx);
+
+    case 'checkout.session.expired':
+      return applyCheckoutExpired(event, ctx);
 
     default:
       // Unhandled event types are normal — the endpoint subscribes narrowly, but

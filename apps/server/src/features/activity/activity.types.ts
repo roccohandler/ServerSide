@@ -47,6 +47,15 @@ export const ACTIVITY_TYPES = [
   'billing.payment_failed',
   'billing.subscription_changed',
   'project.created',
+  /*
+   * Two names for the scope, and they are two events for the same reason `file.uploaded` and
+   * `file.delivered` are: one is us writing the agreement up and one is the customer agreeing
+   * to it. A single `project.scope_changed` would make somebody's own timeline read as though
+   * they had done both — and this is the one record on a project that has to be readable as
+   * evidence of who did what.
+   */
+  'project.scope_sent',
+  'project.scope_accepted',
   'project.milestone_changed',
   'project.approved',
   'project.changes_requested',

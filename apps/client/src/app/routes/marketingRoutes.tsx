@@ -8,7 +8,6 @@ import { AboutPage } from '../../features/public/about';
 import { ServicesPage } from '../../features/public/services';
 import { PortfolioPage } from '../../features/public/portfolio';
 import { ContactPage } from '../../features/public/contact';
-import { PrivacyPage, TermsPage } from '../../features/public/legal';
 import { NotFoundPage } from '../../features/public/notFound';
 
 /*
@@ -115,6 +114,62 @@ const WelcomePage = lazy(() =>
 );
 
 /*
+ * The Website Blueprint. Twelve questions, twenty-odd rules and the whole result copy — a
+ * large chunk to hand to every visitor to the homepage, most of whom will never open it. Its
+ * content module is deliberately absent from `content/index.ts` for the same reason the
+ * audit's is.
+ */
+const BlueprintPage = lazy(() =>
+  import('../../features/public/blueprint/BlueprintPage').then((module) => ({
+    default: module.BlueprintPage,
+  })),
+);
+
+/*
+ * `/pricing`. Lazy for the same arithmetic as everything else here: it renders the shared
+ * `PricingBlock` (already in the eager chunk, so free) plus its own content module, which is
+ * deliberately absent from `content/index.ts`. Eager, that content would ride in the chunk
+ * every visitor to the homepage downloads — and the homepage already carries a price block.
+ */
+const PricingPage = lazy(() =>
+  import('../../features/public/pricing/PricingPage').then((module) => ({
+    default: module.PricingPage,
+  })),
+);
+
+/*
+ * ============================================================================
+ * PRIVACY AND TERMS — EAGER UNTIL 2026-08-19, AND NOBODY HAD MEASURED THEM
+ * ============================================================================
+ *
+ * These were eager, and `content/legal.ts` was re-exported from the content barrel — so
+ * 25 kB of prose that a first-time visitor almost never renders was in the chunk every page
+ * modulepreloads. It had always been that way, everything worked, and the weight was
+ * invisible precisely because nothing had changed recently enough to blame.
+ *
+ * What surfaced it: five commercial clauses were added to the terms and the budget guard
+ * failed by 0.8 kB. The clauses had to be published — a refund policy and a deemed-acceptance
+ * window are not optional on a site collecting a $2,450 deposit — so the question became
+ * which eager weight was *not* earning its place, and this was the obvious answer.
+ *
+ * They are the same shape of route as the teardown and the capability library: long, read
+ * deliberately, and reached by somebody who has already decided to look. `LegalPage` is
+ * shared by both, so the two of them are one chunk rather than two.
+ * ============================================================================
+ */
+const PrivacyPage = lazy(() =>
+  import('../../features/public/legal/PrivacyPage').then((module) => ({
+    default: module.PrivacyPage,
+  })),
+);
+
+const TermsPage = lazy(() =>
+  import('../../features/public/legal/TermsPage').then((module) => ({
+    default: module.TermsPage,
+  })),
+);
+
+/*
  * The suspense boundary is inside `SiteLayout`, around the outlet, so the header and
  * footer stay on screen while a lazy chunk arrives. Putting it above this route instead
  * would unmount the whole shell for those few frames.
@@ -123,8 +178,10 @@ export const marketingRoutes = (
   <Route element={<SiteLayout />}>
     <Route path={routes.home} element={<HomePage />} />
     <Route path={routes.services} element={<ServicesPage />} />
+    <Route path={routes.pricing} element={<PricingPage />} />
     <Route path={routes.portfolio} element={<PortfolioPage />} />
     <Route path={routes.audit} element={<AuditPage />} />
+    <Route path={routes.blueprint} element={<BlueprintPage />} />
     {/*
      * Generated from the same list the pages, the metadata and the audit's trade question
      * are generated from, so a sixth trade is one entry in `config/trades.ts` plus one

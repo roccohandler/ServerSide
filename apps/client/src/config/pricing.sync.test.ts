@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { currentPrice, growthPartner } from './pricing';
+import { buildScope, currentPrice, growthPartner } from './pricing';
 
 /*
  * ============================================================================
@@ -60,5 +60,43 @@ describe('the server-side payment amounts', () => {
     // leave a stale deposit amount behind on the payment side.
     expect(source).toMatch(/'build-deposit': BUILD_PRICE_CENTS \/ 2/);
     expect(source).toMatch(/'build-final': BUILD_PRICE_CENTS \/ 2/);
+  });
+});
+
+/*
+ * ============================================================================
+ * THE REVISION ALLOWANCE IS THE SAME NUMBER ON BOTH SIDES
+ * ============================================================================
+ *
+ * The site publishes "two revision rounds" in four places and the terms define what one is.
+ * The portal now shows a client which round they are on, and that count is rendered against
+ * an allowance the *server* sends — so the two numbers have to agree or a customer is being
+ * measured against a figure nobody published.
+ *
+ * Read as text for the same reason the prices are: the workspaces compile separately, and the
+ * server cannot import a browser bundle's configuration without inverting the one dependency
+ * direction this repository is arranged around. Duplication is fine when something checks it.
+ * ============================================================================
+ */
+describe('the revision allowance', () => {
+  const source = readFileSync(
+    join(
+      import.meta.dirname,
+      '..',
+      '..',
+      '..',
+      'server',
+      'src',
+      'features',
+      'projects',
+      'project.types.ts',
+    ),
+    'utf8',
+  );
+
+  it('matches the published number of included rounds', () => {
+    const match = source.match(/INCLUDED_REVISION_ROUNDS = (\d+)/);
+    expect(match, 'INCLUDED_REVISION_ROUNDS is missing from project.types.ts').not.toBeNull();
+    expect(Number(match?.[1] ?? NaN)).toBe(buildScope.revisionRounds);
   });
 });

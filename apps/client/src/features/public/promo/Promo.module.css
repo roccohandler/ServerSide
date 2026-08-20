@@ -17,7 +17,10 @@
 
 .card {
   width: 100%;
-  max-width: var(--container-xs);
+  /* One field and a button. There is no `--container-xs` — this said there was, and the
+     card grew to the full width of the viewport. A card width is a measurement of this card
+     rather than a step on a scale, so it stays a literal here with its consumer. */
+  max-width: 28rem;
   padding: var(--space-7);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -61,5 +64,8 @@
   margin: var(--space-6) 0 0;
   font-size: var(--text-xs);
   line-height: var(--leading-normal);
-  color: var(--color-ink-subtle);
+  /* `--color-ink-muted` — 6.8:1 on `--color-surface` in both palettes. It said
+     `--color-ink-subtle`, which does not exist, so `color` fell back to inherit and the
+     footnote rendered at full ink weight. */
+  color: var(--color-ink-muted);
 }

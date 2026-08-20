@@ -22,6 +22,16 @@ import type { SiteConfig } from '../types/content';
  * ============================================================================
  */
 
+/**
+ * The name of the free assessment, hoisted so two places can use it.
+ *
+ * `site.offer.freeReview.name` is still the authority every component reads. This constant
+ * exists because the footer link is *inside* the `site` literal and cannot reference the
+ * object being defined — and two hand-typed copies of a product's name is how a product ends
+ * up with two names.
+ */
+const FREE_REVIEW_NAME = 'Free website assessment';
+
 export const site: SiteConfig = {
   /*
    * "ServiceSide" became "JobForge" at the owner's direction (2026-08-13), alongside the
@@ -37,39 +47,74 @@ export const site: SiteConfig = {
   ownerName: 'Maxwell Cuenca',
 
   /*
-   * Rendered in exactly one place — under the name in the header — where it has to fit on
-   * one line beside four nav items, a phone number and a button.
+   * ==========================================================================
+   * THE TAGLINE — AND WHY THE CATEGORY NOUN LEADS AGAIN
+   * ==========================================================================
    *
-   * ## Why the order changed
+   * Rendered in exactly one place: under the wordmark in the **footer**, on every page.
    *
-   * It was "Websites and growth systems for service businesses". Both halves were doing
-   * real work — "websites" is the word the buyer arrives with, and interior pages have no
-   * hero subheading to decode a category-level label — but the *first* word is the one that
-   * decides which shelf the reader files this on, and the first word was the commodity.
+   * ## It was rendered nowhere at all until 2026-08-19, and that is worth knowing
    *
-   * So the outcome leads and the mechanism explains, which is the rule everywhere on the
-   * site now. "Websites" has not gone: it is the second clause, where it answers "yes, but
-   * what is it" for somebody who has never bought one. What it no longer does is define the
-   * business.
+   * This comment used to say "under the name in the header". That stopped being true when the
+   * header dropped it — it needed 427px in a slot offering 141px, so it truncated at every
+   * width above 1280px and was hidden below — and nothing picked it up afterwards. The string
+   * survived; its consumer did not. So a field describing what this business is had been
+   * dead for months while the comment above it asserted otherwise, which is the exact failure
+   * composition rule 6 exists to prevent and the reason a stale comment is worse than none.
    *
-   * "Growth systems" is gone entirely, and that is a separate improvement — it was the kind
-   * of phrase that means nothing to somebody who fixes furnaces for a living, which is the
-   * one register this site cannot afford.
+   * The footer is where it lives now. The header's width constraint has not changed and this
+   * slot has no such constraint.
    *
-   * ## Why it is not "more booked jobs"
+   * ## The category noun leads, and the fact that made it lead
    *
-   * Because that is the one outcome this site spends a whole section disowning. `conversion`
-   * draws the funnel through to the invoice and marks "Books the work" as `owner: 'business'`;
-   * `conversion.handoff` says outright that what you charge, whether you have capacity and
-   * whether somebody picks up are the client's; `control.cannotControl` lists the phone being
-   * answered. A tagline promising booked jobs would have contradicted all three from the
-   * header of every page — which is worse than a weak tagline, because it is the sentence a
-   * sceptical reader checks the rest of the site against.
+   * **`getjobforge.com` sells field-service-management software to "electricians, plumbers,
+   * HVAC technicians, and contractors"** — the same trades, the same buyer, a different
+   * product — and three other JobForge products exist besides. So the misread this site has
+   * to survive is not the one it was originally written against.
    *
-   * **Calls and quote requests** is the outcome the work genuinely reaches, and it is the
-   * phrase used everywhere else on the site for exactly that reason.
+   *   - *Job board* was the feared misread. It is close to harmless: implausible to a
+   *     tradesperson reading a page about websites, and it corrects itself within a sentence.
+   *   - *Job-management software* is the dangerous one, precisely because it is **plausible**.
+   *     A plausible misread never self-corrects. The reader does not discover they were
+   *     wrong — they conclude the site is not for them, and leave.
+   *
+   * Against a name collision the cheapest defence is naming the category in the first word,
+   * in the one string that appears on every page directly under the business name.
+   *
+   * ## "Websites that ask for the job." was here for a day, and it was wrong
+   *
+   * DECISION 043 replaced it, and the reason is worth keeping because it is the kind of
+   * mistake that looks like a good line.
+   *
+   * It put **the single most contested word in this brand's landscape into the tagline.**
+   * "Job" appears in the business name, in the competitor's name, in the competitor's whole
+   * category — and, with that line, in the promise as well. Four uses of one ambiguous word
+   * in one lockup is the opposite of disambiguation: it makes the misfiling *easier*.
+   *
+   * Worse, "ask for the job" is borrowed from sales ("ask for the close") and does not
+   * survive the transfer. Read cold, next to a name like JobForge, a website that *asks for
+   * the job* sounds like a website applying for work — which is the job-board reading the
+   * line existed to prevent.
+   *
+   * ## Why "calls" and not "customers" or "jobs"
+   *
+   * Both of those sit on the far side of a boundary this site spends an entire section
+   * drawing. `conversion` runs the funnel through to the invoice and marks "Books the work"
+   * as `owner: 'business'`; `conversion.handoff` says outright that what you charge, whether
+   * you have capacity and whether somebody picks up are the client's.
+   *
+   * A **call** is the last thing on the website's side of that line. It is what the work can
+   * honestly claim to affect, it is the word this market actually uses, and it is already the
+   * outcome named everywhere else on the site. Promising customers or jobs from the header of
+   * every page would contradict the rest of the site — which is worse than a weak tagline,
+   * because it is the sentence a sceptical reader checks everything else against.
+   *
+   * Quote requests are the other half and they live in the supporting copy. A tagline is a
+   * compression, and 38 characters that a roofer reads correctly at a glance beats 60 that
+   * are complete.
+   * ==========================================================================
    */
-  tagline: 'More calls and quote requests — from a better website',
+  tagline: 'Websites that turn visitors into calls.',
 
   description:
     'JobForge helps local service businesses in the Greater Seattle area turn more of the people already finding them into calls and quote requests — by building the website and the paths that lead to the phone, measuring what they produce, and improving them from there. Built for HVAC, plumbing, electrical, roofing, landscaping and other trades that get hired locally.',
@@ -123,7 +168,7 @@ export const site: SiteConfig = {
        * one thing a sceptical buyer notices fastest is a site that cannot keep its own
        * names straight. The thing itself is unchanged.
        */
-      name: 'Free website assessment',
+      name: FREE_REVIEW_NAME,
       summary:
         'Send us your website — or your Google listing if you do not have one — and we will send back a short, plain-English list of what is likely costing you calls, and what we would do about it.',
       includes: [
@@ -201,9 +246,43 @@ export const site: SiteConfig = {
      * would rather just send a message is trapped in an account flow.
      * ======================================================================
      */
+    /*
+     * ======================================================================
+     * THE PRIMARY ACTION IS THE BLUEPRINT NOW — DECISION 043
+     * ======================================================================
+     *
+     * **Modifies DECISION 028's destination, not its principle.** That decision moved every
+     * primary call to action to `/get-my-assessment` on the argument that a first commitment
+     * of one field beats one of seven, and that the account *is* the capture. Both halves of
+     * that reasoning are intact and `/get-my-assessment` is untouched — it is the offer page,
+     * it is indexed, and it is where a reader who wants a person to look at their site goes.
+     *
+     * What changed is that there is now something with a **lower** first commitment than an
+     * email address and a considerably better claim to being the product demonstration.
+     *
+     * ## The arithmetic
+     *
+     * Interactive tools convert at 6.2–8.3% against 3.8% for gated static offers, and
+     * assessment/maturity tools in professional services land at 7–10%. They produce *fewer*
+     * raw leads than a gated download at the same spend and convert them to qualified
+     * opportunities at a materially higher rate — which is exactly the trade this business
+     * wants, because it takes one build at a time.
+     *
+     * ## The argument that is not about arithmetic
+     *
+     * DECISION 028's own words: "the first conversion should never be 'decide whether to
+     * spend $4,900'". The Blueprint is a smaller first step than the one that decision
+     * settled on — it costs nothing at all, not even an address — and it ends by *showing the
+     * reader the thing being sold*, worked through against their own business. An account
+     * offered at the end of that is offered to somebody who has already had the value, which
+     * is the exchange `/audit` has always made and the one this funnel was reaching for.
+     *
+     * The capture is not lost. It moves to the moment it is worth most.
+     * ======================================================================
+     */
     primary: {
-      label: 'Get my free website assessment',
-      to: routes.getAssessment,
+      label: 'Get my Website Blueprint',
+      to: routes.blueprint,
     },
     primaryFallback: { label: 'Start a conversation', to: `${routes.contact}#${sections.request}` },
     /*
@@ -220,7 +299,7 @@ export const site: SiteConfig = {
      * the contact form already knows why they came.
      */
     secondary: {
-      label: 'Discuss my project',
+      label: 'Start my project',
       to: `${routes.contact}?intent=build#${sections.request}`,
     },
     /*
@@ -232,7 +311,7 @@ export const site: SiteConfig = {
      * largest object on the screen. Shortening the button rather than dropping a nav item
      * keeps every route one click away.
      */
-    navLabel: 'Get my assessment',
+    navLabel: 'Get my Blueprint',
   },
 
   /*
@@ -254,6 +333,21 @@ export const site: SiteConfig = {
   nav: [
     { label: 'Services', to: routes.services },
     /*
+     * Pricing, immediately after Services, and it is the fifth item on a bar that was
+     * deliberately kept to four.
+     *
+     * The note above says four destinations answer the four questions a visitor arrives with.
+     * That was true and it was missing one, because the fourth question a visitor arrives with
+     * — often the *first* — is what it costs, and this site's answer to it was buried below the
+     * fold of two long pages. A price published in a category where nobody publishes one is
+     * worth very little if the reader has to scroll to find it.
+     *
+     * It earns the slot the PlayBook lost rather than adding to a full bar. And it is the
+     * cheapest item here to click: nothing on `/pricing` asks for anything, which is what makes
+     * it safe to put in front of somebody who has not decided.
+     */
+    { label: 'Pricing', to: routes.pricing },
+    /*
      * The audit sits in the navigation because it is the site's lowest-friction offer:
      * it asks for nothing, it returns a diagnosis of the reader's own site, and somebody
      * who completes it is the most qualified visitor this site will ever get.
@@ -272,7 +366,25 @@ export const site: SiteConfig = {
   footerNav: [
     { label: 'Home', to: routes.home },
     { label: 'Services', to: routes.services },
+    { label: 'Pricing', to: routes.pricing },
     { label: 'Score your site', to: routes.audit },
+    /*
+     * The Blueprint, in the footer rather than the header. It is the second diagnostic on the
+     * site and a second one in the bar would read as two competing offers — the same reason
+     * the PlayBook left it. Its readers arrive from the audit's result, from search, or from a
+     * link somebody sent, all of which reach a footer perfectly well.
+     */
+    { label: 'Website Blueprint', to: routes.blueprint },
+    /*
+     * The free assessment, which stopped being the primary destination in DECISION 043 and
+     * did not stop mattering.
+     *
+     * It is the offer for somebody who wants a person to look at their *real* site, and the
+     * Blueprint's own result hands off to it — but a page reachable only from the far end of
+     * a twelve-question flow is a page most people never see. The footer is what makes it a
+     * destination rather than a consequence.
+     */
+    { label: FREE_REVIEW_NAME, to: routes.getAssessment },
     { label: 'PlayBook', to: routes.playbook },
     /*
      * The capability library, in the footer rather than the header for the same reason the

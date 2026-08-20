@@ -1,0 +1,51 @@
+# =============================================================================
+# LINE ENDINGS
+# =============================================================================
+#
+# This file exists because of a failure that looked like nothing at all.
+#
+# `.prettierrc` sets `endOfLine: "lf"` and `npm run verify` starts with
+# `format:check`, so LF is not a preference here — it is the build gate. Git on
+# Windows defaults to `core.autocrlf=true`, which rewrites every text file to
+# CRLF *on checkout*. With no `.gitattributes` to say otherwise, the two
+# disagree, and the disagreement is invisible until the moment it is not:
+#
+#   * `git diff` shows nothing, because autocrlf normalises back to LF when git
+#     compares the working tree against the index. The repository content is
+#     correct the whole time.
+#   * Nothing is wrong immediately after writing a file, because the editor
+#     wrote LF and git has not touched it.
+#   * Then somebody switches branch. Git re-materialises every file that
+#     differs — through the CRLF filter — and 119 files that nobody edited are
+#     suddenly rejected by `format:check`, with an empty `git diff` to explain
+#     it. On this repository that happened during a routine merge to `main`.
+#
+# `eol=lf` makes the checkout itself produce LF regardless of `core.autocrlf`,
+# so the working tree matches what the gate demands on every platform, and no
+# contributor has to configure their machine to be able to run `npm run verify`.
+# =============================================================================
+
+* text=auto eol=lf
+
+# -----------------------------------------------------------------------------
+# Binary — never transformed, never diffed as text
+# -----------------------------------------------------------------------------
+#
+# `text=auto` already detects these by content. Naming them is belt and braces:
+# content detection reads only the first blob of a file, and a corrupted image
+# is a defect nobody notices until a page renders wrong in production.
+
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.avif  binary
+*.mp4   binary
+*.webm  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.pdf   binary

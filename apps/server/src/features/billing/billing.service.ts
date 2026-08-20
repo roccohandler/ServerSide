@@ -2,10 +2,17 @@ import { AppError } from '../../lib/appError.js';
 import { describeError, redactEmail, type Logger } from '../../lib/logger.js';
 import type { EmailService } from '../../infrastructure/email/email.service.js';
 import { noopNotifier, type Notifier } from '../notifications/index.js';
-import { amountLabel, BILLING_CURRENCY, EXPECTED_AMOUNT_CENTS } from './billing.amounts.js';
+import {
+  amountLabel,
+  BILLING_CURRENCY,
+  EXPECTED_AMOUNT_CENTS,
+  INVOICE_DUE_DAYS,
+} from './billing.amounts.js';
+import { describeBillingProduct } from './billing.email.js';
 import type { buildPaymentReceivedEmail } from './billing.email.js';
 import type { BillingRepository } from './billing.repository.js';
 import { noopBillingFulfillment, type BillingFulfillment } from './billing.fulfillment.js';
+import { DEMO_EMAIL } from '../demo/index.js';
 import { interpretWebhookEvent } from './billing.webhooks.js';
 import type { StripeClient } from './stripe.client.js';
 import {
@@ -87,6 +94,44 @@ export interface BillingService {
     readonly url: string;
     readonly product: BillingProduct;
     readonly emailedTo: string | undefined;
+  }>;
+  /**
+   * ==========================================================================
+   * AN INVOICE, WHICH IS WHAT AN OWNER-SENT PAYMENT SHOULD HAVE BEEN
+   * ==========================================================================
+   *
+   * DECISION 041. `createCheckoutSession` above mints a link that **expires after 24 hours**,
+   * so one sent on a Friday afternoon is dead before Monday — and the client's only symptom is
+   * a page telling them the link has expired, for a payment they were trying to make.
+   *
+   * An invoice has a permanent URL, a PDF, a due date and Stripe's own reminders. It is also
+   * the document a business buying a $4,900 asset actually wants: their bookkeeper needs an
+   * invoice and a Checkout receipt is not one.
+   *
+   * ## Three things it shares with the Checkout path, deliberately
+   *
+   *   1. **The price is verified first.** `requireVerifiedPrice` runs before anything is
+   *      created, so a mistyped dashboard Price is a loud 503 for the owner rather than a
+   *      wrong figure in a client's inbox.
+   *   2. **A demo customer is refused on the first line**, before the Price lookup and before
+   *      the Stripe client is touched. That is what makes "no live charge is possible in the
+   *      demonstration" provable by a test rather than argued from configuration.
+   *   3. **Build payments only.** A subscription invoice sent from the console would be the
+   *      owner selling somebody Growth Partner by email, and the published terms say the plan
+   *      starts on launch day only if the client chooses it.
+   *
+   * ## What it does *not* share
+   *
+   * Checkout can bill a bare email address; an invoice cannot. So this resolves or creates the
+   * Stripe customer first — which makes the duplicate-customer problem impossible here rather
+   * than merely handled, and means the client's invoices all land in one place.
+   * ==========================================================================
+   */
+  createInvoice(params: { readonly projectId: string; readonly product: BillingProduct }): Promise<{
+    readonly url: string;
+    readonly number: string | null;
+    readonly product: BillingProduct;
+    readonly emailedTo: string;
   }>;
   /**
    * A Stripe customer-portal link for a project's client, so they can see invoices
@@ -266,6 +311,92 @@ export function createBillingService(dependencies: BillingServiceDependencies): 
       return project;
     },
 
+    async createInvoice({ projectId, product }) {
+      /*
+       * ======================================================================
+       * BUILD PAYMENTS ONLY, AND THE REFUSAL IS FIRST
+       * ======================================================================
+       *
+       * A subscription invoice sent from the console would be the owner selling somebody
+       * Growth Partner by email, and the published terms say in five places that the plan
+       * starts on launch day *only if the client chooses it*. `createCheckoutSession` refuses
+       * to *email* a subscription link for the same reason; this refuses to create the thing
+       * at all, because an invoice with a due date is a considerably stronger ask than a URL.
+       */
+      if (product !== 'build-deposit' && product !== 'build-final') {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          'Growth Partner is not invoiced. The published terms say it starts on launch day only if the client chooses it, and an invoice with a due date is not a choice.',
+        );
+      }
+
+      const project = await requireProject(projectId);
+
+      /*
+       * The demonstration account, refused before the Price lookup and before the Stripe
+       * client is touched — so **Stripe is contacted zero times on the demo path**, which is
+       * the property that makes "no live charge is possible" provable by a test rather than
+       * argued from configuration. The same ordering as `createCustomerCheckoutSession`.
+       */
+      if (project.email === DEMO_EMAIL) {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          'This is the demonstration project, so no real invoice can be raised against it.',
+        );
+      }
+
+      /* The published price is the authority, never the dashboard. See the note below. */
+      const priceId = await requireVerifiedPrice(product);
+      if (!stripe) throw new AppError('SERVICE_UNAVAILABLE', NOT_CONFIGURED);
+
+      /*
+       * An invoice needs a customer; Checkout does not. Resolving one here rather than
+       * accepting a bare address makes the duplicate-customer problem impossible on this path
+       * rather than merely handled — and it means every invoice this client ever gets lands in
+       * one Stripe record, which is the whole reason they wanted an invoice.
+       */
+      const customerId =
+        project.stripeCustomerId ??
+        (await stripe.ensureCustomer({ email: project.email, name: project.contactName })).id;
+
+      const invoice = await stripe.createAndSendInvoice({
+        customerId,
+        priceId,
+        description: describeBillingProduct(product),
+        daysUntilDue: INVOICE_DUE_DAYS,
+        metadata: { projectId: project.id, product },
+      });
+
+      if (!invoice.url) {
+        throw new AppError('INTERNAL_ERROR', 'Stripe returned an invoice without a URL.');
+      }
+
+      /*
+       * The customer id is stored the first time we resolve one, so the *next* payment — and
+       * the portal link, and any later subscription — all reach the same Stripe record.
+       */
+      await repository.updateProject(project.id, {
+        ...(project.stripeCustomerId ? {} : { stripeCustomerId: customerId }),
+      });
+
+      logger.info('billing.invoice_sent', { projectId: project.id, product, invoice: invoice.id });
+
+      /*
+       * Stripe sends the invoice itself, so this does **not** also send `paymentDue`.
+       *
+       * Two messages about one payment is how a client ends up unsure which is real, and
+       * Stripe's is the better of the two here: it carries the PDF, the number, the due date
+       * and a payment page that does not expire. What ours would add is tone, which is not
+       * worth a duplicate.
+       */
+      return {
+        url: invoice.url,
+        number: invoice.number,
+        product,
+        emailedTo: project.email,
+      };
+    },
+
     async createCheckoutSession({ projectId, product, notifyCustomer }) {
       /*
        * The published price is the authority, never the dashboard. Before any link is
@@ -282,6 +413,8 @@ export function createBillingService(dependencies: BillingServiceDependencies): 
         mode: checkoutModeFor(product),
         priceId,
         customerEmail: project.email,
+        // The project's Stripe customer once its first payment has created one.
+        ...(project.stripeCustomerId ? { customerId: project.stripeCustomerId } : {}),
         metadata: { projectId: project.id, product },
         successUrl: `${siteUrl}/welcome?paid=${product}`,
         cancelUrl: `${siteUrl}/contact`,
@@ -372,6 +505,12 @@ export function createBillingService(dependencies: BillingServiceDependencies): 
          * resulting Stripe customer to an address they do not own.
          */
         customerEmail: customer.email,
+        /*
+         * Their existing Stripe customer, once they have one. First payment has none and
+         * Stripe creates it; every payment after that attaches to the same record rather
+         * than minting a second guest customer. See `CheckoutSessionRequest.customerId`.
+         */
+        ...(customer.stripeCustomerId ? { customerId: customer.stripeCustomerId } : {}),
         /*
          * `userId` is what the webhook uses to find the account to activate. It is set
          * here, server-side, from the authenticated session — a client cannot influence

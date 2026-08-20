@@ -218,6 +218,29 @@ export function createProjectRouter(dependencies: ProjectRoutesDependencies): Ro
     response.status(201).json(success({ feedback: toThreadViews(comments) }));
   });
 
+  /* ------------------------------------------------------------------ scope */
+
+  /*
+   * Accepting the scope and price. DECISION 040.
+   *
+   * `project:write:own` and the `one` mount, so the ownership check that resolved the project
+   * has already run — a customer cannot accept a scope on somebody else's project, and the
+   * check is the same one every route in this file inherits rather than a second opinion
+   * written here.
+   *
+   * There is deliberately **no** route for un-accepting. An acceptance is a record of
+   * something that happened; withdrawing it is the owner sending a new version, which
+   * supersedes it and says so. A customer who has changed their mind writes to us, and the
+   * message reaches the same person.
+   */
+  one.post('/scope/accept', requireCapability('project:write:own'), async (request, response) => {
+    const project = requireProject(request);
+    const auth = requireRequestAuth(request);
+
+    const accepted = await projectService.acceptScope({ project, acceptedBy: auth.user });
+    response.json(success({ project: toCustomerProjectView(accepted) }));
+  });
+
   /* ------------------------------------------------------------- approval */
 
   /*
@@ -228,7 +251,35 @@ export function createProjectRouter(dependencies: ProjectRoutesDependencies): Ro
     const project = requireProject(request);
     const auth = requireRequestAuth(request);
 
-    const approved = await projectService.approve({ project, approvedBy: auth.user });
+    /*
+     * ======================================================================
+     * WHAT, EXACTLY, WAS APPROVED
+     * ======================================================================
+     *
+     * `approvedDeploymentId` was declared on the project, documented as "which deployment the
+     * approval was given against", cleared by `requestChanges` — and **never written**. The
+     * service's own comment calls an approval that cannot say what was approved "not worth
+     * having", and that was the state it was in.
+     *
+     * It is resolved here rather than in the service because the service does not depend on
+     * deployments and should not: `DeploymentService` already depends on the project
+     * repository, so an edge back the other way would close a cycle. The route has both.
+     *
+     * The newest *ready preview* is the right answer rather than the newest deployment of any
+     * kind: a production deployment is what happens after approval, and a failed build is not
+     * a thing anybody approved. Absent is a legitimate result — a preview URL set by hand has
+     * no deployment behind it — and it stays absent rather than becoming a guess.
+     */
+    const recent = await deploymentService.listForProject(project.id, RECENT_DEPLOYMENTS);
+    const approvedDeployment = recent.find(
+      (deployment) => deployment.environment === 'preview' && deployment.state === 'ready',
+    );
+
+    const approved = await projectService.approve({
+      project,
+      approvedBy: auth.user,
+      ...(approvedDeployment ? { approvedDeploymentId: approvedDeployment.id } : {}),
+    });
     response.json(success({ project: toCustomerProjectView(approved) }));
   });
 

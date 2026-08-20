@@ -13,6 +13,7 @@ import {
   type StoredProject,
   type SubscriptionStatus,
 } from './project.types.js';
+import { SCOPE_FIELD_LIMITS, type ProjectScope } from './scope.types.js';
 
 /*
  * The project document.
@@ -34,6 +35,8 @@ export interface ProjectDocument {
   status: ProjectStatus;
   milestone: ProjectMilestone;
   approval: ApprovalState;
+  scope?: ProjectScope;
+  revisionRounds?: number;
   approvedAt?: Date;
   approvedDeploymentId?: string;
   previewUrl?: string;
@@ -87,6 +90,43 @@ const projectSchema = new Schema<ProjectDocument>(
     status: { type: String, required: true, enum: PROJECT_STATUSES, default: 'agreed' },
     milestone: { type: String, required: true, enum: PROJECT_MILESTONES, default: 'onboarding' },
     approval: { type: String, required: true, enum: APPROVAL_STATES, default: 'not_ready' },
+    /*
+     * The agreed scope. `_id: false` because it is a value on the project rather than a
+     * document in its own right — nothing looks a scope up, and a spurious ObjectId in here
+     * would eventually be mistaken for one worth referencing.
+     *
+     * Written whole by `ScopeService` and never patched, so `acceptedAt` cannot outlive the
+     * version it was given against. See `scope.types.ts`.
+     */
+    scope: {
+      type: new Schema<ProjectScope>(
+        {
+          version: { type: Number, required: true, min: 1 },
+          summary: {
+            type: String,
+            required: true,
+            trim: true,
+            maxlength: SCOPE_FIELD_LIMITS.summary,
+          },
+          lines: {
+            type: [{ type: String, trim: true, maxlength: SCOPE_FIELD_LIMITS.line }],
+            required: true,
+          },
+          priceCents: { type: Number, required: true, min: 0 },
+          notes: { type: String, trim: true, maxlength: SCOPE_FIELD_LIMITS.notes },
+          caseStudy: { type: Boolean },
+          sentAt: { type: Date, required: true },
+          sentBy: { type: String, required: true, trim: true, maxlength: SCOPE_FIELD_LIMITS.name },
+          acceptedAt: { type: Date },
+          acceptedByUserId: { type: String, trim: true, maxlength: 64 },
+          acceptedName: { type: String, trim: true, maxlength: SCOPE_FIELD_LIMITS.name },
+        },
+        { _id: false },
+      ),
+      required: false,
+    },
+    /* Counted by `requestChanges`. See `INCLUDED_REVISION_ROUNDS`. */
+    revisionRounds: { type: Number, min: 0 },
     approvedAt: { type: Date },
     approvedDeploymentId: { type: String, trim: true, maxlength: 64 },
     previewUrl: { type: String, trim: true, maxlength: PROJECT_FIELD_LIMITS.url },
@@ -145,6 +185,13 @@ export function toStoredProject(document: ProjectDocument & { _id: unknown }): S
      */
     milestone: document.milestone ?? 'onboarding',
     approval: document.approval ?? 'not_ready',
+    /*
+     * Read whole or not at all. A `lean()` read returns a plain object for the subdocument,
+     * and `lines` comes back as a Mongoose array on a hydrated one — spreading normalises
+     * both to something the rest of the server can treat as a plain readonly array.
+     */
+    ...(document.scope ? { scope: { ...document.scope, lines: [...document.scope.lines] } } : {}),
+    revisionRounds: document.revisionRounds,
     approvedAt: document.approvedAt,
     approvedDeploymentId: document.approvedDeploymentId,
     previewUrl: document.previewUrl,

@@ -10,6 +10,7 @@ import {
   buildPaymentDueEmail,
   buildPaymentFailedEmail,
   buildPreviewReadyEmail,
+  buildScopeReadyEmail,
   buildProjectLaunchedEmail,
   buildReportPublishedEmail,
   buildTasksAssignedEmail,
@@ -55,6 +56,21 @@ export interface Notifier {
     readonly to: NotificationRecipient;
     readonly businessName: string;
     readonly projectId: string;
+  }): Promise<void>;
+
+  /**
+   * The scope and price are written up and waiting to be accepted. DECISION 040.
+   *
+   * `revised` changes one sentence rather than adding a second template. A first send and a
+   * replacement are the same event — here is the agreement, read it — and the only thing the
+   * reader needs told apart is whether it supersedes something they have already read. Two
+   * templates would be two places for that sentence to drift.
+   */
+  scopeReady(params: {
+    readonly to: NotificationRecipient;
+    readonly businessName: string;
+    readonly projectId: string;
+    readonly revised: boolean;
   }): Promise<void>;
 
   approvalRequested(params: {
@@ -292,6 +308,16 @@ export function createNotifier(dependencies: NotifierDependencies): Notifier {
         }),
       ),
 
+    scopeReady: ({ to, businessName, projectId, revised }) =>
+      deliver('scope.ready', () =>
+        buildScopeReadyEmail({
+          to,
+          businessName,
+          revised,
+          projectUrl: paths.project(siteUrl, projectId),
+        }),
+      ),
+
     approvalRequested: ({ to, businessName, projectId }) =>
       deliver('approval.requested', () =>
         buildApprovalRequestedEmail({
@@ -466,6 +492,9 @@ export function createNotifier(dependencies: NotifierDependencies): Notifier {
  */
 export const noopNotifier: Notifier = {
   async previewReady() {
+    /* intentionally nothing */
+  },
+  async scopeReady() {
     /* intentionally nothing */
   },
   async approvalRequested() {

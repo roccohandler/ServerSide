@@ -33,10 +33,26 @@ export const CONSOLE_MAIN_ID = 'console-main';
  * now, so that link would be a hard-coded URL to another host — configuration this app does
  * not otherwise need, for a journey the owner makes by typing the address they already know.
  *
- * **No Stripe controls.** Refunds, checkout links and subscription changes live behind
- * `BILLING_ADMIN_TOKEN` and are operated with curl. Putting them here would mean shipping
- * that token to a browser, and re-implementing the decisions around them in React would put
- * a second copy of the payment rules in the least trustworthy place.
+ * **No Stripe *credential* reaches this bundle, and the line has moved once.**
+ *
+ * This used to read "No Stripe controls", full stop — refunds, checkout links and
+ * subscription changes all behind `BILLING_ADMIN_TOKEN` and operated with curl. That stopped
+ * being true when `CheckoutLinkPanel` shipped, and the comment went on asserting it, which is
+ * worse than having said nothing: a reader deciding where a new payment control belongs would
+ * have been told there is no such place.
+ *
+ * The rule that actually holds, and the one to keep holding, is narrower and sharper. **The
+ * console may ask the server to do something; it may never hold the means to do it itself.**
+ * `CheckoutLinkPanel` and `ScopePanel` post to `/api/admin/…`, which is behind the session
+ * cookie and `requireCapability`, and every decision — which Price, whether the figure matches
+ * the published one, whether the customer may be charged at all — stays on the server. No key
+ * is inlined, no amount is computed here, and `billingService` is handed to the admin router
+ * as a *narrow* dependency for exactly this reason: see its note in `admin.routes.ts`.
+ *
+ * What is still refused: refunds, subscription cancellation, and anything that writes a
+ * payment status. Those remain behind `BILLING_ADMIN_TOKEN` and curl (DECISION 019), because
+ * they are irreversible and because a mis-click on a list of several customers' projects is a
+ * different kind of accident from a mis-typed curl command.
  *
  * ## What was missing, and why it was missing
  *

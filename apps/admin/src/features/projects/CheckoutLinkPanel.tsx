@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button, Switch, TextField } from '@jobforge/ui';
 import type { AdminProjectView } from '@jobforge/shared';
 import { Notice } from '../../components/Notice';
-import { createCheckoutLink } from '../../lib/endpoints';
+import { createCheckoutLink, sendInvoice } from '../../lib/endpoints';
 import styles from './Projects.module.css';
 
 /*
@@ -56,11 +56,24 @@ interface Created {
   readonly product: Product;
   readonly url: string;
   readonly emailedTo: string | null;
+  /**
+   * True when this came from the invoice path.
+   *
+   * It changes two sentences: whether the URL expires, and whether "sent" is a claim about
+   * delivery. Stripe sends an invoice and reports that it accepted it; our own notifier
+   * swallows its failures by contract, so the checkout path can only ever say a message was
+   * *built* for an address.
+   */
+  readonly invoiced: boolean;
+  readonly number?: string | null;
 }
+
+/** Which button is spinning. Prefixed on the invoice path so the two cannot collide. */
+type Pending = Product | `invoice-${Product}`;
 
 export function CheckoutLinkPanel({ project }: CheckoutLinkPanelProps) {
   const [notifyCustomer, setNotifyCustomer] = useState(false);
-  const [pending, setPending] = useState<Product | null>(null);
+  const [pending, setPending] = useState<Pending | null>(null);
   const [created, setCreated] = useState<Created | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -81,7 +94,37 @@ export function CheckoutLinkPanel({ project }: CheckoutLinkPanelProps) {
       return;
     }
 
-    setCreated({ product, url: result.data.url, emailedTo: result.data.emailedTo });
+    setCreated({
+      product,
+      url: result.data.url,
+      emailedTo: result.data.emailedTo,
+      invoiced: false,
+    });
+  }
+
+  async function invoice(product: Product) {
+    setPending(`invoice-${product}`);
+    setProblem(null);
+    setCreated(null);
+    setCopied(false);
+
+    const result = await sendInvoice(project.id, { product });
+
+    setPending(null);
+
+    if (!result.success) {
+      /* Verbatim, for the same reason. The 503 names both amounts and where to fix them. */
+      setProblem(result.error.message);
+      return;
+    }
+
+    setCreated({
+      product,
+      url: result.data.url,
+      emailedTo: result.data.emailedTo,
+      invoiced: true,
+      number: result.data.number,
+    });
   }
 
   /*
@@ -100,11 +143,51 @@ export function CheckoutLinkPanel({ project }: CheckoutLinkPanelProps) {
 
   return (
     <div className={styles['panel']}>
-      <h2 className={styles['subheading']}>Payment links</h2>
+      <h2 className={styles['subheading']}>Asking for a payment</h2>
+
+      {/*
+       * ======================================================================
+       * TWO WAYS TO ASK, AND THE DIFFERENCE IS SAID OUT LOUD
+       * ======================================================================
+       *
+       * DECISION 041. An invoice is the default and a Checkout link is the exception, and the
+       * copy has to say why — because from here the two buttons look identical and one of
+       * them produces something that **stops working after 24 hours**.
+       *
+       * That expiry is the defect this panel used to have and could not describe: a link sent
+       * on a Friday afternoon is dead before Monday, and the client's only symptom is an
+       * expiry page for a payment they were trying to make.
+       * ======================================================================
+       */}
       <p className={styles['muted']}>
-        A Stripe Checkout link for one half of the build. The amount comes from the Stripe Price,
-        which is checked against the published figure before anything is created — so a link is
-        either right or refused.
+        An invoice is usually the right answer: it does not expire, it comes with a PDF and a due
+        date, Stripe chases it, and it is the document their bookkeeper wants. Either way the amount
+        comes from the Stripe Price, which is checked against the published figure before anything
+        is created — so it is right or it is refused.
+      </p>
+
+      <div className={styles['formActions']}>
+        <Button
+          loading={pending === 'invoice-build-deposit'}
+          disabled={pending !== null}
+          onClick={() => void invoice('build-deposit')}
+        >
+          Invoice the deposit
+        </Button>
+        <Button
+          loading={pending === 'invoice-build-final'}
+          disabled={pending !== null}
+          onClick={() => void invoice('build-final')}
+        >
+          Invoice the launch payment
+        </Button>
+      </div>
+
+      <h3 className={styles['subheading']}>Or a checkout link</h3>
+      <p className={styles['muted']}>
+        For somebody who is going to pay in the next few minutes — on the phone, or standing in
+        front of you. <strong>It expires after 24 hours</strong>, so it is the wrong thing to send
+        on a Friday.
       </p>
 
       <Switch
@@ -117,6 +200,7 @@ export function CheckoutLinkPanel({ project }: CheckoutLinkPanelProps) {
 
       <div className={styles['formActions']}>
         <Button
+          variant="secondary"
           loading={pending === 'build-deposit'}
           disabled={pending !== null}
           onClick={() => void generate('build-deposit')}
@@ -138,16 +222,29 @@ export function CheckoutLinkPanel({ project }: CheckoutLinkPanelProps) {
       {created ? (
         <>
           <Notice tone="success">
-            {created.emailedTo
-              ? `The ${LABELS[created.product]} link was sent to ${created.emailedTo}.`
-              : `The ${LABELS[created.product]} link is ready.`}
+            {created.invoiced
+              ? `Stripe has invoiced ${created.emailedTo} for the ${LABELS[created.product]}${
+                  created.number ? ` — ${created.number}` : ''
+                }.`
+              : created.emailedTo
+                ? `The ${LABELS[created.product]} link was sent to ${created.emailedTo}.`
+                : `The ${LABELS[created.product]} link is ready.`}
           </Notice>
 
           <div className={styles['inlineForm']}>
             <TextField
               id="checkout-link"
-              label="The link"
-              hint="Stripe hosts this page. It stays valid until it is used or Stripe expires it."
+              label={created.invoiced ? 'The invoice' : 'The link'}
+              /*
+               * The expiry is stated on the checkout path and its absence stated on the
+               * invoice one, because the whole reason both buttons exist is that difference —
+               * and an operator who has just pressed one should be told which they got.
+               */
+              hint={
+                created.invoiced
+                  ? 'A permanent page, with the PDF on it. Stripe chases this until it is paid.'
+                  : 'Stripe hosts this page. It expires after 24 hours, so send it now.'
+              }
               value={created.url}
               readOnly
             />

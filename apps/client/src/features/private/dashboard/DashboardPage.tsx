@@ -145,6 +145,26 @@ export function DashboardPage() {
   return (
     <div className={styles['page']}>
       <header className={styles['header']}>
+        {/*
+         * ======================================================================
+         * A PROJECT WORKSPACE, NOT A DASHBOARD
+         * ======================================================================
+         *
+         * "Hello, Dana" is warm and it is not an identity. A customer arriving here should be
+         * able to tell in one line *what this place is* — and "dashboard" is what every SaaS
+         * product they have ever abandoned called its landing page.
+         *
+         * The eyebrow above the greeting is the fix, and it costs one line: this is the place
+         * their project is run from, which is a claim the rest of the page then makes good on.
+         * It also closes the last gap in the site's own narrative — the marketing pages promise
+         * a project managed through an account, and until now the account never said it was
+         * one.
+         *
+         * The greeting stays. It is the reason somebody feels dealt with by a person rather
+         * than by a queue, and it is the half of this heading that is not replaceable.
+         * ======================================================================
+         */}
+        <p className={styles['eyebrow']}>Your JobForge project</p>
         <h1 className={styles['title']}>Hello, {firstName}</h1>
 
         {/*

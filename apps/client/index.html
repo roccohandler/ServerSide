@@ -25,30 +25,52 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <!-- The bar colour, per theme. The second one wins on a dark system; without it the
-         browser chrome stays charcoal-on-cream while the page below it is charcoal. -->
-    <meta name="theme-color" content="#17191E" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B0D11" />
     <!--
-      Both, in that order.
+      The browser bar colour. One value, not one per theme.
 
-      This said `light` until 2026-08-16, under a comment calling it a committed design and
-      explaining that declaring it stops the browser auto-inverting form controls for a
-      reader whose OS is in dark mode. That was true and it was answering the wrong
-      question: the site now has a measured dark palette, so there is nothing to protect the
-      reader from. `light dark` is what tells the browser to paint native controls,
-      scrollbars and the overscroll area in whichever one is active.
+      It had a `media="(prefers-color-scheme: dark)"` sibling until DECISION 036, and that
+      sibling now describes a page that does not exist: the site serves the light palette
+      whatever the operating system is set to, so a bar painted from the OS setting would be
+      the one part of the window still answering it. `#17191E` is the site header's own
+      charcoal, which is what sits directly under the bar on every screen — and it is within
+      a few points of the dark palette's `#0B0D11` header, so a reader who has chosen dark
+      does not get a seam either.
     -->
-    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#17191E" />
+    <!--
+      Light, and only light.
+
+      This has now said all three things it can say. It was `light` under a comment calling
+      it a committed design; it became `light dark` on 2026-08-16 when a measured dark
+      palette landed and was wired to `prefers-color-scheme`; and DECISION 036 unwired that
+      while keeping the palette. So it is `light` again, and for a reason the first version
+      did not have: the dark palette is still there, but nothing reaches it without a stored
+      choice, and `useTheme` writes `data-theme="dark"` — which `tokens.css` answers with its
+      own `color-scheme: dark`.
+
+      What this declaration actually buys is the half no stylesheet can do from a token: it
+      stops the browser painting native form controls, the scrollbar and the overscroll area
+      dark for a reader whose OS is dark, around a page that is cream. Leaving it as
+      `light dark` would have left exactly that seam — a charcoal date picker inside a cream
+      form — which is the failure `Demo.module.css` already documents for the demo sites.
+    -->
+    <meta name="color-scheme" content="light" />
 
     <!--
       The theme, before the first paint.
 
-      `prefers-color-scheme` needs no JavaScript and cannot flash — the stylesheet answers
-      the operating system on its own. This exists for the other case: a reader who has
-      *overridden* their system, whose choice lives in `localStorage`, which no stylesheet
-      can read. Without these six lines they would see one frame of the wrong palette on
-      every navigation that reloads the document.
+      Almost every load no longer needs this at all. The default palette is the light one and
+      it is on `:root`, so a visitor who has never touched the Appearance control gets the
+      right colours from the stylesheet, before any script, with nothing that can flash. That
+      became true with DECISION 036 and it is the quiet half of that change.
+
+      This exists for the reader who *has* chosen — whose choice lives in `localStorage`,
+      which no stylesheet can read. Without these six lines they would see one frame of the
+      wrong palette on every navigation that reloads the document.
+
+      **Do not edit the script below without needing to.** It already handles exactly the two
+      values `useTheme` writes and ignores everything else, which is why narrowing the theme
+      from three states to two moved no digest. Every byte of it is in a CSP hash.
 
       It is inline because an external file would be a blocking request before first paint,
       which is worse than the flash it prevents. Inline scripts are blocked by the

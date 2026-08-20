@@ -29,6 +29,22 @@ export const pages: readonly PageMeta[] = [
       'What is included: build, launch, capture, track, maintain and improve — the whole JobForge growth system for local service businesses in Greater Seattle.',
     sitemapPriority: 0.8,
   },
+  /*
+   * High priority, and indexed. "How much does a website cost" is one of the few searches
+   * this business can be genuinely relevant to without competing on the commodity term, and
+   * a page that answers it with two real figures is unusual enough in this category to be
+   * worth ranking for — zero of the five national competitors publish any price at all.
+   *
+   * The description leads with both numbers on purpose. A search result that states the price
+   * pre-qualifies the click, which is the opposite of what a page about pricing usually does.
+   */
+  {
+    path: routes.pricing,
+    title: 'Pricing',
+    description:
+      'What a website build costs and what the monthly service costs, with the terms that go with them: the payment schedule, the refund policy, and what "finished" actually means. No form in the way.',
+    sitemapPriority: 0.9,
+  },
   {
     path: routes.portfolio,
     title: 'Examples',
@@ -41,6 +57,19 @@ export const pages: readonly PageMeta[] = [
     title: 'Website Score',
     description:
       'Score your own website against twenty checks and get the five things most likely costing you calls and quote requests — free, in about five minutes, with no email address required.',
+    sitemapPriority: 0.9,
+  },
+  /*
+   * Indexed, and high. "What should my website have on it" is a question people genuinely
+   * search, and a page that answers it with a personalised plan rather than a listicle is
+   * unusual enough to be worth ranking for. It is also the one tool on this site that works
+   * for somebody who has no website yet — the population every other page here assumes away.
+   */
+  {
+    path: routes.blueprint,
+    title: 'Website Blueprint',
+    description:
+      'Twelve questions about your business — none technical — and a plan for what a website for a business like yours actually has to do. Free, about five minutes, and nothing to sign up for.',
     sitemapPriority: 0.9,
   },
   {

@@ -5,8 +5,8 @@
  *
  * Usage, from the repo root (reads STRIPE_SECRET_KEY from .env; never prints it):
  *
- *     npm run stripe:setup --workspace server            # create-or-verify
- *     npm run stripe:setup --workspace server -- --verify  # verify only, change nothing
+ *     npm run stripe:setup            # create-or-verify
+ *     npm run stripe:setup -- --verify  # verify only, change nothing
  *
  * What it manages — exactly two Products and four Prices, nothing else:
  *
