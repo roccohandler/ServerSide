@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { routes } from '../../../config/routes';
+import { blueprint } from '../../../content/blueprint';
 import { primaryCta } from '../../../content';
 import type { PublicUser } from '@jobforge/shared';
 import { AuthProvider } from '../../../session';
@@ -121,13 +122,37 @@ beforeEach(() => {
 });
 
 describe('the assessment funnel front door', () => {
-  it('is where the site sends every primary call to action', () => {
+  /*
+   * ==========================================================================
+   * IT IS NO LONGER THE PRIMARY DESTINATION, AND THAT WAS A DECISION
+   * ==========================================================================
+   *
+   * This asserted `primaryCta.to === routes.getAssessment`, and the comment said the point
+   * was to force a conversation if the button were ever repointed. It did exactly that:
+   * DECISION 043 moved the primary action to `/blueprint`, and this test is what made that a
+   * deliberate change rather than a quiet one. A guard that fires once and usefully has paid
+   * for itself.
+   *
+   * What it asserts now is the property that survived the move. `/get-my-assessment` is still
+   * the front door of the *assessment* funnel — the offer page, indexed, reachable, and where
+   * a reader who wants a person to look at their real site goes. DECISION 028's argument
+   * about it is untouched; only the site-wide default moved.
+   *
+   * Rewritten rather than deleted, because "nothing points here any more" is precisely how a
+   * page that still matters becomes unreachable.
+   * ==========================================================================
+   */
+  it('is still the destination of the assessment offer, wherever it is offered', () => {
     /*
-     * Read from the content rather than typed, so the two cannot drift. If the button is
-     * ever repointed, this fails and somebody has to decide whether the funnel moved with
-     * it — which is the conversation worth forcing.
+     * The Blueprint's handoff is the main route here now: a reader who has just been told,
+     * plainly, that nobody has looked at their website is offered the thing that does. If
+     * that link is ever repointed this fails, which is the same conversation the previous
+     * version of this test forced.
      */
-    expect(primaryCta.to).toBe(routes.getAssessment);
+    expect(blueprint.result.handoff.cta.to).toBe(routes.getAssessment);
+
+    /* And the site-wide primary is a real route rather than a stale one. */
+    expect(Object.values(routes)).toContain(primaryCta.to);
   });
 
   it('says what the assessment is rather than that an account is being created', () => {

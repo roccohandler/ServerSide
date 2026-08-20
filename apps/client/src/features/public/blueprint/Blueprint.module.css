@@ -1,0 +1,272 @@
+/*
+ * ============================================================================
+ * /blueprint
+ * ============================================================================
+ *
+ * Two screens in one stylesheet: the question flow, and the result.
+ *
+ * The question flow is deliberately sparse. One question is on screen at a time and the only
+ * thing that should compete for attention is the choices — so there is no card, no shadow and
+ * no decoration around any of it.
+ * ============================================================================
+ */
+
+/* ---------------------------------------------------------------- the flow */
+
+.assurance {
+  margin-top: var(--space-5);
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+/*
+ * The progress line, set small and quiet but never hidden. It is the thing that makes "one
+ * question at a time" honest rather than a way of not saying how many there are.
+ */
+.progress {
+  margin-top: var(--space-6);
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  font-weight: var(--weight-semibold);
+}
+
+.question {
+  margin-top: var(--space-3);
+}
+
+.prompt {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  text-wrap: balance;
+}
+
+.hint {
+  margin-top: var(--space-3);
+  color: var(--color-ink-muted);
+  line-height: var(--leading-relaxed);
+}
+
+.choices {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * A choice is a full-width target, and the size is the point rather than the style.
+ *
+ * This is answered on a phone, often one-handed, twelve times in a row. A row that fills the
+ * measure cannot be missed and needs no aim; a tidy inline chip would need both.
+ *
+ * `aria-pressed` carries the state, so the selected styling hangs off the attribute rather
+ * than off a class — which means the two cannot disagree.
+ */
+.choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  border: var(--space-hair) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.choice:hover {
+  border-color: var(--color-brand);
+}
+
+.choice[aria-pressed='true'] {
+  border-color: var(--color-brand);
+  background: var(--color-tint-brand);
+  font-weight: var(--weight-semibold);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.privacy {
+  margin-top: var(--space-7);
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
+}
+
+/* ---------------------------------------------------------------- the result */
+
+/*
+ * The sentence that keeps §32, and it is styled to be read rather than skimmed past — a rule
+ * above it, reading size, full measure. A reader who thinks we looked at their site will read
+ * everything below as a verdict on it.
+ */
+.basis {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: var(--space-hair) solid var(--color-border);
+  line-height: var(--leading-relaxed);
+}
+
+.plan {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-7);
+  padding: 0;
+  list-style: none;
+  counter-reset: plan;
+}
+
+/*
+ * Numbered, and the numbering encodes something true: the list is ordered by what matters most
+ * for this reader's answers. A decorative `01 / 02 / 03` on an unordered set would be the
+ * failure the design rules name specifically.
+ */
+.planItem {
+  counter-increment: plan;
+  padding-inline-start: var(--space-8);
+  position: relative;
+}
+
+.planItem::before {
+  content: counter(plan, decimal-leading-zero);
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  color: var(--color-accent-text);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.planTitle {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  text-wrap: balance;
+}
+
+.planDetail {
+  margin-top: var(--space-2);
+  color: var(--color-ink-muted);
+  line-height: var(--leading-relaxed);
+}
+
+.valueNote {
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: var(--space-hair) solid var(--color-border);
+  line-height: var(--leading-relaxed);
+}
+
+/*
+ * The second half, and it looks different on purpose.
+ *
+ * Unnumbered, unordered, and set as open questions rather than as ranked recommendations —
+ * because it is a list of things nobody has answered. Numbering it would make it read as a
+ * second plan, which is exactly the confusion §32 is about.
+ */
+.unknown {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-7);
+  padding: 0;
+  list-style: none;
+}
+
+.unknownItem {
+  padding: var(--space-4) var(--space-5);
+  border-inline-start: var(--space-1) solid var(--color-border-strong);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.handoff {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: var(--space-hair) solid var(--color-border);
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+
+.handoffHeading {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+}
+
+.handoffBody {
+  color: var(--color-ink-muted);
+  line-height: var(--leading-relaxed);
+}
+
+.limitsHeading {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.limits {
+  margin: var(--space-4) 0 var(--space-6);
+  color: var(--color-ink-muted);
+  line-height: var(--leading-relaxed);
+}
+
+/* ---------------------------------------------------------------- the offer */
+
+/*
+ * The block that turns the plan into a purchase.
+ *
+ * It sits on the brand band, which is the only place on this page that uses one — everything
+ * above is a plan and this is an offer, and the change of ground is what says so without a
+ * heading having to. It is also the last band, so the page ends on the thing it is for.
+ */
+.buildFacts {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding: 0;
+  list-style: none;
+  line-height: var(--leading-relaxed);
+}
+
+.buildStandard {
+  margin-top: var(--space-5);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.buildActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+  margin-top: var(--space-7);
+}
+
+/*
+ * The second action is a link rather than a button, deliberately.
+ *
+ * Two buttons side by side is a choice; a button and a link is a primary action with a way to
+ * keep reading. A reader who is not ready should not have to weigh two equally-weighted
+ * options at the moment they are deciding.
+ */
+.buildSecondary {
+  font-weight: var(--weight-medium);
+}
+
+.buildNote {
+  margin-top: var(--space-6);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}

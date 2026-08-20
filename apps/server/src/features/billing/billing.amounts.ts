@@ -36,6 +36,23 @@ export const GROWTH_PARTNER_ANNUAL_CENTS = 299_000;
 
 export const BILLING_CURRENCY = 'usd';
 
+/**
+ * How long a client has to pay an owner-sent invoice. DECISION 041.
+ *
+ * Seven days, and it is a commercial choice rather than a technical one — which is why it is
+ * here, beside the amounts, rather than inside the Stripe client.
+ *
+ * **Not net-30.** These are two instalments on a build: the deposit is what puts somebody on
+ * the schedule, and the balance is owed on a website that is finished and waiting. A month is
+ * a month of a build slot held for a payment nobody has made, on a business that publishes
+ * "one build at a time" as the reason its timeline is keepable.
+ *
+ * **Not net-0 either.** A due date that has already passed when the email arrives is a due
+ * date that teaches people to ignore due dates. Seven days is a working week: long enough that
+ * a bookkeeper can process it, short enough that it does not become next month's problem.
+ */
+export const INVOICE_DUE_DAYS = 7;
+
 /** What each Stripe Price must charge. Halves are derived, never typed. */
 export const EXPECTED_AMOUNT_CENTS: Readonly<Record<BillingProduct, number>> = {
   'build-deposit': BUILD_PRICE_CENTS / 2,

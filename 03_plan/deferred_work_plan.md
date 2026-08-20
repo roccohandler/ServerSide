@@ -449,13 +449,21 @@ boundary or a `content/` import is followed by a build measurement recorded in �
       against WCAG AA with the same algorithm `tokens.test.ts` uses.
 - [x] **2.2** Declare it — `@media (prefers-color-scheme: dark)` guarded, plus `[data-theme]`
       both ways. Shadows and `--color-surface-dark` handled explicitly. Measure.
+      **Amended 2026-08-19 (DECISION 036): the media query is gone.** The palette stays; only
+      `[data-theme='dark']` reaches it. See §9.14 — including why this batch's own note about
+      `--color-surface-dark` breaking turned out to be the whole story.
 - [x] **2.3** Extend `tokens.test.ts` rule 4 to compute AA over the dark set as well, and verify
       it fails on a deliberately bad dark pair.
 - [x] **2.4** The theme control: three states, persisted, announced, in both apps.
+      **Amended 2026-08-19: two states.** "Match my system" has no meaning once no stylesheet
+      asks the system. See §9.14.
 - [x] **2.5** No-flash bootstrap: inline script, `sha256-` in both CSPs, and the build guard that
       fails when the digest drifts.
 - [x] **2.6** Pin the demo sites to light and prove it with a test.
 - [x] **2.7** `meta color-scheme`, `theme-color`, and the two comments that need superseding.
+      **Amended 2026-08-19: back to `light`, and one `theme-color`.** Both comments were
+      superseded a second time rather than reverted, which is the point of writing them that way.
+      See §9.14.
 
 ### Phase 3 — Forced colours
 
@@ -857,3 +865,60 @@ is both the success state and the symptom of a broken directory walk. It counts 
 spelling instead — 139 of them — which is the number that would collapse if the walk stopped
 finding files. Worth knowing before the next repository-wide rule is written with the same
 shape.
+
+### 9.14 Phase 2 built the right palette and wired it to the wrong question (2026-08-19, DECISION 036)
+
+This is the third entry in this document that reverses a decision, and it reverses one of this
+document's own — §1's central argument, applied to item 2.
+
+**§1 said:** build the response to signals the browser already sends; do not build the machinery
+for signals nothing sends. `prefers-color-scheme: dark` arrives on a large fraction of every
+load, so a light-only site was "a wrong answer to a question that had been asked". That reasoning
+is why the dark palette exists, it produced thirty measured tokens and a real second theme, and
+none of that is being undone.
+
+**What it got wrong** was treating the arriving signal as the question. `prefers-color-scheme` is
+one global setting — usually chosen once, at night, for a phone — and the site received it as
+though it were a per-application preference about _this_ page. It is a signal about the reader's
+environment, not an instruction about which of two designs a business should lead with.
+
+**And they were never two designs.** The audit that found this measured what Phase 2 actually
+produced:
+
+|                                                     |                                              |
+| --------------------------------------------------- | -------------------------------------------- |
+| `.module.css` files containing a dark-specific rule | **0 of 90**                                  |
+| Cream page against a charcoal band, light           | **15.21:1**                                  |
+| The same two tokens, dark                           | **1.08:1**                                   |
+| Colour tokens never re-measured for dark            | **2** (`--color-surface-on-dark`, `-strong`) |
+| Colour-bearing CSS rules rule 4 can measure         | **144 of 948 — 15.2%**                       |
+
+Batch 2.2's own checklist named the third row before it happened: "`--color-surface-dark` is the
+token that breaks... it must resolve to something that still reads as _a different surface from
+the page_, or every dark band disappears into the ground." `#0B0D11` against `#15171C` satisfies
+the sentence and not the intent. Eight homepage section bands, the header and the footer all take
+their structure from that one contrast, and in the second palette they flatten.
+
+Nothing in a token block can fix that, because it is not a palette problem — it is that every
+composition in this repository was designed against cream, and a translation of the _values_ does
+not translate the _decisions_. Which is fine for an alternate a reader asks for, and not fine for
+the first thing a contractor sees on a phone in a driveway.
+
+**So the palette stays and the media query goes.** Light is the site; dark is reached from the
+Appearance control, which is what batch 2.4 built and what makes this cheap. Batch 2.4's three
+states became two in the same change — "Match my system" cannot mean anything once no stylesheet
+asks the system.
+
+**The three defects it flushed out are the more useful finding.** Rule 4 needs a foreground and a
+background stated in the same block, so it never saw any of them: a phone bezel painted with
+`--color-ink` (charcoal in light, **cream** in dark, on the hero), the demonstration banner doing
+the same and becoming the brightest element on a dark page, and `.onDark` in `Logo.module.css`
+pairing two _inverting_ tokens so the mark's tile hit 1.08:1 against the header and vanished — on
+every page, in both applications' shells. All three are legible. None is right. §9.4 records that
+a second palette is "a type system for colour roles"; this is the part of that type system rule 4
+cannot check, and there is now a rule that can.
+
+The same sweep found four `var(--x)` references to custom properties defined nowhere, three of
+them added after this plan closed. CSS discards the whole declaration and says nothing, so the
+word "Demonstration" — which its own stylesheet comment calls the thing that has to be
+unmistakable — had no fill at all.

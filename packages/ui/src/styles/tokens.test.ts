@@ -479,35 +479,81 @@ describe('the design system', () => {
 
     /*
      * ========================================================================
-     * THE TWO DARK BLOCKS SAY THE SAME THING
+     * THE DARK PALETTE IS DECLARED ONCE, AND THE OS IS NOT ASKED
      * ========================================================================
      *
-     * `tokens.css` declares the dark palette twice — once inside
-     * `@media (prefers-color-scheme: dark)` and once under `[data-theme='dark']` — because
-     * CSS has no way to reach one from the other and `light-dark()` degrades to no colour
-     * at all rather than to light. That duplication is the price and this is the guard on it.
+     * This replaces a check that the *two* dark blocks agreed with each other. There was a
+     * copy inside `@media (prefers-color-scheme: dark)` and a copy under `[data-theme='dark']`,
+     * and keeping them in step was the price of the operating system being allowed to choose.
+     * DECISION 036 stopped asking it: light is the default for every visitor and the dark
+     * palette is reached only from the Appearance control, so there is one block and nothing
+     * to keep in step.
      *
-     * Without it the failure is invisible and specific: somebody tunes one value, the theme
-     * looks right on their machine because their OS is dark, and the *toggle* renders a
-     * different palette from the one the OS renders. Nothing warns, both blocks are valid
-     * CSS, and only a reader who switches manually on a light system ever sees it.
+     * The check that replaces it is the decision itself. Deleting a media query is a one-line
+     * change and re-adding one is too — and the symptom of re-adding one is not a broken
+     * build, it is the site quietly serving two different first impressions again, which is
+     * the exact bug this whole change was made to fix. So the file may not contain the string
+     * at all outside a comment.
      */
-    const media = block(":root:not([data-theme='light'])");
-    const explicit = block(":root[data-theme='dark']");
-    const declarations = (source: string) =>
-      [...source.matchAll(/^\s*(--[a-z-]+):\s*([^;]+);/gm)].map(
-        ([, token, value]) => `${token}: ${value?.trim()}`,
-      );
+    expect(
+      withoutComments(tokensSource).includes('prefers-color-scheme'),
+      'tokens.css answers `prefers-color-scheme` again. The light palette is the default for ' +
+        'every visitor by decision, not by omission — see DECISION 036 and the long note in ' +
+        'tokens.css. Dark is reached through the Appearance control, which writes ' +
+        '`data-theme`. If the decision is being reversed, reverse it here too, on purpose.',
+    ).toBe(false);
+
+    /*
+     * ========================================================================
+     * BOTH PALETTES DECLARE THE SAME COLOURS
+     * ========================================================================
+     *
+     * A token that exists in one palette and not the other is not a build failure and not a
+     * contrast failure. It is a value tuned against one ground, silently reused on the other,
+     * and the only way anybody finds it is by looking at the page in the second theme — which
+     * is how `--color-surface-on-dark` sat unmeasured through a whole dark-mode project.
+     *
+     * The allowlist is checked in both directions like `EXCEPTIONS`: an entry that has *started*
+     * being overridden fails too, so an allowance cannot outlive its argument.
+     */
+    const NOT_OVERRIDDEN_IN_DARK: readonly { token: string; why: string }[] = [
+      {
+        token: '--color-surface-on-dark',
+        why: 'Cream at 8% over a charcoal band, and the band is charcoal in both palettes. The alpha resolves against whatever is behind it, so there is no second value to measure — unlike every solid token, which resolves against a ground that moved.',
+      },
+      {
+        token: '--color-surface-on-dark-strong',
+        why: 'The emphasised form of the above, and the same argument.',
+      },
+    ];
+
+    const lightColours = [...block(':root').matchAll(/^\s*(--color-[a-z-]+):/gm)].map(
+      ([, token]) => token as string,
+    );
+    const darkColours = new Set(
+      [...block(":root[data-theme='dark']").matchAll(/^\s*(--color-[a-z-]+):/gm)].map(
+        ([, token]) => token as string,
+      ),
+    );
+    const allowedMissing = new Set(NOT_OVERRIDDEN_IN_DARK.map((entry) => entry.token));
 
     expect(
-      declarations(media),
-      'The two dark blocks in tokens.css have drifted apart. They must declare the same ' +
-        'tokens with the same values — the media query answers the operating system and ' +
-        'the attribute answers the toggle, and a reader can meet either one.',
-    ).toEqual(declarations(explicit));
+      lightColours.filter((token) => !darkColours.has(token) && !allowedMissing.has(token)),
+      'These colours exist in the light palette and not the dark one, so the dark theme is ' +
+        'reusing a value measured against cream. Give each a measured dark value, or add it ' +
+        'to NOT_OVERRIDDEN_IN_DARK with the sentence that says why it does not need one.',
+    ).toEqual([]);
 
-    /* Guards the guard: two empty blocks are also equal to each other. */
-    expect(declarations(media).length).toBeGreaterThan(25);
+    expect(
+      NOT_OVERRIDDEN_IN_DARK.filter((entry) => darkColours.has(entry.token)).map(
+        (entry) => entry.token,
+      ),
+      'These are in NOT_OVERRIDDEN_IN_DARK and the dark block now overrides them. Delete the ' +
+        'entry — an allowance nobody is using is an allowance the next reader trusts.',
+    ).toEqual([]);
+
+    /* Guards the guard: an empty light palette would satisfy every assertion above. */
+    expect(lightColours.length).toBeGreaterThan(25);
 
     const channel = (value: number) =>
       value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
@@ -548,10 +594,15 @@ describe('the design system', () => {
           if (!fg || !bg) continue;
 
           /*
-           * The demo subtree is measured in light only, because it is *served* in light
-           * only — `DemoLayout` pins `data-theme="light"` on itself. See the EXCEPTIONS
-           * entry, and `Demo.module.css`'s own note on why five other businesses' brands
-           * do not follow a JobForge visitor's operating-system setting.
+           * The hook is kept and no file currently uses it, which is deliberate and was not
+           * always accurate. It used to carry a comment saying the demo subtree was excused
+           * here because `DemoLayout` pins `data-theme="light"` on itself, and pointing at an
+           * `EXCEPTIONS` entry. Neither was true: the demo pins `color-scheme: light` on
+           * `.shell` (which paints nothing, and is there so the browser does not draw a
+           * charcoal date picker inside somebody else's bright website), and no entry ever
+           * existed. Nothing was excused and nothing needed to be — every colour below the
+           * disclosure bar is a `--demo-*` literal, so no pair in those files matches this
+           * rule at all. The stale-entry check below still holds the hook honest.
            */
           if (theme === 'dark' && isExcepted('contrast-dark', file)) {
             exceptionsUsed.add(`contrast-dark:${basename(file)}`);
@@ -591,6 +642,140 @@ describe('the design system', () => {
       stale,
       'These contrast-dark EXCEPTIONS no longer match anything — delete the entry.',
     ).toEqual([]);
+  });
+
+  /*
+   * ==========================================================================
+   * NO TEXT TOKEN PAINTS A SURFACE
+   * ==========================================================================
+   *
+   * The rule above measures a pair. This one measures a *role*, and it exists because the
+   * rule above structurally cannot see the failure it catches.
+   *
+   * The contrast rule needs a foreground and a background stated in the same block. That is
+   * 144 of the 948 colour-bearing rules in this repository — the other 804 state one half and
+   * inherit the other, which no stylesheet can resolve statically. So a rule that paints only
+   * a background is invisible to it, and `background: var(--color-ink)` is invisible *and*
+   * wrong: `--color-ink` means "the colour text is" and therefore inverts with the ground.
+   * It was charcoal on the light page and cream on the dark one, which is correct for text
+   * and is not correct for a phone bezel, a sticky bar, or anything else that is an object.
+   *
+   * Three of those shipped: the hero's phone frame, the demonstration banner, and the mark
+   * tile in the header (that one paired two inverting tokens, so it stayed legible right up
+   * until it turned 1.08:1 and disappeared). None failed a test. Two of them were also
+   * legible, which is the point — legibility is not the property being protected here.
+   *
+   * The fix in every case was the same: name the token that means the *thing*.
+   * `--color-surface-dark` is a band and stays a band; `--color-ink-inverse` is the text on
+   * one and stays cream. There is no EXCEPTIONS hook because there has not yet been a
+   * defensible reason, and the day there is, it costs a sentence like every other one here.
+   */
+  it('paints no surface with a token that means text', () => {
+    /* Tokens whose value follows the ground. A surface painted with one is a surface that
+       inverts when the palette does — which is only ever right by accident. */
+    const TEXT_TOKENS = ['--color-ink', '--color-ink-muted', '--color-accent-text'];
+
+    const offenders: string[] = [];
+    let backgroundsSeen = 0;
+
+    for (const file of allStylesheets(SRC)) {
+      withoutComments(readFileSync(file, 'utf8'))
+        .split('\n')
+        .forEach((line, index) => {
+          const match = line.match(/^\s*background(?:-color)?\s*:\s*([^;]+);/);
+          if (!match?.[1]) return;
+          backgroundsSeen += 1;
+          const token = TEXT_TOKENS.find((name) => match[1]?.includes(`var(${name})`));
+          if (!token) return;
+          offenders.push(`${basename(file)}:${index + 1}  ${line.trim()}`);
+        });
+    }
+
+    expect(
+      offenders,
+      'These paint a surface with a token that means text, so the surface inverts with the ' +
+        'palette. Name the token that means the thing instead — --color-surface-dark for a ' +
+        'band, --color-surface for a card, --color-accent-strong for an ember fill.',
+    ).toEqual([]);
+
+    expect(backgroundsSeen).toBeGreaterThan(100);
+  });
+
+  /*
+   * ==========================================================================
+   * EVERY CUSTOM PROPERTY A STYLESHEET NAMES ACTUALLY EXISTS
+   * ==========================================================================
+   *
+   * A misspelt custom property is the quietest failure in CSS. `var(--color-accent-fill)` is
+   * valid syntax, passes every linter, builds, deploys — and at computed-value time the whole
+   * declaration is thrown away. `background` falls back to transparent and `color` falls back
+   * to inherited, so the element renders as *something* and nobody is told anything.
+   *
+   * Four were live in this repository when this rule was written, all four added recently and
+   * all four invisible to every other guard here: `--color-accent-fill` (the word
+   * "Demonstration", which the stylesheet's own comment calls the thing that has to be
+   * unmistakable, rendering with no fill), `--color-ink-subtle`, `--container-prose` and
+   * `--container-xs` (two elements with no max-width, so two measures gone on wide screens).
+   *
+   * A `var(--x, fallback)` is deliberately allowed: a fallback is a stated intention, and the
+   * one-argument form is the one that fails silently.
+   */
+  it('names no custom property that is never defined', () => {
+    const defined = new Set<string>();
+
+    for (const file of allStylesheets(SRC)) {
+      for (const [, , token] of readFileSync(file, 'utf8').matchAll(
+        /(^|[;{\s])(--[a-zA-Z0-9-]+)\s*:/g,
+      )) {
+        if (token) defined.add(token);
+      }
+    }
+
+    /*
+     * A component may set a custom property from JSX — `style={{ '--reveal-delay': … }}` is
+     * the documented way to pass a dynamic value into a stylesheet — so those count as
+     * definitions too. Without this the rule would fire on every one of them.
+     */
+    function sourceFiles(dir: string): string[] {
+      return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        if (SKIP.has(entry.name)) return [];
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) return sourceFiles(path);
+        return /\.tsx?$/.test(entry.name) ? [path] : [];
+      });
+    }
+
+    for (const file of sourceFiles(SRC)) {
+      for (const [, token] of readFileSync(file, 'utf8').matchAll(
+        /['"](--[a-zA-Z0-9-]+)['"]\s*:/g,
+      )) {
+        if (token) defined.add(token);
+      }
+    }
+
+    const offenders: string[] = [];
+    let referencesSeen = 0;
+
+    for (const file of allStylesheets(SRC)) {
+      withoutComments(readFileSync(file, 'utf8'))
+        .split('\n')
+        .forEach((line, index) => {
+          for (const [, token, fallback] of line.matchAll(/var\((--[a-zA-Z0-9-]+)\s*(,)?/g)) {
+            referencesSeen += 1;
+            if (fallback || !token || defined.has(token)) continue;
+            offenders.push(`${basename(file)}:${index + 1}  ${line.trim()}`);
+          }
+        });
+    }
+
+    expect(
+      offenders,
+      'These name a custom property that is defined nowhere, so the browser discards the ' +
+        'whole declaration and the element renders as if the line were not there. Fix the ' +
+        'name, add the token to styles/tokens.css, or state a fallback: var(--x, value).',
+    ).toEqual([]);
+
+    expect(referencesSeen).toBeGreaterThan(500);
   });
 
   /*

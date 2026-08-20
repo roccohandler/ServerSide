@@ -112,6 +112,20 @@ export function requestChanges(
   return httpPost(`/api/app/projects/${encodeURIComponent(projectId)}/request-changes`);
 }
 
+/**
+ * Agreeing to the scope and the price. DECISION 040.
+ *
+ * Its own endpoint for the same reason `approveProject` is: "they agreed to this, on this
+ * date, at this version" is a claim that has to be defensible later, and the server is what
+ * records it. There is deliberately no counterpart for withdrawing — what supersedes an
+ * acceptance is a new version, which only the owner can send.
+ */
+export function acceptScope(
+  projectId: string,
+): Promise<ApiResult<{ readonly project: ProjectView }>> {
+  return httpPost(`/api/app/projects/${encodeURIComponent(projectId)}/scope/accept`);
+}
+
 /* ------------------------------------------------------------------- files */
 
 /**

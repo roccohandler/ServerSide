@@ -4,17 +4,33 @@ import { routes, sections } from '../../../../../config/routes';
 import { Card } from '@jobforge/ui';
 import { ButtonLink } from '@jobforge/ui';
 import { Icon } from '@jobforge/ui';
-import { track } from '../../../../../lib/analytics';
+import { track, type CtaLocation } from '../../../../../lib/analytics';
 import { headingTags, type BlockLevel } from './headingTags';
 import styles from './Pricing.module.css';
 import offer from '../../Offer.module.css';
 
 interface BuildCardProps {
   readonly blockLevel: BlockLevel;
-  readonly location: 'home' | 'services';
+  readonly location: PricingSurface;
   /** `false` on the homepage, where the offer stack already prints the expansion. */
   readonly showIncludes: boolean;
 }
+
+/** The three surfaces that render a price. Exported so all of them name the same set. */
+export type PricingSurface = 'home' | 'services' | 'pricing';
+
+/**
+ * Which `cta_clicked` location each surface reports.
+ *
+ * A lookup rather than the ternary this used to be. Two surfaces are a ternary; three are a
+ * ternary with a default, and a default is where the third surface silently reports as the
+ * first — which is indistinguishable in a report from the third surface not existing.
+ */
+const CTA_LOCATIONS: Readonly<Record<PricingSurface, CtaLocation>> = {
+  home: 'pricing',
+  services: 'services-pricing',
+  pricing: 'pricing-page',
+};
 
 /**
  * The primary purchase: the whole website build.
@@ -86,11 +102,7 @@ export function BuildCard({ blockLevel, location, showIncludes }: BuildCardProps
           <ButtonLink
             to={primaryCta.to}
             variant="secondary"
-            onClick={() =>
-              track('cta_clicked', {
-                location: location === 'services' ? 'services-pricing' : 'pricing',
-              })
-            }
+            onClick={() => track('cta_clicked', { location: CTA_LOCATIONS[location] })}
           >
             {primaryCta.label}
           </ButtonLink>

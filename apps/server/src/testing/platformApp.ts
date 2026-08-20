@@ -79,6 +79,16 @@ export interface PlatformHarness {
    */
   readonly services: {
     readonly billing: ReturnType<typeof createBillingService>;
+    /**
+     * Exposed for the owner-side operations a customer-path test has to stand up before the
+     * customer can do anything — sending a scope is the first of them.
+     *
+     * Through the service rather than by writing the field into the repository, because what
+     * the customer then accepts has to be a scope that went through the real path: versioned,
+     * notified, and with the acceptance fields genuinely absent rather than merely omitted by
+     * whoever wrote the fixture.
+     */
+    readonly projects: ReturnType<typeof createProjectService>;
   };
   readonly repositories: {
     readonly projects: ReturnType<typeof createInMemoryProjectRepository>;
@@ -433,7 +443,7 @@ export function createPlatformHarness(options: PlatformHarnessOptions = {}): Pla
     stripe,
     email,
     identityVerifier,
-    services: { billing: billingService },
+    services: { billing: billingService, projects: projectService },
     repositories: {
       projects,
       tasks,

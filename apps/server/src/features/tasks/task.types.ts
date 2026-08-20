@@ -28,6 +28,20 @@ export const TASK_KINDS = [
   'review-preview',
   'approve-website',
   'connect-domain',
+  /**
+   * The one task that arrives *after* launch rather than before it.
+   *
+   * Every other kind here blocks a build. This one asks a client whose site is live to keep
+   * their Google Business Profile current and to ask a happy customer for a review — and it is
+   * on this list rather than in an email because the research is unambiguous about two things:
+   * every home-services buyer checks third-party reviews before ringing, and a well-kept
+   * Google listing does more for a local service business than anything on the website itself.
+   *
+   * The site says that out loud already (`localSearch.caveat`: "we will tell you that rather
+   * than sell you around it"). This is the version of that sentence that actually reaches
+   * somebody at the moment it is useful.
+   */
+  'review-listing',
   /** Anything the owner types by hand for one project. */
   'custom',
 ] as const;

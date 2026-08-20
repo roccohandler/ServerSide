@@ -98,6 +98,17 @@ export function fetchConversations(
  * project is the server's decision, because the server is the only side that knows whether
  * the person has a portal to receive it in.
  */
+/**
+ * Takes a prospect off the list without sending anything.
+ *
+ * For the enquiry answered somewhere this system cannot see — a phone call, or a reply from
+ * the owner's own mail app — or one that never needed an answer. The server refuses it for a
+ * customer's change request, which is closed by resolving the thread so the client is told.
+ */
+export function closeConversation(conversationId: string): Promise<ApiResult<unknown>> {
+  return post(`/admin/conversations/${encodeURIComponent(conversationId)}/close`);
+}
+
 export function sendReply(conversationId: string, body: string): Promise<ApiResult<unknown>> {
   return post(`/admin/conversations/${encodeURIComponent(conversationId)}/replies`, { body });
 }
@@ -249,6 +260,31 @@ export function createCheckoutLink(
   }>
 > {
   return post(`/admin/projects/${encodeURIComponent(projectId)}/checkout-link`, input);
+}
+
+/**
+ * Raises an invoice and lets Stripe send it. DECISION 041.
+ *
+ * The difference from `createCheckoutLink` above is the thing that matters and the panel says
+ * it out loud: a Checkout link **expires after 24 hours**, so one sent on a Friday afternoon
+ * is dead before Monday. An invoice has a permanent URL, a PDF, a due date and Stripe's own
+ * reminders — and it is the document a client's bookkeeper actually wants.
+ *
+ * `emailedTo` here *is* a delivery claim, unlike the checkout call's. Stripe sends the invoice
+ * and reports whether it accepted it; our own notifier swallows its failures by contract.
+ */
+export function sendInvoice(
+  projectId: string,
+  input: { readonly product: 'build-deposit' | 'build-final' },
+): Promise<
+  ApiResult<{
+    readonly url: string;
+    readonly number: string | null;
+    readonly product: string;
+    readonly emailedTo: string;
+  }>
+> {
+  return post(`/admin/projects/${encodeURIComponent(projectId)}/invoice`, input);
 }
 
 export function setUrls(
@@ -427,6 +463,32 @@ export function setEstimate(
   });
 }
 
+/* ------------------------------------------------------------------ the scope */
+
+/**
+ * Sends the scope and price for the customer to accept. DECISION 040.
+ *
+ * Every send is a new version and every send withdraws any acceptance the previous one had.
+ * That rule lives in `ProjectService.sendScope` and nothing about it lives here — but the
+ * console has to *say* it, because from the operator's side correcting a typo and re-opening
+ * a signed agreement look like the same click. `ScopePanel` is where that warning is written.
+ *
+ * `priceCents`, not dollars: every figure crossing this boundary is cents, matching
+ * `billing.amounts.ts`. The panel converts once, on the way in.
+ */
+export function sendScope(
+  projectId: string,
+  scope: {
+    readonly summary: string;
+    readonly lines: readonly string[];
+    readonly priceCents: number;
+    readonly notes?: string;
+    readonly caseStudy?: boolean;
+  },
+): Promise<ApiResult<{ readonly project: AdminProjectView }>> {
+  return post(`/admin/projects/${encodeURIComponent(projectId)}/scope`, scope);
+}
+
 /* ------------------------------------------------------------------ accounts */
 
 export function fetchAccounts(
@@ -476,4 +538,25 @@ export function fetchWorklist(
   signal?: AbortSignal,
 ): Promise<ApiResult<{ readonly groups: readonly WorklistGroup[] }>> {
   return get('/admin/worklist', signal);
+}
+
+/* ------------------------------------------------------- the response guarantee */
+
+/**
+ * Applies the response-guarantee remedy for one month. DECISION 009.
+ *
+ * The terms promise the month's fee is "waived in full and applied without you having to
+ * request it" — so this exists to make the second half true. It was behind
+ * `BILLING_ADMIN_TOKEN` and curl, which meant a promise the customer never has to ask for was
+ * one the owner had to remember from a terminal.
+ *
+ * **A credit, never a refund.** The server hard-codes the remedy; DECISION 019 keeps anything
+ * that moves money *out* on the token surface. Idempotent per project-month, which is what
+ * makes it safe to be a button rather than a dialog.
+ */
+export function applyGuaranteeCredit(
+  projectId: string,
+  month: string,
+): Promise<ApiResult<{ readonly credit: { readonly month: string } }>> {
+  return post(`/admin/projects/${encodeURIComponent(projectId)}/guarantee-credit`, { month });
 }

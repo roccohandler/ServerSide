@@ -3,6 +3,7 @@ import { parseBody, parseQuery } from '../../lib/requestSchema.js';
 import { COMMENT_FIELD_LIMITS } from '../feedback/index.js';
 import { TASK_KINDS } from '../tasks/index.js';
 import { PROJECT_FIELD_LIMITS, PROJECT_MILESTONES, PROJECT_STATUSES } from './project.types.js';
+import { SCOPE_FIELD_LIMITS } from './scope.types.js';
 
 /*
  * The bodies the project portal accepts.
@@ -131,6 +132,34 @@ export const updateProjectDetailsSchema = z
     error: 'Nothing was changed.',
   });
 
+/**
+ * The scope the owner sends for the customer to accept. DECISION 040.
+ *
+ * `priceCents` is an integer in cents and there is no currency field, matching
+ * `billing.amounts.ts` — every figure in this system is cents and every currency is USD, and
+ * a currency field nothing reads is a field somebody eventually sets to something else.
+ *
+ * The cap is deliberately generous rather than tied to the published build price: a bespoke
+ * quote is a normal thing to send, and it is `scopeAllowsSelfServeDeposit` that decides
+ * whether *Checkout* can settle it. Validation's job is to reject nonsense, not to enforce a
+ * commercial rule that lives one layer down.
+ *
+ * `version`, `sentAt`, `sentBy` and every acceptance field are absent on purpose. They are
+ * facts the server establishes, and a payload that could set them is a payload that could
+ * claim a customer accepted something.
+ */
+export const sendScopeSchema = z.strictObject({
+  summary: z.string().trim().min(1).max(SCOPE_FIELD_LIMITS.summary),
+  lines: z
+    .array(z.string().trim().min(1).max(SCOPE_FIELD_LIMITS.line))
+    .min(1)
+    .max(SCOPE_FIELD_LIMITS.lines),
+  priceCents: z.int().min(0).max(100_000_00),
+  notes: z.string().trim().max(SCOPE_FIELD_LIMITS.notes).optional(),
+  /* Founding-client scopes only. Accepting one grants case-study permission. */
+  caseStudy: z.boolean().optional(),
+});
+
 export const parseListQuery = (query: unknown) => parseQuery(listQuerySchema, query);
 export const parseCreateProject = (body: unknown) => parseBody(createProjectSchema, body);
 export const parseSetProjectOwner = (body: unknown) => parseBody(setProjectOwnerSchema, body);
@@ -142,3 +171,4 @@ export const parseAddComment = (body: unknown) => parseBody(addCommentSchema, bo
 export const parseAddTask = (body: unknown) => parseBody(addTaskSchema, body);
 export const parseSetDeploymentUrl = (body: unknown) => parseBody(setDeploymentUrlSchema, body);
 export const parseSetEstimate = (body: unknown) => parseBody(setEstimateSchema, body);
+export const parseSendScope = (body: unknown) => parseBody(sendScopeSchema, body);

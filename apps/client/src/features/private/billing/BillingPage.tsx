@@ -195,9 +195,50 @@ export function BillingPage() {
            * second payment would read as the price being re-negotiated.
            * ============================================================================
            */}
+          {/*
+           * ======================================================================
+           * THE FINAL PAYMENT SHOULD BE EXPECTED, NOT A SECOND ASK
+           * ======================================================================
+           *
+           * Payment-UX research is blunt about where these flows actually fail: *"users rarely
+           * abandon a payment flow due to structural pricing flaws; they abandon it because the
+           * presentation layer introduces ambiguity"*, and what a payer needs to know is **who
+           * they are paying, how much, when, and what happens after they confirm.**
+           *
+           * The previous version answered "how much" and nothing else. It named the balance
+           * without the total it is half of, without the deposit already paid, and without
+           * saying what pressing the button causes — so a reader who had paid weeks ago met a
+           * figure and had to reconstruct the arithmetic to be sure it was not a second full
+           * charge.
+           *
+           * The three-line breakdown is the whole fix, and it is deliberately arithmetic the
+           * reader can check rather than a single number they have to trust. Every figure is
+           * derived from `config/pricing.ts` — nothing here is typed.
+           * ======================================================================
+           */}
           <p className={styles['panelBody']}>
-            Your website is approved and going live. The second half of the build — {prices.deposit}{' '}
-            — settles it, and nothing else is owed on the build.
+            You approved the website, so the balance is now due — this is the second half of the
+            agreed price, not a new charge.
+          </p>
+
+          <dl className={styles['ledger']}>
+            <div>
+              <dt>Agreed price</dt>
+              <dd>{pricing.build.price}</dd>
+            </div>
+            <div>
+              <dt>Deposit already paid</dt>
+              <dd>−{prices.deposit}</dd>
+            </div>
+            <div className={styles['ledgerTotal']}>
+              <dt>Due now</dt>
+              <dd>{prices.deposit}</dd>
+            </div>
+          </dl>
+
+          <p className={styles['panelBody']}>
+            Once it clears we put the site live on your domain the same working day, and nothing
+            else is owed on the build.
           </p>
           <Button
             size="lg"

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { pricing } from '../../../../content';
 import { routes } from '../../../../config/routes';
 import { CarePlans } from './CarePlans';
-import { BuildCard } from './pricing/BuildCard';
+import { BuildCard, type PricingSurface } from './pricing/BuildCard';
 import { RelationshipDiagram } from './pricing/RelationshipDiagram';
 import { YearOneEconomics } from './pricing/YearOneEconomics';
 import { CoverageComparison } from './pricing/CoverageComparison';
@@ -11,14 +11,14 @@ import { CommercialTermsDisclosure } from './pricing/CommercialTermsDisclosure';
 import type { BlockLevel } from './pricing/headingTags';
 import styles from './pricing/Pricing.module.css';
 
-interface PricingBlockProps {
+export interface PricingBlockProps {
   /**
    * The heading level of this block's sub-headings — the build card's name, the year-one
    * heading, the comparison heading and the terms heading.
    */
   readonly blockLevel?: BlockLevel;
-  /** Which surface reported the interaction, so the two are separable in the numbers. */
-  readonly location?: 'home' | 'services';
+  /** Which surface reported the interaction, so the three are separable in the numbers. */
+  readonly location?: PricingSurface;
   /**
    * How much of the block to render.
    *
@@ -128,9 +128,18 @@ export function PricingBlock({
 
       <CommercialTermsDisclosure blockLevel={blockLevel} open={full} />
 
+      {/*
+       * The summary's way out, and it points at `/pricing` rather than `/services`.
+       *
+       * It used to point at the services page, which was the only surface rendering the
+       * market comparison and the commercial terms. `/pricing` now renders both plus the
+       * payment terms, and it is the page a reader looking at a figure is actually asking
+       * for — a services page answers "what is the work", and this reader has already
+       * decided that and is asking "what does it cost me, and what am I risking".
+       */}
       {full ? null : (
         <p className={styles['priceFootnote']}>
-          <Link to={routes.services}>See how this compares to the alternatives</Link>.
+          <Link to={routes.pricing}>See the full price, the terms, and how it compares</Link>.
         </p>
       )}
     </div>

@@ -61,7 +61,22 @@ export { trust, type TrustCommitment } from './trust';
 export { testimonials, testimonialsSection } from './testimonials';
 export { aboutContent } from './about';
 export { contactContent, heroForm, inquiryOptions } from './contact';
-export { privacyContent, termsContent, legalNotice } from './legal';
+/*
+ * `legal` is **not** re-exported here, and it used to be. See the note below on what is
+ * deliberately absent — this is the same rule, applied to a module that had been breaking it
+ * since before the rule was written.
+ *
+ * The privacy and terms pages are the definition of a page somebody arrives at deliberately.
+ * They were eager routes reading barrel-exported content, so 25 kB of prose that almost no
+ * first-time visitor renders sat in the chunk every page modulepreloads. Nothing was
+ * obviously wrong: the pages worked, the tests passed, and the weight was invisible because
+ * it had always been there.
+ *
+ * It surfaced when five commercial clauses were added to the terms on 2026-08-19 and the
+ * budget guard failed by 0.8 kB — the guard doing exactly its job, on prose that had to be
+ * published rather than on prose that could be cut. Splitting the route paid for the clauses
+ * several times over.
+ */
 export { pages, notFoundPage, findPageMeta, buildDocumentTitle } from './pages';
 export { hero, audience, outcomes, finalCta } from './home';
 export { opportunity } from './opportunity';

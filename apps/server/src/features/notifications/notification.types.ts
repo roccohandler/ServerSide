@@ -68,6 +68,13 @@ export type NotificationAudience = (typeof NOTIFICATION_AUDIENCES)[number];
  */
 export const NOTIFICATION_KINDS = [
   /* ---------------------------------------------------------------- customer */
+  /**
+   * The scope and price are written up and waiting to be accepted. DECISION 040.
+   *
+   * First in the list because it is first in the project: nothing else here can happen until
+   * this one has been read, since an unaccepted scope means no deposit button.
+   */
+  'scope.ready',
   /** A preview exists and is worth looking at. The build waits on this one. */
   'preview.ready',
   /** Their changes are done and the site is waiting on their approval. */
@@ -116,6 +123,22 @@ export const NOTIFICATION_KINDS = [
   /** A monthly Website Performance Report was published. Growth Partner's deliverable. */
   'report.published',
   /* ------------------------------------------------------------------- owner */
+  /**
+   * A client accepted their scope and price, so the deposit is now payable.
+   *
+   * Immediate rather than digest, and it is the earliest of the three that are: it is the
+   * moment a conversation becomes a project, and the owner's next action — watching for the
+   * deposit, or invoicing if the figure was bespoke — depends on knowing.
+   */
+  'owner.scope_accepted',
+  /**
+   * A deposit was paid twice — two checkout tabs, one of which has to be refunded.
+   *
+   * Immediate, and the most time-sensitive owner alert here: it is the only one about money
+   * that has to go *back*. A customer who spots the second charge before we do has a
+   * considerably worse morning than one who gets an unprompted refund.
+   */
+  'owner.duplicate_payment',
   /** A client approved their website. */
   'owner.approved',
   /** A client asked for changes. */
@@ -168,6 +191,7 @@ export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
  */
 export const IMMEDIATE_KINDS: readonly NotificationKind[] = [
   /* Every customer notification. Listed rather than derived, so the exception is visible. */
+  'scope.ready',
   'preview.ready',
   'approval.requested',
   'tasks.assigned',
@@ -181,6 +205,8 @@ export const IMMEDIATE_KINDS: readonly NotificationKind[] = [
   'report.published',
   /* Owner: somebody is now waiting on a reply, or money moved. */
   'owner.changes_requested',
+  'owner.duplicate_payment',
+  'owner.scope_accepted',
   'owner.approved',
   'owner.tasks_cleared',
 ];

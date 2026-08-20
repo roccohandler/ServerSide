@@ -46,3 +46,17 @@
   display: grid;
   gap: var(--space-3);
 }
+
+/*
+ * The two actions on a closed row.
+ *
+ * Wraps rather than shrinks: "Close without replying" is a long label on purpose — it has to
+ * be distinguishable at a glance from the button beside it, because one of them emails a
+ * prospect and the other decides they will not hear from anybody.
+ */
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}

@@ -11,6 +11,25 @@ export const routes = {
   home: '/',
   about: '/about',
   services: '/services',
+  /**
+   * What it costs, and what happens to your money — the page a price-shopper types.
+   *
+   * Its own route rather than a section of `/services`, and the reason is the reader rather
+   * than the length. Somebody on `/services` is asking *what is the work*; somebody who went
+   * looking for a price has already answered that and is asking *what does it cost me, and
+   * what am I risking*. Those are different questions and the second one has answers the
+   * services page has no business carrying: the refund policy, what "finished" means, the
+   * deemed-acceptance window, what happens if they go quiet, and the sales-tax line.
+   *
+   * It is also a URL people expect to be able to guess, and one already promised in writing:
+   * a follow-up email sent to every prospect who goes quiet has been telling them "the
+   * pricing page says what it costs" since before there was one.
+   *
+   * `/pricing` rather than `/what-it-costs`, breaking the pattern `/what-your-website-can-do`
+   * set. That pattern exists because nobody types "capabilities" — but everybody types
+   * "pricing", so here the convention and the reader's own word are the same word.
+   */
+  pricing: '/pricing',
   portfolio: '/portfolio',
   /**
    * The Website Score — the self-serve diagnostic at /audit.
@@ -21,6 +40,20 @@ export const routes = {
    * two share their scoring rules and nothing else.
    */
   audit: '/audit',
+  /**
+   * The Website Blueprint — twelve questions about a *business*, and a plan for what a website
+   * for a business like theirs has to do. DECISION 042.
+   *
+   * Its own route rather than a longer `/audit`, and the distinction is the reader rather than
+   * the length. `/audit` scores a site that exists, for somebody who suspects theirs is
+   * underperforming. This plans a site for a business — and it works for somebody who has no
+   * website at all, which is a population `/audit` cannot serve and a large share of this
+   * market.
+   *
+   * **Not called an assessment**, and that is deliberate rather than fussy: five things in this
+   * repository are already called one. See DECISION 042.
+   */
+  blueprint: '/blueprint',
   /**
    * The capability library — what a website can do for a local service business.
    *

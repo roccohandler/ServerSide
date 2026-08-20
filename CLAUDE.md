@@ -145,11 +145,17 @@ having two names is how a reader learns to check every folder.
    DECISION 030 drew the rule's outer boundary, which is a different question from its cost:
    **rule 6 is about surface, not about coverage.** A dark palette, a `forced-colors` block and
    a print stylesheet are not API somebody might one day call — they are answers to
-   `prefers-color-scheme`, `forced-colors` and `print`, which arrive from real readers on every
-   page load this site has ever served. A light-only, screen-only page is a wrong answer to a
-   question that was asked, not the absence of a speculative feature. The line: **build the
-   response to signals the browser already sends; do not build the machinery for signals
-   nothing sends.** That is why there is no message catalogue.
+   `forced-colors` and `print` and to a reader's own request, which arrive from real readers on
+   every page load this site has ever served. A screen-only page is a wrong answer to a question
+   that was asked, not the absence of a speculative feature. The line: **build the response to
+   signals the browser already sends; do not build the machinery for signals nothing sends.**
+   That is why there is no message catalogue.
+   DECISION 036 marked that line's other edge, and it is the one that is easy to get wrong:
+   **a signal arriving is not the same as the signal being the question.** `prefers-color-scheme`
+   arrives on a large share of loads and it is a global setting about a reader's _environment_,
+   not an instruction about which of two designs a business leads with — so the dark palette is
+   built, measured and kept, and it is served only to a reader who asks for it. Answering a
+   signal is not the same as obeying it.
 7. **Low indirection.** A feature's entry point is one hop and it is the only sanctioned hop.
 
 ---
@@ -157,15 +163,21 @@ having two names is how a reader learns to check every folder.
 ## Tokens
 
 Every colour, size, radius, shadow and stacking value comes from
-`packages/ui/src/styles/tokens.css`. `tokens.test.ts` beside it enforces six rules across
+`packages/ui/src/styles/tokens.css`. `tokens.test.ts` beside it enforces these rules across
 **every app and package** and **each one fails the build**:
 
 1. No colour literal in any UI-colour property.
 2. Every `z-index` from the `--z-*` scale.
 3. Only the six documented breakpoints.
-4. Every stated foreground/background pair clears WCAG AA, computed from the real hex values.
+4. Every stated foreground/background pair clears WCAG AA, computed from the real hex values —
+   **over both palettes**, and the two must declare the same set of colours.
 5. Every `font-size` and `border-radius` from a scale.
 6. Every spacing value from the rhythm.
+7. Every inset spelled on the inline axis.
+8. No surface painted with a token that means text. Rule 4 needs both halves in one block and
+   sees 15% of the colour-bearing rules; this is the half of "the right token" it cannot check.
+9. No `var(--x)` naming a custom property that is defined nowhere. `var(--x, value)` is fine.
+10. `tokens.css` may not name `prefers-color-scheme`. DECISION 036, enforced.
 
 ### What is deliberately allowed
 
@@ -337,6 +349,28 @@ than responsibility. Judge by whether the file has one reason to change.
   locally, and the theme silently stops working **in production only**. `scripts/check-csp.ts`
   runs after `build` in `npm run verify`, recomputes the digest from the built HTML, and prints
   the hash to paste.
+- **Light is the site; dark is a request, not a setting.** DECISION 036. Both palettes are in
+  `tokens.css` and both clear AA, and `prefers-color-scheme` is deliberately **not** consulted —
+  `tokens.test.ts` fails the build if the string reappears in that file. A visitor gets cream on
+  any machine; the Appearance control in the footer and in both workspace bars writes
+  `data-theme`, which is the only way into the dark block. It had a media query for three days
+  and the symptom was the owner unable to say which palette was the site. The reasoning is a long
+  note in `tokens.css` and it is worth reading before touching either half.
+- **The dark palette is a translation, and the guard only sees 15% of the surface.** No
+  `.module.css` in five workspaces contains a dark-specific rule, so every composition was
+  designed against cream — a charcoal band is 15.21:1 against the page in light and **1.08:1** in
+  dark, which is why an alternate palette is a fine thing to offer and a poor thing to serve
+  unasked. And rule 4 can only measure a rule that states a foreground _and_ a background: 144 of 948. Three role inversions shipped through that gap — a phone bezel and a sticky bar painted
+  with `--color-ink` (charcoal in light, **cream** in dark), and `.onDark` in `Logo.module.css`
+  pairing two inverting tokens so the mark's tile vanished into the header. All three legible,
+  all three wrong. **Name the token that means the thing**: `--color-surface-dark` is a band in
+  both palettes, `--color-ink-inverse` is the text on one.
+- **A misspelt custom property is silent, and CSS throws away the whole declaration.**
+  `var(--color-accent-fill)` parses, lints, builds and deploys, and then `background` falls back
+  to transparent — so the word "Demonstration" had no fill and nothing anywhere said so. Four
+  were live at once (`--color-accent-fill`, `--color-ink-subtle`, `--container-prose`,
+  `--container-xs`). `tokens.test.ts` now fails on any `var(--x)` with no definition and no
+  fallback; `var(--x, value)` is still fine, because a fallback is a stated intention.
 - **A data router costs 16.6 kB gzipped and this repository does not have one.** `useBlocker`
   needs `createBrowserRouter`; migrating was measured at eager JS 537.9 → 591.9 kB raw, because
   the data layer arrives whether or not a route uses a loader. The budget guard refused it. The

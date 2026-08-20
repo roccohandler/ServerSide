@@ -1058,7 +1058,19 @@ export const pricing = {
    */
   reassurance: [
     'We draft the copy and the structure — you correct the facts',
-    'The domain, hosting and content are in your name from day one',
+    /*
+     * The consequence was missing, and the consequence is the whole point.
+     *
+     * "In your name from day one" is a fact about account registration. The fear it answers is
+     * being held hostage by whoever built the site — which is the most common bad experience
+     * this market has actually had, and it is not answered by a fact about registration unless
+     * the reader completes the inference themselves. Most do not. The clause after the dash is
+     * the sentence they came for, and it costs six words.
+     *
+     * The full block, with the individual assets named, is on `/pricing` where somebody is
+     * actively weighing the risk. This is the homepage's version and it stays one line.
+     */
+    'The domain, hosting and content are in your name from day one — leave whenever you like and you take all of it',
     `${buildScope.revisionRoundsWord[0]?.toUpperCase() ?? ''}${buildScope.revisionRoundsWord.slice(1)} revision rounds within the agreed scope`,
     '30 days of checks and fixes after it goes live',
     'It does not launch until it passes the published Launch Standard',

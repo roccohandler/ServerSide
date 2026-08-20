@@ -44,6 +44,23 @@ export const CURRENT_ACTION_KINDS = [
    */
   'finish-request',
   'start-assessment',
+  /*
+   * ==========================================================================
+   * TWO KINDS ARRIVED WITH THE SCOPE RECORD — DECISION 040
+   * ==========================================================================
+   *
+   * `request-scope` is somebody with an assessment and no project: the next step is a
+   * conversation that produces a written scope, not a payment. It replaces what `pay-deposit`
+   * used to say to this person, which since the deposit gate would have pointed them at a
+   * button that is no longer there.
+   *
+   * `accept-scope` is somebody whose scope has been written and not yet agreed. It is the
+   * first customer-visible state of a project, and before the record existed it did not
+   * exist — a project could not be seen at all until a payment created one.
+   * ==========================================================================
+   */
+  'request-scope',
+  'accept-scope',
   'pay-deposit',
   /*
    * The second instalment, owed once the site is going live. Ordered here with the other
@@ -148,11 +165,62 @@ export function chooseCurrentAction(params: {
       };
     }
 
+    /*
+     * ====================================================================
+     * THIS USED TO SAY "PAY THE DEPOSIT", AND IT POINTED AT A BUTTON
+     * ====================================================================
+     *
+     * It read "the deposit is what puts you on the schedule" and sent them to `/app/billing`.
+     * Since DECISION 040 the deposit is not offered until a scope has been sent and accepted,
+     * so for somebody with no project at all that button is now absent — and an instruction
+     * to go and press a control that is not there is worse than no instruction.
+     *
+     * The honest next step is the one rule #35 has always described: a conversation that
+     * produces a written scope. Which is also what actually happened before this — the button
+     * existed, and nobody bought a $4,900 build by clicking it without speaking to anybody.
+     * What has changed is that the dashboard now says so.
+     * ====================================================================
+     */
+    return {
+      kind: 'request-scope',
+      heading: 'Ready when you are',
+      body: `Your assessment scored ${assessment.score} out of 100. When you want the website built, tell us and we will write up exactly what we would build and what it costs — nothing is charged until you have read it and agreed to it.`,
+      cta: { label: 'Tell us you are ready', href: '/app/messages' },
+      waitingOnCustomer: true,
+    };
+  }
+
+  /*
+   * ======================================================================
+   * THE TWO STEPS BEFORE A BUILD STARTS — DECISION 040
+   * ======================================================================
+   *
+   * A project can now exist before any money has changed hands: `PROJECT_STATUSES` has always
+   * defined `agreed` as "scope agreed in writing; nothing paid yet", and the console can
+   * create one. Before the scope record, that state was invisible to the customer — their
+   * dashboard fell straight through to the milestone copy and said the build was underway.
+   *
+   * Both branches sit above the task list deliberately. An unpaid project has no onboarding
+   * tasks yet (they are seeded on activation), but the ordering has to be right rather than
+   * accidentally right: reading the agreement comes before doing the work it describes.
+   * ======================================================================
+   */
+  if (project.scope && !project.scope.acceptedAt) {
+    return {
+      kind: 'accept-scope',
+      heading: 'Your scope and price are ready to read',
+      body: 'This is exactly what we would build and what it costs. Have a read, and if anything is wrong or missing tell us before you agree to it.',
+      cta: { label: 'Read the scope', href: `/app/projects/${project.id}` },
+      waitingOnCustomer: true,
+    };
+  }
+
+  if (project.scope?.acceptedAt && billing.available.deposit) {
     return {
       kind: 'pay-deposit',
-      heading: 'Ready when you are',
-      body: `Your assessment scored ${assessment.score} out of 100. When you want the website built, the deposit is what puts you on the schedule.`,
-      cta: { label: 'See what happens next', href: '/app/billing' },
+      heading: 'The deposit puts you on the schedule',
+      body: 'You have agreed the scope and the price. Half to begin, half on the day it goes live — and the build starts as soon as this clears.',
+      cta: { label: 'Pay the deposit', href: '/app/billing' },
       waitingOnCustomer: true,
     };
   }

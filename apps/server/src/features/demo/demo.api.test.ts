@@ -271,6 +271,42 @@ describe('demo mode', () => {
     expect(harness.stripe.checkoutRequests.length).toBe(before);
   });
 
+  /*
+   * ==========================================================================
+   * AND THE SAME REFUSAL ON THE PATH THAT ARRIVED LAST
+   * ==========================================================================
+   *
+   * DECISION 041 added a third way to ask somebody for money — an owner-raised invoice — and
+   * a third way to ask is a third way to charge the demonstration account. It refuses on the
+   * first line, before the Price lookup and before the Stripe client is touched, exactly as
+   * the two Checkout creators do.
+   *
+   * This test is the reason that ordering is worth being fussy about: an invoice is worse
+   * than a link if it escapes, because it is a document with a number that has to be credited
+   * rather than a URL nobody has to open.
+   * ==========================================================================
+   */
+  it('refuses to invoice the demonstration project, before Stripe is reached', async () => {
+    const cookie = await enter();
+    await post('/api/demo/payments').set('Cookie', cookie).send({ stage: 'deposit' }).expect(204);
+
+    const demoProject = harness.repositories.projects.projects.find(
+      (project) => project.email === DEMO_EMAIL,
+    );
+    expect(demoProject, 'entering the demo produced no project to invoice').toBeDefined();
+
+    const before = harness.stripe.invoiceRequests.length;
+
+    await expect(
+      harness.services.billing.createInvoice({
+        projectId: demoProject!.id,
+        product: 'build-deposit',
+      }),
+    ).rejects.toThrow(/demonstration/i);
+
+    expect(harness.stripe.invoiceRequests.length).toBe(before);
+  });
+
   it('refuses to simulate a payment for a real customer', async () => {
     const real = await createRealCustomer();
 

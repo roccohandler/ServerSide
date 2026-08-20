@@ -1,5 +1,6 @@
 import { routes } from '../../../config/routes';
-import { findPageMeta, privacyContent } from '../../../content';
+import { findPageMeta } from '../../../content';
+import { privacyContent } from '../../../content/legal';
 import { LegalPage } from './LegalPage';
 
 const meta = findPageMeta(routes.privacy) ?? {

@@ -911,5 +911,8 @@ Stated plainly rather than discovered later:
   email. Building a dashboard before there are leads to look at would be premature.
 - **ESLint is pinned to v9** because `eslint-plugin-jsx-a11y` does not yet support v10,
   and accessibility linting was worth more than being on the newest major.
-- **Light theme only.** No `prefers-color-scheme` support; adding it means a second
-  palette in `styles/tokens.css` and re-checking every contrast pair.
+- **Light by default, dark on request, and the operating system is not asked.** Both palettes
+  are measured and both clear AA (DECISION 030 added the second, DECISION 036 decided which one
+  is the site). `prefers-color-scheme` is deliberately not consulted — the reader chooses from
+  the Appearance control in the footer, and `tokens.test.ts` fails the build if a media query
+  comes back.

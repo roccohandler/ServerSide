@@ -10,7 +10,7 @@ Last reviewed: 2026-08-13.
 
 ---
 
-## DECISION 001 — Is the standard price real?
+## DECISION 001 — Is the standard price real? — ANSWERED: A, it is the rate card
 
 **Current implementation:** the site publishes $7,500 as the "Standard project price"
 beside the $4,900 founding price, presented as two concurrent prices (never a
@@ -27,7 +27,17 @@ C. Drop the comparison: publish one price with no discount framing (`foundingOff
 
 **Recommended:** A, if true — otherwise C. Never keep the comparison "for effect."
 
-Owner decision: [ ]
+Owner decision: [x] **A — 2026-08-19.** $7,500 is the price the work is offered at once the ten
+founding projects are taken. The two-price presentation stands unchanged, and the reasoning at
+the top of `config/pricing.ts` is now confirmed rather than assumed: it is a rate card being
+established, not a price history, so the standard price is labelled and concurrent and is never
+rendered with a strike-through.
+
+**What this closes.** The presentation was legally load-bearing under 16 CFR 233.1 and rested on
+an unconfirmed premise. It no longer does. **What it does not close:** the confirmation is only
+worth anything while it stays true. If the business ever decides it will not charge $7,500,
+option C is one edit — `foundingOffer.enabled = false` — and every trace of the comparison leaves
+the site with it.
 
 ---
 
@@ -147,7 +157,7 @@ Owner decision: [ ]
 
 ---
 
-## DECISION 009 — Response-guarantee waiver mechanism in Stripe
+## DECISION 009 — Response-guarantee waiver mechanism in Stripe — ANSWERED: credit the next invoice
 
 **Current implementation:** the promise and automatic remedy are published; the billing
 mechanics are undefined (credit next invoice vs. refund the month).
@@ -155,11 +165,48 @@ mechanics are undefined (credit next invoice vs. refund the month).
 **Recommended:** credit the next invoice via a one-time coupon; refund only when the
 client is cancelling anyway. Record in `docs/guarantee-terms.md`.
 
-Owner decision: [ ]
+Owner decision: [x] **Credit the next invoice — 2026-08-19.** A month's fee is applied as a
+credit against the next monthly invoice. A refund is issued instead only where the client is
+cancelling and there is no next invoice to credit.
+
+**One correction, and it is the whole reason this needed writing down.** The brief for this
+decision proposed a credit _applied on request_. The terms already published say the opposite —
+"waived in full and **applied without you having to request it**" — and a mechanism that requires
+a request would have quietly weakened a live promise to make it easier to administer. So the
+remedy stays automatic from the client's side. What is being decided here is only how the money
+moves, which is a question the client never has to hold.
+
+**What that means for the implementation.** Automatic-from-the-client's-side is not the same as
+automatic-in-code, and this decision does not pretend otherwise: whether a reply was _substantive_
+inside 24 business hours is a judgement no timestamp can make, so the credit is applied by the
+owner. The console gains the action, the credit is recorded against the project, and the
+customer sees it on their billing page without having asked. What the system genuinely can do is
+notice the risk — a message awaiting a team reply past the window is exactly what
+`listAwaitingTeamReply` already surfaces — so the console flags it rather than deciding it.
+
+**Not `docs/guarantee-terms.md`.** The terms are published in `content/legal.ts` under
+`response`, which is the copy a client actually reads. A second document restating them is a
+second place for them to drift, which is the failure the whole content layer is arranged to
+avoid.
+
+**Built 2026-08-20.** `GuaranteePanel` on the console's project page, `POST
+/api/admin/projects/:id/guarantee-credit`, and a customer-visible activity entry so the waiver
+is something they _see_ rather than something they would have to ask about. The panel renders
+nothing on a project with no plan.
+
+**The route hard-codes `remedy: 'credit'`, and the omission is the decision.** DECISION 019
+keeps anything that moves money _out_ — refunds, cancellations, payment statuses — on the
+`BILLING_ADMIN_TOKEN` surface, because those are irreversible and a mis-click on a page holding
+several customers' projects is a different kind of accident from a mis-typed curl command. The
+refund remedy stays there, for the client who is leaving and has no next invoice to credit.
+
+It is one press rather than a confirmation dialog, and that is only safe because
+`recordGuaranteeCredit` is idempotent per project-month — a confirmation in front of a remedy is
+a reason not to apply it.
 
 ---
 
-## DECISION 010 — Refund policy on the build
+## DECISION 010 — Refund policy on the build — ANSWERED: B, refundable until work starts
 
 **Current implementation:** none is published. The deposit's refundability if a client
 walks away mid-build is undefined anywhere.
@@ -173,11 +220,29 @@ B. Pro-rated refund for work not yet performed. C. Cooling-off window then A.
 **Recommended:** decide with the agreement's legal review; B is the most defensible
 default.
 
-Owner decision: [ ]
+Owner decision: [x] **B — 2026-08-19.** Published as `refunds` in `content/legal.ts`:
+
+- **Before the first working session**, the deposit is refunded in full, no reason required.
+- **After it**, the refund is the deposit less the fair value of work completed to that point,
+  and the deposit is the ceiling — a cancelled project can cost the client nothing beyond it.
+- **Where the business cannot deliver**, the full deposit is returned regardless of stage.
+
+**Why B rather than the cooling-off window.** A window is easier to administer and it protects
+the wrong party: the clock can expire while the work has not started, so a client who paid on
+Monday and heard nothing for a fortnight would have lost their refund to a date rather than to
+any work being done. Tying the boundary to _work beginning_ makes it a fact about the project
+instead of a fact about the calendar, and it is the version that can be stated as reassurance on
+the pricing page without a caveat immediately underneath it.
+
+The boundary is checkable, which is the property that matters in a dispute: the first working
+session produces an activity entry, and the project moves off `onboarding`.
+
+**Note for the legal review this page has always asked for:** "fair value of work completed" is
+the phrase carrying the weight. The written agreement should say how it is assessed.
 
 ---
 
-## DECISION 011 — Final-payment timing enforcement
+## DECISION 011 — Final-payment timing enforcement — ANSWERED: A, plus deemed acceptance
 
 **Current implementation:** "half on the day it goes live." Undefined: does the site
 launch before or after the second payment clears?
@@ -186,7 +251,36 @@ Options: A. Payment link sent at approval; site launches when it clears (recomme
 clean, and the client has already seen the finished site in review). B. Launch first,
 invoice due on launch day (trust-forward, collection risk).
 
-Owner decision: [ ]
+Owner decision: [x] **A, with a backstop — 2026-08-19.** The code already implements A:
+`approve()` moves the project to `launching`, `setMilestone` emails that the balance is payable,
+and `available.final` opens at `launching`. What was missing was not behaviour but a published
+term, and one clause the behaviour has no answer for.
+
+**The published order.** The balance is payable on approval; the site goes live the same working
+day the payment clears. Nothing about that changes.
+
+**The backstop — 10 business days.** If a preview is delivered and an approval requested, and no
+response of any kind arrives within ten business days, the work is **deemed accepted** and the
+balance becomes due. Published as `acceptance` in `content/legal.ts`.
+
+**Why a backstop is needed at all, and why ten.** Without it a finished build can be held open
+indefinitely by silence: the milestone cannot advance, the balance cannot be invoiced, and the
+one-build-at-a-time capacity claim — which is the reason the two-to-four-week timeline is
+keepable — is being spent on a project nobody is progressing. Ten business days is a fortnight
+of working time. It is long enough that a holiday or a busy month does not trigger it, and short
+enough that it resolves inside a billing cycle. Five was considered and rejected for the first
+reason.
+
+**What deemed acceptance is not.** It is not a launch. Nothing goes live on a deemed acceptance
+without the payment, exactly as with a real one — it makes the balance due, not the site public.
+And it is only reachable from a state the client was actually told about: the approval request
+sends an email and writes an activity entry, both of which are the evidence that the clock
+started.
+
+**Related:** DECISION 010 (refunds) and the client-delay clause, which pauses a project after 30
+days of silence during _onboarding_ — a different stage and a different remedy. The two are
+deliberately separate: silence before a build has anything to show is a scheduling problem, and
+silence in front of a finished website is a payment problem.
 
 ---
 
@@ -495,7 +589,21 @@ privately regardless).
 **Recommended:** move `supportEmail` to a domain mailbox before the first Growth
 Partner client — it is the channel the response guarantee is measured on.
 
-Owner decision: [ ]
+Owner decision: [x] **Move it — 2026-08-19.** `site.contact.supportEmail` is already separate
+from `site.contact.email` for exactly this reason, and the separation was built before there was
+a reason to use it. The remaining work was to prove the separation is real rather than
+decorative: that nothing anywhere renders the address as a literal, so pointing it at a domain
+mailbox is one edit rather than a hunt.
+
+**The mailbox itself is the owner's to create**, and until it exists the value stays as it is —
+a support channel that bounces is worse than a personal one that works. What has changed is that
+switching it costs one line, and a guard now fails the build if the literal reappears anywhere
+outside `content/site.ts`.
+
+**Why it matters more than it looks.** This is the address the response guarantee is _measured
+on_ — the terms name "the designated business email" as one of the two qualifying channels. An
+address that can be lost with a personal account is a contractual commitment resting on a
+consumer product's password reset.
 
 ---
 
@@ -1451,3 +1559,406 @@ already sitting in an inbox.
   a call to a method that already existed for another screen.
 
 Owner decision: [x] Built — 2026-08-17
+
+---
+
+## DECISION 036 — Which palette is the site — ANSWERED: light, for everybody, and dark on request (2026-08-19)
+
+**Superseded:** DECISION 030, in one respect only. That decision wired a measured dark palette
+to `prefers-color-scheme` under the heading "answer the browser, not the roadmap". The palette
+was right and it stays. The wiring was wrong and it is gone.
+
+**The symptom.** The same URL rendered a charcoal page on a desktop in dark mode and a cream one
+on an iPhone in light mode, and the owner — who had not thought of himself as having designed
+two themes — could not say which one was the site. That question is the finding. A marketing
+page whose owner cannot name its palette has two first impressions, and a business with one
+conversion goal cannot afford the second one to be a surprise.
+
+**What the audit found, and it was not what anybody expected.** Both palettes clear WCAG AA on
+every pairing the site actually renders; the dark values are genuinely measured, not inverted;
+the two dark blocks were in perfect step. The gap was not contrast. It was that **the dark
+palette is a token translation and the light one is a design**:
+
+- **Zero of ninety `.module.css` files** contain a single dark-specific rule. Every dark
+  decision in the product lives in one forty-line block.
+- **The structural rhythm does not survive the translation.** Cream page against charcoal band
+  is 15.21:1, and it is the loudest device on the homepage — eight section bands plus the header
+  and the footer. Read from the dark palette the same two tokens are **1.08:1**. The bands
+  flatten into the page. No token block can fix that; it is a second composition.
+- **Two colour tokens were never re-measured** for the second palette and nothing said so.
+- **The guard sees 15.2% of the surface.** `tokens.test.ts` can only measure a rule that states
+  a foreground and a background together: 144 of 948 colour-bearing rules. Three role-inversion
+  defects had shipped through it, one of them the logo on every page.
+
+**The decision.** The light palette — Cast Cream and Forge Charcoal — is **the site**, for every
+visitor, whatever their machine is set to. The `@media (prefers-color-scheme: dark)` block is
+deleted. The dark palette stays, in full, reachable through the Appearance control that already
+existed in the footer and in both workspace bars.
+
+**Why, specifically for this business rather than in general:**
+
+1. **The buyer reads this outdoors.** Contractors, on a phone, in daylight. Positive polarity —
+   dark text on a light ground — measures better for reading speed and acuity, and Piepenbrock
+   et al. (2013) is the study that matters here because it set out to find the age effect and
+   found the advantage holds for **older** adults too. A dark screen is at its worst under a
+   bright sky. This audience is over forty and outside.
+2. **Cast Cream is a quarter of the brand.** A palette that deletes it is not this site with the
+   lights off.
+3. **The product being sold is a light website.** The hero browser frame and all ten portfolio
+   captures are screenshots of bright pages. A dark chrome around light product photography for
+   a whole scroll is a sales page arguing with its own evidence.
+4. **`prefers-color-scheme` is one global answer to a per-application question**, usually set
+   once, at night, for a phone. Honouring it is not the same as respecting the reader — what
+   accessibility guidance asks for is _user control_, and a control is what remains. WCAG
+   requires no part of this either way; SC 1.4.3 asks for contrast, which both palettes have.
+
+**What this is not.** It is not the removal of dark mode. Every dark value still exists, still
+clears AA, and is two clicks away. Only the default moved — and a default is a design decision,
+not a preference to be inherited from an operating system.
+
+**What went with it:** the three-state control. _Match my system_ was the default and it has no
+meaning without the media query — every value of it now resolves to light. Both applications
+drop to two options in the same change. A stored `system` from before reads as `light`, which is
+the palette it would now have produced anyway, so there is no migration to write.
+
+**Four things were fixed in the same change, because the audit found them:**
+
+| Fix                                                                        | What was wrong                                                                                                                                                                                                                                                                                                                                   |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The phone bezel, the demonstration banner, and the logo tile on every band | Each painted an object with a token that means _text_, so each inverted with the palette. The logo tile hit 1.08:1 against the header and disappeared.                                                                                                                                                                                           |
+| Four custom properties that were never defined                             | `--color-accent-fill`, `--color-ink-subtle`, `--container-prose`, `--container-xs`. CSS discards the whole declaration silently: the word "Demonstration" had no fill, and two elements had no measure.                                                                                                                                          |
+| The light elevation set, raised ~1.7×                                      | White on cream is 1.16:1 and the hairline is 1.34:1, so the shadow is the _only_ separation — and it ran at 4% while the dark set ran at 35% to solve the same problem. This is the measurable answer to "the light one looks less finished".                                                                                                    |
+| Three new build guards                                                     | One forbids `prefers-color-scheme` in `tokens.css`, so reversing this decision is deliberate. One forbids painting a surface with a text token. One fails on a custom property that is defined nowhere. A fourth asserts both palettes declare the same colours, with a named, both-ways-checked allowlist for the two that legitimately do not. |
+
+Owner decision: [x] Built — 2026-08-19
+
+---
+
+## DECISION 037 — Washington sales tax is presented exclusive of the price — ANSWERED (2026-08-19)
+
+**The law, not a preference.** Washington's ESSB 5814 took effect **1 October 2025** and moved
+custom website development — including the support and consulting sold alongside it — into the
+definition of a taxable retail sale. The build is taxable. The monthly service almost certainly
+is. In Greater Seattle the combined rate is around 10%, which is roughly **$490 on a $4,900
+build** and about **$30 a month** on Growth Partner.
+
+**What was decided.** The published prices do not change. `$4,900` and `$299/mo` stay exactly as
+they are and tax is stated separately — on the pricing page, in the terms, and calculated at
+checkout by Stripe Tax.
+
+**Why exclusive rather than inclusive.**
+
+1. **It is what a business buyer expects.** Both prices are quoted to businesses who account for
+   tax themselves, and a tax-inclusive figure is the one that makes their bookkeeping harder
+   rather than easier.
+2. **Inclusive pricing makes the rate a pricing decision.** The combined rate varies by delivery
+   address inside the service area and changes when a jurisdiction changes it. An inclusive price
+   would have to move every time, and `config/pricing.ts` is a file whose whole design is that a
+   figure appears once and everything derives from it — a number that changes for reasons
+   unrelated to the offer does not belong in it.
+3. **Absorbing it costs a tenth of the margin** on a founding-priced build, on a rate card that
+   already leads with a discount.
+
+**The rule this establishes: a tax rate is not a price and never enters the price triangle.**
+`config/pricing.ts` states _that_ tax applies and what the line reads; it states no rate and no
+figure. `sanctionedFigures()` therefore does not grow, and the currency sweep in
+`content.test.ts` keeps meaning what it meant. Stripe is the only thing that computes an amount,
+because the amount depends on an address the site does not have until checkout.
+
+**Still the owner's, and not blocked by this decision.** Registering with the Department of
+Revenue, enabling Stripe Tax on the account, and remitting. The copy is honest the day it ships —
+"plus applicable sales tax" is true whether or not collection is switched on — but collecting
+without being registered is not an option, and the liability has been accruing since October 2025
+either way.
+
+---
+
+## DECISION 038 — The tagline leads with the category noun — ANSWERED (2026-08-19)
+
+**Modifies the reasoning recorded in `content/site.ts`**, which argued that the outcome should
+lead and the mechanism explain. That argument was right about the general case and is overtaken
+by a specific fact.
+
+**The fact.** `getjobforge.com` is field-service-management software sold to "electricians,
+plumbers, HVAC technicians, and contractors", launching Q1 2026 — the same trades, the same
+metro-scale buyer, a different product. Three other products called JobForge also exist.
+
+**Why that changes the calculation.** The misread this site was written to avoid was _job board_.
+That one is close to harmless: it is implausible to a tradesperson reading a page about websites,
+and it self-corrects within a sentence. The misread that actually costs money is **job-management
+software**, and it is dangerous for the opposite reason — it is entirely plausible, it is what a
+competitor with a nearly identical name genuinely sells to this exact audience, and a plausible
+misread never self-corrects. The reader does not discover they were wrong; they conclude the site
+is not for them and leave.
+
+**What was decided.** The tagline becomes **"Websites that ask for the job."**
+
+- **"Websites" leads**, and that is the whole point: naming the category in the first word is the
+  cheapest available defence against being filed as software.
+- **"ask for the job"** names the mechanism — a page with one obvious next step on it — and
+  claims no result. It is what the site _does_, not what the buyer _gets_.
+- It does not promise booked work. The distinction the previous rationale drew is preserved
+  intact: `conversion` still marks "Books the work" as the client's, and this line still stops
+  where that boundary does. Asking is the website's job. Answering the phone is theirs.
+
+**What was rejected, and recorded so it is not revived.** _"We build software to help
+service-based businesses get more jobs."_ It contains **software**, contains **jobs**, and omits
+**website** — it is, almost word for word, the competitor's own positioning, and it is the single
+most damaging sentence available to this business. It must not appear in copy, in metadata, in an
+advertisement, or in a pitch.
+
+**Unchanged: the hero headline.** _"More of the people already finding you should be calling
+you."_ It survived every candidate tested. Its comparative modifies traffic the business already
+has rather than its revenue, and its mood is normative rather than predictive — which is why it
+says something strong without promising anything.
+
+**Not resolved by this decision.** The trademark and search-discoverability exposure. Copy can
+defend a name; it cannot clear one. A USPTO and Washington State search should happen before any
+further brand spend.
+
+---
+
+## DECISION 039 — Analytics is cookieless, build-time gated, and shows no consent banner — ANSWERED (2026-08-19)
+
+**The problem.** `lib/analytics.ts` declares a 36-event funnel taxonomy, and every call site
+fires into `window.dataLayer` — which nothing creates. Every number in the conversion report is
+therefore unmeasurable, including the ones the site was restructured to produce.
+
+**What was decided.** A cookieless, privacy-preserving provider (Plausible or Fathom shape),
+loaded only when configured, with no consent banner.
+
+**Why cookieless rather than GA4.**
+
+1. **The privacy page is a published promise and it is currently true.** Analytics that sets no
+   cookie and collects no personal data lets that page keep saying something close to what it
+   says now. GA4 would require rewriting it into the standard document nobody reads, which is a
+   real cost on a site whose whole position is that it publishes what others hide.
+2. **The payload budget.** Roughly 0.4 kB gzipped of eager JS headroom. A cookieless script is
+   about 1 kB and loads externally; GA4's is an order of magnitude larger.
+3. **No banner is needed** when there is nothing to consent to — which avoids putting an
+   interstitial in front of the first screen of a site whose primary metric is what happens on it.
+
+**Build-time gated, and the precedent is deliberate.** Unset means _nothing loads at all_ — no
+script tag, no CSP entry in use, no events leaving the browser — exactly as `DEMO_PASSCODE` unset
+leaves `/api/demo` unmounted and `UNSUBSCRIBE_SECRET` unset leaves follow-up entirely unwired.
+The feature cannot be half-on, and the privacy copy is generated from the same configuration, so
+the page cannot describe a build it is not part of.
+
+**The event names do not change.** Renaming an event is the one thing `lib/analytics.ts` warns
+against in its own header, because a name is what a report is grouped by six months later. The
+taxonomy ships as written.
+
+**Still the owner's.** Creating the account, and accepting the roughly $9 a month. Until then the
+sink stays unconfigured and the site behaves exactly as it does today.
+
+---
+
+## DECISION 040 — Scope acceptance is a product record, and it gates the deposit — ANSWERED (2026-08-19)
+
+**The contradiction this resolves.** `docs/business-offer.md` rule #35 says scope is agreed in
+writing before any payment. `/app/billing` offers a self-serve deposit button to any customer
+with an unpaid project. Both are live. One of them is wrong, and the research is clear that
+removing the self-serve path would be the wrong one to fix — a buyer who has decided should not
+have to wait for an email.
+
+**What was decided.** The written agreement becomes a **record in the product** rather than a
+habit outside it. The owner composes and sends a scope from the console; the customer reads and
+accepts it in the portal; acceptance stores who accepted, when, and **which version**.
+`available.deposit` is gated on an accepted scope.
+
+**Why acceptance is the presence of a date.** The same shape as `report.deliveredAt` and
+`publishedAt`, and for the same reason: a nullable timestamp cannot disagree with a boolean
+beside it, because there is no boolean beside it. An unaccepted scope is one with no
+`acceptedAt`, and the deposit is not offered — which is a fact about the payload, not a control
+the client is asked to leave alone.
+
+**Sending a new version withdraws acceptance.** Otherwise "you accepted this" points at a
+document that has since changed, which is precisely the sentence a scope record exists to make
+defensible.
+
+**What this does not do.** It does not make the deposit harder to pay for a client who has agreed
+something — it makes agreeing something a thing they can do in ninety seconds instead of a thread.
+Rule #35 stops being aspirational and starts being enforced by the server.
+
+---
+
+## DECISION 041 — Owner-sent payments become Stripe Invoices — ANSWERED (2026-08-19)
+
+**The defect.** A Checkout Session expires after 24 hours. A payment link sent on a Friday
+afternoon is dead before Monday, and the client's only symptom is a page telling them the link
+has expired — for a payment they were trying to make.
+
+**What was decided.** Owner-initiated payments are **Stripe Invoices**: a permanent hosted URL, a
+PDF, a due date, and Stripe's own reminder schedule. Self-serve Checkout at `/app/billing` is
+unchanged and stays the path for a customer paying under their own initiative.
+
+**Why invoices are better here than a re-mint button.**
+
+1. **The link stops expiring**, which is the actual defect rather than a symptom of it.
+2. **The client gets a document.** A business buying a $4,900 asset has a bookkeeper who wants an
+   invoice, and a Checkout receipt is not one. This is a real gap in the product, not a
+   technicality.
+3. **Reminders exist without anybody writing them**, which removes the most tedious part of
+   chasing a balance from the owner's week.
+
+**Two rules carried over unchanged.** The demo customer is refused on the **first line**, before
+any Price lookup and before the Stripe client is touched, exactly as both Checkout creators do —
+that is what makes "no live charge is possible in the demonstration" provable by a test rather
+than argued from configuration. And invoice webhooks go through the same claim → interpret →
+mark → release idempotency as every other event, because Stripe delivers at least once.
+
+---
+
+## DECISION 042 — The Website Blueprint is a separate tool at `/blueprint` — ANSWERED (2026-08-19)
+
+**The naming problem first, because it is the one that would have caused the damage.** Five
+things in this repository are already called _assessment_: the marketing offer ("free website
+assessment"), the `/audit` Website Score, `features/private/assessment`, the server's
+`features/assessments`, and the console's assessment queue. The new tool is a **Blueprint**
+everywhere — in the route, in the copy, in the code, and in conversation.
+
+**What it is.** Twelve questions about somebody's _business_ — trade, service area, how customers
+find them, what they want more of — producing a personalised plan for what their website should
+do. **No technical questions.** It works for somebody who has no website at all, which is the
+population `/audit` cannot serve.
+
+**Why a separate route rather than replacing or extending `/audit`.** They answer different
+questions for different people. `/audit` scores a site that exists, against twenty checks, for
+somebody who suspects theirs is underperforming. The Blueprint plans a site for a business, for
+somebody deciding what they need. Merging them produces a thirty-two-question flow before anybody
+sees a result; replacing `/audit` deletes a working funnel, its content and its events to solve a
+problem it does not have.
+
+**The result is shown free, and the account keeps it.** The same exchange `/audit` already makes,
+in the same order: value first, then the ask. The draft lives in `sessionStorage` until a session
+exists, so nothing anonymous is ever written to the database — which is what makes the privacy
+copy about it true rather than reassuring.
+
+**§32 of the brief, enforced structurally rather than by wording.** A Blueprint built from twelve
+business answers cannot say _anything_ about the reader's actual website, and hedged phrasing is
+not a sufficient guard because readers do not parse hedges. So the output has **two visually
+distinct, separately headed sections**: "Based on what you told us", and "What we would need to
+look at your site to say". The second is the handoff to the human assessment. A test asserts no
+answer-derived recommendation can appear in it.
+
+**One optional money question**, banded, asking typical job value only. Enough to make the plan
+specific; never presented as a prediction of what the reader will earn. Enquiry counts, close
+rates and revenue stay out — they belong to the human assessment request, where somebody has
+already committed.
+
+**The rules are data, not components.** `content/blueprint.ts` holds the questions and
+`features/public/blueprint/rules/` holds the mapping, so a sixth trade or a new recommendation is
+an entry rather than a branch inside JSX. §50 of the brief asked for this specifically, and the
+failure it prevents is a component that knows Seattle HVAC pricing.
+
+---
+
+## DECISION 043 — One narrative: category, Blueprint-first, and the plan that leads to the offer — ANSWERED (2026-08-20)
+
+**Modifies DECISION 038 (the tagline) and DECISION 028's destination.** Neither is reversed;
+both are refined by facts that were not available when they were taken.
+
+### The tagline was wrong, and it was wrong in an instructive way
+
+DECISION 038 chose **"Websites that ask for the job."** on the correct reasoning that the
+category noun has to lead. The noun did lead. The rest of the line was the problem.
+
+It put **the single most contested word in this brand's landscape into the promise.** "Job"
+already appears in the business name, in the competitor's name, and in the competitor's entire
+category — [getjobforge.com](https://getjobforge.com/) is live today as _"JobForge — Coming
+Soon | Field Service Management Software"_ for "electricians, plumbers, HVAC technicians, and
+contractors". Adding a fourth use of the word in the one line meant to disambiguate makes the
+misfiling **easier**, not harder.
+
+It also does not survive being read cold. "Ask for the job" is borrowed from sales — _ask for
+the close_ — and next to a name like JobForge it reads as a website applying for work, which is
+the job-board misreading the line existed to prevent.
+
+**Replaced with "Websites that turn visitors into calls."** — 38 characters, category first,
+outcome second, and no contested word in it.
+
+### Why "calls" and not "customers" or "jobs"
+
+Both of those sit on the far side of a boundary this site spends an entire section drawing.
+`conversion` runs the funnel through to the invoice and marks "Books the work" as
+`owner: 'business'`; `conversion.handoff` says outright that what you charge, whether you have
+capacity and whether somebody picks up are the client's.
+
+A **call** is the last thing on the website's side of that line. It is what the work can
+honestly claim to affect, it is the word this market uses, and it is already the outcome named
+everywhere else on the site. Quote requests are the other half and live in supporting copy —
+a tagline is a compression, and 38 characters a roofer reads correctly at a glance beats 60
+that are complete.
+
+### The category is websites, not software
+
+The strongest argument against "software" is not that it overstates the product, though it
+does — the commercial product today is a website project. It is that **category is the mental
+box a buyer files you in**, and the software box already contains Jobber, ServiceTitan, and a
+company with this company's exact name launching into it. Choosing it means being invisible in
+a category this business does not compete in, under a name somebody else is about to spend
+money on.
+
+`Customer-conversion websites for local service businesses` is the eyebrow now. It is the
+category, it is accurate, and nothing else in that box is called JobForge.
+
+### The primary call to action is the Blueprint
+
+**Modifies DECISION 028's destination, not its principle.** That decision moved every primary
+action to `/get-my-assessment` because the account _is_ the capture and one field beats seven.
+Both halves stand; `/get-my-assessment` is untouched, indexed, in the footer, and is where the
+Blueprint's own result hands off.
+
+What changed is that something now exists with a **lower** first commitment than an email
+address and a far better claim to being the product demonstration. Interactive tools convert at
+6.2–8.3% against 3.8% for gated static offers, and assessment tools in professional services
+land at 7–10%. They produce _fewer_ raw leads and convert them to qualified opportunities at a
+materially higher rate — which is the right trade for a business that takes one build at a
+time.
+
+DECISION 028's own words were "the first conversion should never be 'decide whether to spend
+$4,900'". The Blueprint is a smaller first step than the one that decision settled on, and it
+ends by showing the reader the thing being sold, worked through against their own business.
+The capture is not lost. It moves to the moment it is worth most.
+
+### Two questions were being asked and ignored
+
+**No rule matched on `trade`, and none on `jobValue`.** Question one — the answer that most
+decides whether a reader believes the tool is about them — had no effect on the plan. Neither
+did the one question people are most reluctant to answer.
+
+Every test passed. The result looked personalised. Along those two axes it was not.
+
+Fixed by grouping trades **by how the work is bought** rather than by trade (break-fix,
+considered property work, recurring visible work, appearance, personal outcome, logistics), so
+a new trade is an entry rather than a rule; and by making banded job value drive _priority_ —
+low value is a routing problem, high value is a shortlisting problem — rather than appending a
+sentence.
+
+**A guard now fails the build if any question stops changing the answer.** It holds every other
+answer fixed, sweeps one question's choices, and fails by name if two different answers can
+never produce two different plans. It cannot be satisfied by a rule that merely mentions the
+field.
+
+### The Blueprint result now leads to the offer
+
+It ended by offering a _free assessment_ — somebody who had just described their business and
+been shown what their website should do was offered another free thing. A funnel with no floor,
+at the highest-intent moment this site produces.
+
+The offer block sits **after** the honest half, deliberately: the reader is told plainly that
+nobody has looked at their site, and only then is the build offered. That order is what makes
+the offer credible instead of making the recommendations read as sales copy. It is conditional
+in its own words — _"if you want it built"_ — and it ends with the way out stated as plainly as
+the way in.
+
+### What was deliberately not changed
+
+- **The hero headline.** "More of the people already finding you should be calling you" beat
+  every candidate tested and is normative rather than predictive. The eyebrow now carries the
+  category, which frees the headline to stay pure outcome.
+- **The meta title.** "Turn website visitors into calls — Seattle service businesses" was
+  already the strategy this decision arrived at independently.
+- **The 50/50 payment architecture, the scope gate, the terms, and the analytics model.** All
+  four were audited against current guidance and none needed changing. Only the explanatory
+  copy around the final payment did.

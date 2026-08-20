@@ -3,13 +3,14 @@ import { Badge, Button, Card, SectionHeading, TextAreaField } from '@jobforge/ui
 import { FIELD_LIMITS } from '@jobforge/shared';
 import type { ConversationSummary } from '@jobforge/shared';
 import { Empty, Failure, Loading } from '../../components/State';
+import { Notice } from '../../components/Notice';
 import { InlineConfirm } from '../../components/InlineConfirm';
 import { ShowMore } from '../../components/ShowMore';
 import { useAnnounce } from '../../components/useAnnounce';
 import { usePagedResource } from '../../hooks/usePagedResource';
 import { useTitle } from '../../hooks/useTitle';
 import { LeaveGuard } from '../../components/LeaveGuard';
-import { fetchConversations, sendReply } from '../../lib/endpoints';
+import { closeConversation, fetchConversations, sendReply } from '../../lib/endpoints';
 import styles from './Inbox.module.css';
 
 /*
@@ -115,9 +116,26 @@ export function InboxPage() {
                   onSent={reload}
                 />
               ) : (
-                <Button variant="secondary" onClick={() => setOpenId(conversation.id)}>
-                  Reply
-                </Button>
+                <div className={styles['rowActions']}>
+                  <Button variant="secondary" onClick={() => setOpenId(conversation.id)}>
+                    Reply
+                  </Button>
+                  {/*
+                   * Prospects only, and the omission for clients is the decision rather than
+                   * an oversight: a change request leaves this list by being *resolved* on the
+                   * project page, which also tells the client something happened. A silent
+                   * close from here would be the console deciding a client's request was
+                   * finished without saying so to the client.
+                   *
+                   * No confirmation. It is reversible in the only way that matters — the
+                   * prospect is still in the database, the conversation still exists, and a
+                   * reply is still possible — and putting a dialog in front of the button that
+                   * tidies a list is how a list stops getting tidied.
+                   */}
+                  {conversation.kind === 'prospect' ? (
+                    <CloseButton conversationId={conversation.id} onClosed={reload} />
+                  ) : null}
+                </div>
               )}
             </Card>
           </li>
@@ -148,6 +166,64 @@ export function InboxPage() {
         />
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Takes a prospect off the list without sending anything.
+ *
+ * ## Why this exists at all
+ *
+ * `LEAD_STATUSES` has held `'closed'` since the lead model was written and nothing had ever
+ * set it — the only transition was `new → contacted`, written when a reply goes out from this
+ * console. So an enquiry answered by phone, or from the owner's own mail app, or one that was
+ * a supplier pitching, stayed on this list forever.
+ *
+ * That matters more than it sounds. This screen's whole claim is "these people are waiting on
+ * a reply", and a list carrying people nobody is waiting on stops being read as a worklist —
+ * which is how the ones who genuinely are waiting get missed.
+ *
+ * ## It says what it does and it does not pretend to send anything
+ *
+ * "Close without replying" rather than "Done" or "Dismiss". The operator has to be able to
+ * tell this apart from the button beside it at a glance, because one of them emails a
+ * prospect and the other quietly decides they will not hear from anybody.
+ */
+function CloseButton({
+  conversationId,
+  onClosed,
+}: {
+  readonly conversationId: string;
+  readonly onClosed: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const announce = useAnnounce();
+
+  async function close() {
+    setBusy(true);
+    setProblem(null);
+
+    const result = await closeConversation(conversationId);
+
+    setBusy(false);
+
+    if (!result.success) {
+      setProblem(result.error.message);
+      return;
+    }
+
+    announce('Closed. They are off the list and nothing was sent to them.');
+    onClosed();
+  }
+
+  return (
+    <>
+      <Button variant="ghost" loading={busy} disabled={busy} onClick={() => void close()}>
+        Close without replying
+      </Button>
+      {problem ? <Notice tone="problem">{problem}</Notice> : null}
+    </>
   );
 }
 

@@ -49,6 +49,19 @@ export interface ConversationService {
     readonly author: StoredUser;
     readonly body: string;
   }): Promise<void>;
+  /**
+   * Takes a prospect off the list of people owed an answer, without sending one.
+   *
+   * For the enquiry that was handled somewhere this system cannot see — a phone call, a reply
+   * from the owner's own mail app — or that never needed an answer at all. `LEAD_STATUSES`
+   * has had `'closed'` since the model was written and nothing has ever set it, so until now
+   * the only way off this list was a reply sent from the console.
+   *
+   * **Leads only.** A customer's change request is closed by resolving the thread, which
+   * already exists and additionally tells the customer something happened. Closing one
+   * silently from here would be the console quietly deciding a client's request was finished.
+   */
+  close(id: ConversationId): Promise<void>;
 }
 
 export interface ConversationServiceDependencies {
@@ -143,6 +156,29 @@ export function createConversationService(
       }
 
       await replyToCustomer({ commentId: id.recordId, author, body });
+    },
+
+    async close(id) {
+      if (id.source !== 'lead') {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          'A change request is closed by resolving the thread, which also tells the client. Use the project page.',
+        );
+      }
+
+      const lead = await leads.findById(id.recordId);
+      if (!lead) throw notFound();
+
+      /*
+       * Idempotent, and quietly so. A second click on a row that has already gone is the
+       * ordinary consequence of two tabs, and refusing it would be an error message about
+       * something that is already true.
+       */
+      if (lead.status === 'closed') return;
+
+      await leads.updateStatus(lead.id, 'closed');
+
+      logger.info('conversation.lead_closed', { leadId: lead.id });
     },
   };
 

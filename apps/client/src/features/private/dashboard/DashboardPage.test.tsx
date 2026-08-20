@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -52,6 +52,7 @@ function buildData(overrides: Partial<DashboardData> = {}): DashboardData {
       waitingOnCustomer: false,
       progress: { step: 3, total: 8 },
       approval: 'not_ready',
+      revisions: { used: 0, included: 2 },
       createdAt: '2026-08-01T00:00:00.000Z',
       updatedAt: '2026-08-10T00:00:00.000Z',
     },
@@ -406,7 +407,30 @@ describe('the customer dashboard', () => {
     renderDashboard();
 
     await screen.findByText(/3 things have happened/i);
-    expect(markActivityRead).toHaveBeenCalledTimes(1);
+
+    /*
+     * ======================================================================
+     * `waitFor` RATHER THAN A BARE ASSERTION, AND IT IS NOT BELT AND BRACES
+     * ======================================================================
+     *
+     * This read `expect(markActivityRead).toHaveBeenCalledTimes(1)` immediately after the
+     * `findByText` above, and it flaked — twice in one afternoon, under the load of the full
+     * suite, while passing every time the file was run on its own.
+     *
+     * The cause is a real ordering rather than a slow machine. `findByText` resolves the
+     * moment the text is in the document; the mark happens in an effect, which React flushes
+     * *after* that commit. On an idle machine the two land in the same tick and the assertion
+     * is accidentally right. Under load they do not, and the test fails on a component that is
+     * behaving perfectly.
+     *
+     * The `toHaveBeenCalledTimes(1)` is the assertion that matters and it survives: `waitFor`
+     * retries until it holds, so a second call — which is what the `marked` ref exists to
+     * prevent — still fails this, immediately and for the right reason.
+     * ======================================================================
+     */
+    await waitFor(() => {
+      expect(markActivityRead).toHaveBeenCalledTimes(1);
+    });
   });
 
   /*

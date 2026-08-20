@@ -105,6 +105,56 @@
   color: var(--color-ink-muted);
 }
 
+/* ---------------------------------------------------------------- the scope */
+
+/*
+ * The deliverables, as a list rather than as a paragraph.
+ *
+ * A scope read as prose is a scope somebody skims; the whole reason it is a record is that
+ * each line is a thing that was or was not agreed. `--space-5` on the marker keeps the
+ * indent optical rather than snapped to a rem step — `tokens.test.ts` allows `em` here for
+ * exactly this, and the marker sits beside text whose size may change.
+ */
+.scopeList {
+  margin: var(--space-4) 0 0;
+  padding-inline-start: 1.2em;
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-ink-muted);
+  line-height: var(--leading-relaxed);
+}
+
+/*
+ * The figure, on a rule, apart from the list above it.
+ *
+ * It is the one thing on this panel somebody will come back to check, and a total that reads
+ * as the last bullet point of a list is a total people miss.
+ */
+.scopePrice {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: var(--space-5) 0 0;
+  padding-top: var(--space-4);
+  border-top: var(--space-hair) solid var(--color-border);
+}
+
+.scopePriceLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.scopePriceValue {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  /* Digits line up when a revised version sits beside the one it replaced. */
+  font-variant-numeric: tabular-nums;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -366,4 +416,21 @@
   .task {
     break-inside: avoid;
   }
+}
+
+/*
+ * The founding-client condition, above the button that agrees to it.
+ *
+ * A tinted panel rather than another muted line, and the tint is the point: it is the one
+ * sentence on this panel a reader is agreeing to *in addition* to the obvious thing, and a
+ * condition that looks like the surrounding notes is a condition somebody skims. Accent tint
+ * rather than a warning tone — it is a fair trade being stated plainly, not a hazard.
+ */
+.panelCondition {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-4) var(--space-5);
+  border-inline-start: var(--space-1) solid var(--color-accent);
+  background: var(--color-tint-accent);
+  border-radius: var(--radius-sm);
+  line-height: var(--leading-relaxed);
 }

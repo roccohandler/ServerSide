@@ -150,7 +150,20 @@ export async function buildWorklist(
         id: `assessment:${assessment.id}`,
         title: assessment.businessName ?? 'A website review',
         detail: `Submitted ${daysBetween(assessment.submittedAt, at)} days ago and not yet written.`,
-        href: `/assessments/${assessment.id}`,
+        /*
+         * The queue, not a per-assessment URL. This linked to `/assessments/${id}` and the
+         * console has never registered that route — the queue opens its editor *in place*
+         * when a row is selected, deliberately, because writing a review is the only thing
+         * anybody comes to that screen for and a navigation between the operator and the work
+         * is a navigation too many.
+         *
+         * So every row here led to a blank page. It fails silently in the way client-side
+         * routing always does: no error, no log, just a screen with nothing on it.
+         *
+         * The queue is oldest-first, which is the same order as this list, so landing on it
+         * puts the row that was clicked at or near the top.
+         */
+        href: '/assessments',
         waitingDays: daysBetween(assessment.submittedAt, at),
       })),
     },

@@ -21,7 +21,24 @@
 /* Size only — the lockup inside carries the weight, width and tracking. */
 .name {
   font-size: var(--text-lg);
+  margin-bottom: var(--space-2);
+}
+
+/*
+ * The category line, directly under the wordmark. See DECISION 038 and `content/site.ts`.
+ *
+ * It sits between the name and the description rather than beside either, because its whole
+ * job is proximity: a reader who has just read "JobForge" needs the noun "Websites" in the
+ * next thing their eye lands on. Separated by the description it would be a summary; here it
+ * is a label.
+ *
+ * Cream rather than muted — this is the one line in the footer that has to be read rather
+ * than scanned past, and `.description` below it is deliberately quieter so the two do not
+ * compete.
+ */
+.tagline {
   margin-bottom: var(--space-4);
+  font-weight: var(--weight-medium);
 }
 
 /*

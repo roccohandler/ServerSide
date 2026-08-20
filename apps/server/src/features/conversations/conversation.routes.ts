@@ -79,5 +79,37 @@ export function createConversationRouter(dependencies: ConversationRoutesDepende
     },
   );
 
+  /*
+   * ==========================================================================
+   * CLOSING A PROSPECT WHO WAS ANSWERED SOMEWHERE ELSE
+   * ==========================================================================
+   *
+   * `LEAD_STATUSES` has held `'closed'` since the lead model was written and nothing has ever
+   * set it. The only transition that existed was `new → contacted`, written when a reply is
+   * dispatched from this console — so a prospect who rang up, or who was answered from a
+   * phone, or who turned out to be a supplier pitching, sat in the inbox forever with no way
+   * to say so.
+   *
+   * That is not cosmetic on a screen whose entire claim is "these people are waiting on a
+   * reply". A list that includes people nobody is waiting on stops being read as a worklist,
+   * which is how the ones who genuinely are waiting get missed.
+   *
+   * `feedback:write:any` rather than the read capability, matching the reply above: taking
+   * somebody off the list of people owed an answer is a decision about the business's
+   * obligations, not a view of them.
+   *
+   * **Leads only.** A customer's change request is closed by resolving the thread, which
+   * already exists and additionally tells the customer. There is deliberately no second way
+   * to do that from here.
+   * ==========================================================================
+   */
+  router.post('/:id/close', requireCapability('feedback:write:any'), async (request, response) => {
+    const id = parseConversationId(pathParam(request.params, 'id'));
+
+    await conversationService.close(id);
+
+    response.status(204).end();
+  });
+
   return router;
 }

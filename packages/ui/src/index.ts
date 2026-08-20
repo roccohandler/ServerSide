@@ -92,6 +92,14 @@ export {
   Honeypot,
 } from './Field';
 export { cx } from './cx';
+/*
+ * Cents → a string, for the two applications that render a figure the *server* supplied.
+ *
+ * Not to be confused with `apps/client/src/config/pricing.ts`, which publishes the marketing
+ * prices and is swept by `content.test.ts`. See the header of `money.ts` for why those two
+ * must not become one function.
+ */
+export { formatMoney } from './money';
 
 /*
  * The one hook here, and the reason it is here rather than in either app.

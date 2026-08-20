@@ -1,3 +1,5 @@
+import { analyticsEnabled } from '../config/env';
+import { salesTax } from '../config/pricing';
 import { prices } from './offer';
 
 /*
@@ -16,9 +18,12 @@ import { prices } from './offer';
  *
  * Three things must stay true here or the page becomes a lie:
  *
- *   1. The privacy page says this site runs no analytics or advertising tracking. That is
- *      true today — `lib/analytics.ts` fires events into nothing. The moment a provider is
- *      wired into `index.html`, this file has to change in the same commit.
+ *   1. The privacy page describes the analytics this build actually has. This used to be a
+ *      promise kept by whoever remembered — "the moment a provider is wired in, this file has
+ *      to change in the same commit" — and it is now kept by the code: the `tracking` section
+ *      and the last clause of `what` are both chosen by `analyticsEnabled()`, the same
+ *      function the script loader reads. See DECISION 039. **If a third statement about
+ *      tracking is added to this page, it goes through the same condition.**
  *   2. **It has to enumerate everything, including the things that never leave the
  *      browser.** The PlayBook assessment and the Website Score both persist to
  *      `localStorage`, and the audit transmits a generated summary of somebody's scores
@@ -67,12 +72,44 @@ export const privacyContent = {
     {
       id: 'what',
       heading: 'What is collected',
-      body: 'Five things. The first four you enter yourself. From the contact form: your name, your business name, your email address, your phone number, your website address if you give one, what you need help with, and any message you write. From the Website Score, if you choose to send it: the same contact details, plus a written summary of the answers you gave — your score, the five categories that came out weakest, and whichever of the traffic, enquiry, close-rate and job-value figures you filled in. From the PlayBook form: your email address, and the fact that you asked for the workbook. From the project onboarding form, if you become a client: the business details, services, service areas and account information you supply so your website can be built. And if you create an account: your email address, your name, your business name, and either a password — stored only as a hash, never the password itself — or the fact that you signed in with Google, together with the Google account id and address that identifies you there. Two things about an account are recorded by the site rather than typed by you: when you last signed in, and a log of what has happened on your project — payments taken, tasks completed, an assessment saved, a preview delivered — so that you and we are reading the same history. If you pay, Stripe holds the card details and we keep only the customer reference it gives us. Beyond that nothing else is collected, and nothing watches which pages you look at.',
+      body: `Five things. The first four you enter yourself. From the contact form: your name, your business name, your email address, your phone number, your website address if you give one, what you need help with, and any message you write. From the Website Score, if you choose to send it: the same contact details, plus a written summary of the answers you gave — your score, the five categories that came out weakest, and whichever of the traffic, enquiry, close-rate and job-value figures you filled in. From the PlayBook form: your email address, and the fact that you asked for the workbook. From the project onboarding form, if you become a client: the business details, services, service areas and account information you supply so your website can be built. And if you create an account: your email address, your name, your business name, and either a password — stored only as a hash, never the password itself — or the fact that you signed in with Google, together with the Google account id and address that identifies you there. Two things about an account are recorded by the site rather than typed by you: when you last signed in, and a log of what has happened on your project — payments taken, tasks completed, an assessment saved, a preview delivered — so that you and we are reading the same history. If you pay, Stripe holds the card details and we keep only the customer reference it gives us. Beyond that nothing else is collected, ${
+        analyticsEnabled()
+          ? 'and the only thing recorded about your visit itself is the anonymous page count described below, which is not linked to you or to any of the above'
+          : 'and nothing watches which pages you look at'
+      }.`,
     },
+    /*
+     * ========================================================================
+     * THE ONE SECTION ON THIS PAGE THAT IS GENERATED
+     * ========================================================================
+     *
+     * Every other string here is written. This one is chosen by `analyticsEnabled()`, and the
+     * reason is the sentence the previous version of it ended with: *"If that ever changes
+     * this page changes with it, because the alternative is a privacy policy that quietly
+     * stops being true."*
+     *
+     * That was a promise made by a comment, kept by whoever remembered. The moment a provider
+     * is configured — an environment variable, in a dashboard, possibly by somebody who has
+     * never opened this file — the honest version of this section is a different paragraph.
+     * Nothing in a build would notice, and the failure is not a bug: it is a false statement
+     * of fact on the page a signup form links to as the notice being agreed to.
+     *
+     * So the choice is made from the same configuration the script loader reads. Two
+     * paragraphs, one condition, and it is impossible for the page to describe a build it is
+     * not part of. See DECISION 039 and `config/env.ts`.
+     *
+     * **The absent version is still the default**, and both are written to be true rather than
+     * reassuring. The second one names what is collected, names what is not, and says plainly
+     * that no cookie is involved — because "privacy-friendly analytics" is a phrase that has
+     * been used to describe products that set cookies.
+     * ========================================================================
+     */
     {
       id: 'tracking',
       heading: 'Analytics and tracking',
-      body: 'There is none. No analytics product, no advertising pixels, no third-party scripts, no cookies set for tracking. The site does not know who you are, where you came from, or which pages you looked at. If that ever changes this page changes with it, because the alternative is a privacy policy that quietly stops being true.',
+      body: analyticsEnabled()
+        ? 'This site counts page views and a short list of actions — a button pressed, a form submitted, a question opened — using a privacy-preserving analytics service. It sets no cookies, stores nothing on your device, and collects no personal data: there is no identifier that links one visit to another, and nothing that can be traced back to you. Your name and email address are never sent to it, even on pages where you have typed them. There are no advertising pixels, no third-party trackers and no data sold or shared with anybody. What it is for is answering one question — which parts of this site are useful to people — and it cannot answer any question about you specifically.'
+        : 'There is none. No analytics product, no advertising pixels, no third-party scripts, no cookies set for tracking. The site does not know who you are, where you came from, or which pages you looked at. If that ever changes this page changes with it — and it changes automatically, because this paragraph is chosen by the same setting that would switch the analytics on.',
     },
     /*
      * The section this page did not have and needed. Two surfaces write to browser
@@ -132,7 +169,58 @@ export const termsContent = {
     {
       id: 'launch',
       heading: 'The project fee',
-      body: `The build is a one-time project at the published price of ${prices.launch} under founding-client pricing (standard project price ${prices.launchStandard}). The scope and the fee are agreed in writing before any work begins. Payment is half to begin and half on the day the site goes live, and nothing else is owed on the build. The project includes two revision rounds; a revision round is a consolidated set of requested changes submitted together. New pages, new functionality, new services or a materially changed brief after sign-off are additional scope and are quoted separately before that work begins. Typical launch is two to four weeks from receiving the materials required from you; timing depends on how quickly content, approvals, access and feedback come back.`,
+      body: `The build is a one-time project at the published price of ${prices.launch} under founding-client pricing (standard project price ${prices.launchStandard}). The scope and the fee are agreed in writing before any work begins, and that agreement is recorded in your account rather than left in an email thread — you can read what you accepted, and when, at any time. Payment is half to begin and half on the day the site goes live. Beyond those two instalments and the sales tax described below, nothing else is owed on the build. The project includes two revision rounds; a revision round is a consolidated set of requested changes submitted together, so a single list of fifteen items is one round and fifteen separate messages over a fortnight is still one round — the count is about how the work is batched, not about how many times you write to us. New pages, new functionality, new services or a materially changed brief after sign-off are additional scope and are quoted separately before that work begins, never after. Typical launch is two to four weeks from receiving the materials required from you; timing depends on how quickly content, approvals, access and feedback come back.`,
+    },
+    /*
+     * ========================================================================
+     * TAX IS ITS OWN SECTION, NOT A SENTENCE INSIDE THE FEE
+     * ========================================================================
+     *
+     * Washington's ESSB 5814 made custom website development a taxable retail sale on
+     * 1 October 2025 — see DECISION 037. Roughly a tenth of the price, on every sale.
+     *
+     * It is a section of its own rather than a clause appended to `launch` because a buyer
+     * scanning these headings for "what will actually leave my bank account" should find it
+     * without reading a paragraph about revision rounds first. A surprise at checkout is the
+     * single most reliable way to lose somebody who had already decided, and the whole
+     * argument of this page is that nothing here is a surprise.
+     *
+     * No rate is stated, deliberately. The combined rate depends on the customer's own
+     * address and changes on somebody else's schedule; Stripe computes it at checkout. A
+     * number here would be wrong for most addresses and stale within a year — and worse,
+     * a customer could add it to the price and be charged something different.
+     * ========================================================================
+     */
+    {
+      id: 'tax',
+      heading: 'Sales tax',
+      body: `${salesTax.explanation} This applies to the project fee and to Growth Partner. It is not a charge made by us and none of it is kept by us — it is collected on the state's behalf and passed on. Published prices on this site are exclusive of it.`,
+    },
+    /*
+     * ========================================================================
+     * REFUNDS — DECISION 010, AND THE BOUNDARY IS WORK, NOT A DATE
+     * ========================================================================
+     *
+     * Nothing was published here for the entire time the site has been collecting a $2,450
+     * deposit, and the register's own wording for why that had to change is the right one:
+     * do not let the first dispute decide it for you.
+     *
+     * The boundary is **the first working session**, not a cooling-off window. A window
+     * protects the wrong party: its clock can expire while no work has started, so somebody
+     * who paid on a Monday and heard nothing for a fortnight would have lost their refund to
+     * a calendar rather than to anything being done for them. Tying it to work beginning
+     * makes it a fact about the project instead — and a checkable one, because the first
+     * session writes an activity entry and the project leaves `onboarding`.
+     *
+     * The third sentence is the one that costs money and is here anyway: if the business
+     * cannot deliver, the deposit comes back in full at any stage. A refund policy that only
+     * describes the client walking away is a policy written by one party for one party.
+     * ========================================================================
+     */
+    {
+      id: 'refunds',
+      heading: 'Refunds on the build',
+      body: 'Before work begins, the deposit is refunded in full on request, and you do not have to give a reason. Once work has begun, the refund is the deposit less the fair value of the work completed to that point — assessed against what was actually produced, and never more than the deposit, so cancelling cannot cost you anything beyond what you have already paid. If we are the reason the project cannot go ahead, the full deposit is returned whatever stage it has reached. "Work begins" means the first working session on your project, which is recorded in your account with a date on it, so neither of us is relying on memory.',
     },
     {
       /*
@@ -144,6 +232,40 @@ export const termsContent = {
       id: 'founding',
       heading: 'Founding-client pricing',
       body: `A limited number of projects are offered below the standard price in exchange for permission to publish the work as a case study — including the state of the site beforehand, the reasoning behind the changes, and what changed after launch. Nothing is published without written approval of the specific material first, and any figures shared are only those you agree to share. The standard price is the price the work is offered at outside this arrangement; it is not a former price and no claim is made that anyone previously paid it. There is no deadline: the offer is limited by the number of projects, and when those are taken the standard price applies.`,
+    },
+    /*
+     * ========================================================================
+     * WHAT "FINISHED" MEANS, AND WHAT HAPPENS IF NOBODY ANSWERS — DECISION 011
+     * ========================================================================
+     *
+     * Two clauses that only make sense together, which is why they are one section.
+     *
+     * **Completion is the Launch Standard.** The site already publishes eight pass/fail
+     * checks and already says "it does not launch until it passes". What it had never done
+     * is make that the contractual definition of done — so "finished" was still, formally, an
+     * opinion held by whoever was asked. Adopting a bar the client can verify themselves
+     * costs nothing new and removes the most common source of a stalled final payment.
+     *
+     * **Deemed acceptance is the backstop, and it is the half that protects the business.**
+     * Without it a finished build can be held open indefinitely by silence: the milestone
+     * cannot advance, the balance cannot be invoiced, and the one-build-at-a-time capacity
+     * claim — the reason the two-to-four-week timeline is keepable at all — is being spent on
+     * a project nobody is progressing.
+     *
+     * Ten business days, not five. A fortnight of working time is long enough that a holiday
+     * or a bad month does not trigger it, and short enough to resolve inside a billing cycle.
+     *
+     * **What it is not: a launch.** Deemed acceptance makes the balance due. It does not put
+     * anything live — that still requires the payment, exactly as a real approval does. And
+     * it is only reachable from a state the client was genuinely told about, because
+     * requesting approval sends an email and writes an activity entry, which is the evidence
+     * the clock ever started.
+     * ========================================================================
+     */
+    {
+      id: 'completion',
+      heading: 'Approval, and what "finished" means',
+      body: 'The website is finished when it passes the eight checks published as the Launch Standard on this site. That is the definition, not an opinion — every check is something you could verify yourself on the day, and if it does not pass, it is not launched and we keep working. When the build reaches that bar we put the preview in front of you and ask you to approve it. Approving it makes the balance payable, and the site goes live the same working day the payment clears. If you would rather have changes, say so and it goes back into revisions; that is expected and it is what the two included rounds are for. If no response of any kind reaches us within ten business days of an approval being requested, the work is treated as accepted and the balance becomes due — that does not put anything live, it only settles what is owed for work already delivered and already shown to you.',
     },
     {
       id: 'management',
@@ -169,6 +291,34 @@ export const termsContent = {
       id: 'client',
       heading: 'What is needed from you',
       body: 'The information and materials required to do the work: your service list, business details, service area, and photographs of your own completed jobs, plus access to any systems we need and reasonably prompt decisions. Timelines are measured from when those are received.',
+    },
+    /*
+     * ========================================================================
+     * THE OTHER KIND OF SILENCE, AND WHY IT GETS A DIFFERENT REMEDY
+     * ========================================================================
+     *
+     * `completion` above handles silence in front of a *finished* website: the work is done,
+     * so the remedy is that the balance falls due.
+     *
+     * This handles silence at the other end, where there is nothing to show yet because the
+     * materials never arrived. The remedy has to be different, because there is nothing owed:
+     * the project pauses and the build slot is released.
+     *
+     * That is not a penalty and the wording should never read as one. It is the honest
+     * consequence of publishing "one build at a time" as the reason the timeline is keepable
+     * — a capacity claim that cannot reclaim capacity is a capacity claim being made on
+     * somebody else's behalf, since the client actually paying for it is the next one, who
+     * cannot start.
+     *
+     * The deposit is untouched by a pause, and the sentence saying so is load-bearing: a
+     * clause that pauses a project without confirming the money is safe reads as a
+     * forfeiture, which is the opposite of what it is.
+     * ========================================================================
+     */
+    {
+      id: 'delays',
+      heading: 'If things go quiet at your end',
+      body: 'Timelines are measured from when your materials and decisions arrive, so a project cannot progress while we are waiting on them. If thirty days pass with nothing needed from us and nothing received from you, the project is paused and the build slot is released to the next client — because taking on one build at a time is what makes the two-to-four-week timeline keepable, and a slot held open indefinitely is one somebody else cannot use. Nothing is forfeited by a pause: your deposit stands, your work stands, and restarting is a matter of scheduling rather than of paying again. We will always write before pausing, and once more after, so it is never something you find out by logging in.',
     },
     {
       id: 'contact',

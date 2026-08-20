@@ -110,9 +110,21 @@ export const FOLLOWUP_RULES: readonly FollowUpRule[] = [
     heading: 'Anything you want to go through?',
     lines: [
       'You asked us to look at your website a few days ago. If you have read what we sent and have a question about any of it, the quickest way to ask is to write back.',
-      'If you would rather see what a build actually involves before deciding, the pricing page says what it costs and how long it takes, with no form in the way.',
+      'If you would rather see what a build actually involves before deciding, the pricing page says what it costs, when you pay it, and what happens if you change your mind — with no form in the way.',
     ],
-    action: { label: 'Ask a question', path: '/app/messages' },
+    /*
+     * The button goes where the sentence above it points.
+     *
+     * It used to read "Ask a question" and land on `/app/messages`, directly under a paragraph
+     * describing the pricing page — so the email named one destination and offered another.
+     * Worse, `/pricing` did not exist at all: this message has been telling prospects "the
+     * pricing page says what it costs" since before there was one, which is the single most
+     * checkable false statement this system has made.
+     *
+     * Asking a question is still offered and is still the first thing the email says: "the
+     * quickest way to ask is to write back", which reaches a person rather than a form.
+     */
+    action: { label: 'See what it costs', path: '/pricing' },
   },
   {
     key: 'no-purchase-day-10',

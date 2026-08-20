@@ -133,6 +133,53 @@ export function buildPreviewReadyEmail(params: {
   });
 }
 
+/**
+ * The scope and price, ready to be read and accepted. DECISION 040.
+ *
+ * Two things it deliberately does not do. It does not put the price in the email — the figure
+ * belongs beside the deliverables it is for, and a number in a message that can be forwarded,
+ * quoted and misremembered is a number that ends up being argued about. And it does not ask
+ * for a reply: the whole point of the record is that accepting is a button with a date on it
+ * rather than an email saying "looks good".
+ */
+export function buildScopeReadyEmail(params: {
+  readonly to: Recipient;
+  readonly businessName: string;
+  readonly projectUrl: string;
+  readonly revised: boolean;
+}): EmailMessage {
+  const opening = params.revised
+    ? 'We have updated the scope and price for your website and it is waiting in your account. It replaces the version we sent before, so it is worth a fresh read.'
+    : 'We have written up exactly what we are building for you and what it costs. It is in your account, and nothing is charged until you have read it and accepted it.';
+
+  return message({
+    to: params.to.email,
+    subject: params.revised
+      ? `Updated scope and price — ${params.businessName}`
+      : `Your scope and price — ${params.businessName}`,
+    heading: params.revised ? 'An updated scope, ready to read' : 'Your scope and price',
+    html: [
+      paragraph(`Hello ${params.to.name},`),
+      paragraph(opening),
+      button(params.projectUrl, 'Read the scope'),
+      paragraph(
+        'If anything in it is wrong or missing, reply to this and tell us — it is easier to change before it is agreed than after.',
+        true,
+      ),
+    ],
+    text: [
+      `Hello ${params.to.name},`,
+      '',
+      opening,
+      '',
+      params.projectUrl,
+      '',
+      'If anything in it is wrong or missing, reply to this and tell us — it is easier to',
+      'change before it is agreed than after.',
+    ],
+  });
+}
+
 export function buildApprovalRequestedEmail(params: {
   readonly to: Recipient;
   readonly businessName: string;

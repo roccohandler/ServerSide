@@ -1,30 +1,36 @@
-import { env } from '../config/env';
+import { analyticsEnabled, env } from '../config/env';
 
 /*
  * ============================================================================
- * CONVERSION EVENTS — NO PROVIDER, NO TRACKING, ON PURPOSE
+ * CONVERSION EVENTS
  * ============================================================================
  *
- * There is no analytics product installed on this site, and this file does not install
- * one. What it adds is the *seam*: the handful of moments in the funnel worth counting,
- * named once, called from the components where they happen.
+ * The handful of moments in the funnel worth counting, named once, called from the
+ * components where they happen — and, since 2026-08-19, a transport for them.
  *
- * Why bother before a provider exists? Because the alternative is finding the call
- * sites later, by hand, in a form that has since been rewritten. The events are the
- * expensive part to get right; the transport is ten lines.
+ * The names came first and the transport second, deliberately. Renaming an event is
+ * expensive because the name is what a report is grouped by six months from now; finding
+ * thirty call sites by hand in forms that have since been rewritten is worse. So the events
+ * were declared and wired long before there was anywhere for them to go, and none of them
+ * changed when there was.
  *
- * ## What happens today
+ * ## Three sinks, in order, and each is a deliberate state rather than a fallback chain
  *
- * In production: nothing. `track()` looks for a sink, finds none, and returns.
- * In development: a `console.debug` so the funnel can be watched while working on it.
+ *   1. **The configured provider.** DECISION 039: cookieless, no consent banner, loaded only
+ *      when `VITE_ANALYTICS_DOMAIN` *and* `VITE_ANALYTICS_SRC` are both set. Unset means the
+ *      script is never injected, no request is made to anybody, and nothing leaves the
+ *      browser — the same all-or-nothing shape as `DEMO_PASSCODE` and `UNSUBSCRIBE_SECRET`.
+ *   2. **`window.dataLayer`**, if something else created one. Kept because a tag manager is
+ *      still a legitimate thing for the owner to add later, and because removing a working
+ *      seam to tidy up is how a working seam gets rediscovered as a missing one.
+ *   3. **`console.debug` in development**, so the funnel can be watched while working on it.
  *
- * ## Turning it on
+ * ## What the provider is sent, and what it is not
  *
- * Set `window.dataLayer = window.dataLayer || []` from a tag manager snippet in
- * `index.html` and every event below starts arriving. That is a deliberate choice for
- * whoever owns the business, not something this file does on their behalf — and when
- * they make it, `content/legal.ts` has to be updated too, because the privacy page
- * currently states that this site does no analytics tracking. It is true today.
+ * The event name and its properties. Never an email address, a name, a business name, or an
+ * identifier that could be joined back to a person — and nothing here has ever carried one.
+ * `content/legal.ts` describes exactly this, generated from the same configuration, so the
+ * privacy page cannot describe a build it is not part of.
  * ============================================================================
  */
 
@@ -132,6 +138,23 @@ export type AnalyticsEvent =
   | 'assessment_started'
   /** All twenty were scored. `score` carries the total out of 40. */
   | 'assessment_completed'
+  /*
+   * ==========================================================================
+   * THE BLUEPRINT — TWO EVENTS, NOT FOURTEEN
+   * ==========================================================================
+   *
+   * A start and a finish. Per-question events were considered and refused for the reason
+   * `playbook_stage_viewed` gives at greater length: twelve near-identical rows answer the same
+   * question as a start and a finish — how many people get through it — while making every
+   * report they appear in worse.
+   *
+   * Deliberately **not** named `assessment_*` or folded into the `audit_*` family. Five things
+   * in this repository are already called an assessment (DECISION 042), and `/audit` measures a
+   * different tool answering a different question for a different reader. Merging them would
+   * make "how many people finish the Blueprint" a subtraction rather than a count.
+   */
+  | 'blueprint_started'
+  | 'blueprint_completed'
   /**
    * The Website Revenue Audit funnel, which is the site's primary conversion path.
    *
@@ -254,8 +277,61 @@ export type AnalyticsEvent =
 
 export type AnalyticsProperties = Readonly<Record<string, string | number | boolean>>;
 
-interface DataLayerWindow {
+interface SinkWindow {
   dataLayer?: unknown[];
+  /**
+   * The provider's queue-then-function. Plausible's snippet defines this and Fathom's
+   * `trackEvent` has the same shape; swapping providers is this name and the script URL.
+   */
+  plausible?: ((event: string, options?: { props?: AnalyticsProperties }) => void) & {
+    q?: unknown[];
+  };
+}
+
+/**
+ * Loads the provider's script, once, if one is configured.
+ *
+ * Injected at runtime rather than written into `index.html`, and that is worth a sentence
+ * because the obvious approach is the other one. A tag in the HTML would have to be added by
+ * a build-time transform — `index.html` is a static file that both `build-seo.ts` and
+ * `check-csp.ts` read, and a conditional tag would mean the fifty prerendered documents
+ * differ from each other by configuration. Injecting from here keeps the HTML identical in
+ * every build and puts the decision in the one file that already owns it.
+ *
+ * The CSP allows this: `script-src` names the provider's host, so a `src` from that host
+ * loads whether the tag was parsed or created. It would *not* allow an inline snippet, which
+ * is the other reason this shape rather than the vendor's copy-paste one.
+ *
+ * Idempotent. React 19's development StrictMode mounts effects twice, and two copies of an
+ * analytics script is two page views for every visitor.
+ */
+export function loadAnalytics(): void {
+  if (!analyticsEnabled()) return;
+  if (typeof document === 'undefined') return;
+  if (document.querySelector('script[data-analytics]')) return;
+
+  const script = document.createElement('script');
+  script.defer = true;
+  script.dataset['analytics'] = 'true';
+  script.dataset['domain'] = env.analytics.domain ?? '';
+  script.src = env.analytics.scriptSrc ?? '';
+  document.head.appendChild(script);
+
+  /*
+   * The queue the provider's own snippet defines, so events fired before the script finishes
+   * downloading are not lost. Without it, everything on the first screen — `pricing_viewed`,
+   * `hero_form_started`, the first `cta_clicked` — races the network and usually loses.
+   */
+  const sink = window as SinkWindow;
+  if (!sink.plausible) {
+    const queued: ((...args: never[]) => void) & { q: unknown[] } = Object.assign(
+      function queue(...args: unknown[]) {
+        queued.q.push(args);
+      } as (...args: never[]) => void,
+      { q: [] as unknown[] },
+    );
+    sink.plausible = queued as unknown as SinkWindow['plausible'];
+  }
 }
 
 /**
@@ -284,10 +360,20 @@ export function track(
 ): void;
 export function track(event: AnalyticsEvent, properties?: AnalyticsProperties): void {
   try {
-    const sink = (window as DataLayerWindow).dataLayer;
+    const sink = window as SinkWindow;
 
-    if (Array.isArray(sink)) {
-      sink.push({ event, ...properties });
+    /*
+     * The configured provider first. `properties` goes through untouched — every value in
+     * this file is a location, a trade slug, a score or an error code, and none of it has
+     * ever been a person.
+     */
+    if (analyticsEnabled() && typeof sink.plausible === 'function') {
+      sink.plausible(event, properties ? { props: properties } : undefined);
+      return;
+    }
+
+    if (Array.isArray(sink.dataLayer)) {
+      sink.dataLayer.push({ event, ...properties });
       return;
     }
 
@@ -339,6 +425,28 @@ export type CtaLocation =
   | 'hero'
   | 'pricing'
   | 'services-pricing'
+  /*
+   * The build card on `/pricing` itself.
+   *
+   * Three values for one card, and they stay three for the reason `nav` and `nav_signup` do:
+   * the reader arriving at each has told us something different. `pricing` is somebody who
+   * scrolled the homepage to the figure. `services-pricing` is somebody reading about the
+   * work. `pricing-page` is somebody who went *looking* for the price — from the nav, the
+   * footer, a follow-up email, or a search result — which is the best-qualified of the three
+   * and the only one whose denominator is a page view of a page about money.
+   */
+  | 'pricing-page'
+  /*
+   * The direct-to-conversation action at the foot of `/pricing`, separated from the
+   * assessment button beside it.
+   *
+   * These two are the one place on the site where the *secondary* action is plausibly the
+   * more valuable click: a reader who has just been through both figures, the payment
+   * schedule, the refund policy and four objections is considerably further along than one
+   * accepting a free diagnosis. Counting them together would hide exactly that, and hide it
+   * on the only page where the answer could change what the primary call to action is.
+   */
+  | 'pricing-page-build'
   | 'review'
   | 'review-sample'
   | 'demo'
@@ -387,6 +495,38 @@ export type CtaLocation =
    * clicks it the branch is decoration, and the honest recommendation is not landing.
    */
   | 'audit-keep'
+  /*
+   * "Create my account and keep these" — the audit's own account door.
+   *
+   * It lands on `/signup` rather than `/get-my-assessment`, deliberately: the button offers an
+   * account to hold results the reader has *already been given*, not a free assessment, and a
+   * page that changes the subject is the thing DECISION 031 refused. What that costs is
+   * visibility — `assessment_signup_viewed` and `assessment_account_created` fire only on the
+   * offer page — and this is what buys it back.
+   *
+   * It is the most qualified account this site produces: somebody who scored their own website
+   * against twenty checks and then chose to keep the answer. Folding it into the offer page's
+   * numbers would hide exactly that.
+   */
+  | 'audit-signup'
+  /*
+   * The Blueprint's handoff to the human assessment — the bridge between the half a
+   * questionnaire can answer and the half it cannot.
+   *
+   * The single most interesting number this site produces about the Blueprint: it is the share
+   * of readers who, having been told plainly that we have not looked at their website, go and
+   * ask somebody to. If it is small, the two halves are not landing as two halves.
+   */
+  | 'blueprint-assessment'
+  /*
+   * The Blueprint's offer block — the reader asking for the plan to be built.
+   *
+   * The number this whole funnel exists to produce, and the one that says whether the
+   * Blueprint is a lead magnet or a product demonstration. Watched against
+   * `blueprint_completed`: the share of people who finish the questions and then ask for the
+   * thing is the only honest measure of whether the plan earns the offer that follows it.
+   */
+  | 'blueprint-build'
   /*
    * The capability explorer's two exits.
    *

@@ -69,7 +69,7 @@ DECISION 029 — §7 is the inventory and the argument.
 | `useAnnouncerState` | _When a message counts as new_ is one piece of behaviour; the region it lands in and the words in it belong to each surface.                                                |
 | `useDelayedFlag`    | The threshold below which a loading state is not worth showing. Five comments across both apps argued for it and none had a number, so all five spelled it "nothing, ever". |
 | `useOnlineStatus`   | Both shells need to know whether the browser has a network; each says so in its own voice.                                                                                  |
-| `useTheme`          | What `data-theme` may say, where it is stored, and what happens when two tabs disagree. Each application draws its own three-state control.                                 |
+| `useTheme`          | What `data-theme` may say, where it is stored, and what happens when two tabs disagree. Each application draws its own two-state control.                                   |
 | `useUnsavedChanges` | `beforeunload` plus a capture-phase click listener. Both applications had the first half, written twice; neither had the second. See it before reaching for a data router.  |
 
 Nothing else non-visual belongs there without the same two-consumers-today argument.
@@ -116,12 +116,23 @@ for the job, never for the value: `--color-ink-muted`, `--color-surface-dark`,
 **Component** — the few places a primitive needs its own mapping. Kept to a minimum,
 because a component token used once is a rename, not an abstraction.
 
-### There are two palettes, and neither is derived from the other
+### There are two palettes, one of them is the site, and neither is derived from the other
 
-Since 2026-08-16 (DECISION 030). Every semantic colour is declared three times in
-`tokens.css`: light on `:root`, dark under `@media (prefers-color-scheme: dark)` guarded by
-`:not([data-theme='light'])`, and dark again under `[data-theme='dark']` so an explicit choice
-beats the operating system in either direction.
+Since 2026-08-16 (DECISION 030), amended 2026-08-19 (DECISION 036). Every semantic colour is
+declared twice in `tokens.css`: light on `:root`, and dark under `[data-theme='dark']`.
+
+**The light one is the site.** It is what every visitor gets, on any machine, whatever the
+operating system is set to. `prefers-color-scheme` is not consulted — the media query that used
+to consult it is gone, and `tokens.test.ts` fails the build if it comes back. Dark is reached
+only through the Appearance control, which writes `data-theme`.
+
+That is a reversal worth understanding rather than skipping. The palette DECISION 030 added was
+correct and it is untouched; what it got wrong was letting an operating-system setting choose
+between two things that are not peers. The dark palette is a **translation** — no stylesheet in
+the repository contains a dark-specific rule, so every composition in it was designed against
+cream, and the site's loudest structural device (a charcoal band on a cream page, 15.21:1) reads
+1.08:1 when both tokens are dark. A translation is a fine thing to offer and a poor thing to
+serve unasked to a contractor reading a sales page outdoors.
 
 **None of the dark values is a light value inverted.** That is not a stylistic position, it is
 forced by the paragraph above: there is no foundation tier because each token is an
@@ -382,13 +393,31 @@ every rule that states both a foreground and a background. It also asserts its o
 table still matches `tokens.css`, so it can never quietly measure colours the site no
 longer uses.
 
-Since 2026-08-16 it does that **twice — once per palette** — because there are two. It also
-asserts that the two blocks declaring the dark values (`@media (prefers-color-scheme: dark)` and
-`[data-theme='dark']`) say exactly the same thing, which is the guard on the one duplication
-`tokens.css` accepts. The first run of the two-palette version found a live defect: a homepage
-chip that paired `--color-ink` with `--color-ink-inverse` and measured **1.00:1** in dark, having
-worked in light only because cream is both "text on a dark band" and "the page ground" there. A
-second palette is, in effect, a type system for colour roles.
+Since 2026-08-16 it does that **twice — once per palette** — because there are two. The first run
+of the two-palette version found a live defect: a homepage chip that paired `--color-ink` with
+`--color-ink-inverse` and measured **1.00:1** in dark, having worked in light only because cream
+is both "text on a dark band" and "the page ground" there. A second palette is, in effect, a type
+system for colour roles.
+
+It used to also assert that the two blocks declaring the dark values said the same thing. There
+is one block now (DECISION 036), and three rules took that one's place — each aimed at something
+the contrast rule cannot see:
+
+- **`tokens.css` may not name `prefers-color-scheme`.** The decision, enforced. Re-adding a
+  media query is a one-line change whose symptom is not a broken build but the site quietly
+  serving two first impressions again.
+- **No surface may be painted with a token that means text.** The contrast rule needs both
+  halves stated in one block, which is 144 of 948 colour-bearing rules; a rule that sets only a
+  background is invisible to it. `background: var(--color-ink)` is legible in both palettes and
+  wrong in one — it was a phone bezel that turned cream, a sticky bar that turned into the
+  brightest thing on the page, and a logo tile that hit 1.08:1 against its own header.
+- **No stylesheet may name a custom property that is defined nowhere.** `var(--color-accent-fill)`
+  is valid syntax and the browser discards the entire declaration. Four were live when the rule
+  was written, including the fill behind the word the stylesheet's own comment calls "the word
+  that has to be unmistakable".
+
+A fourth asserts the two palettes declare the same set of colours, with a named allowlist checked
+in both directions for the two that legitimately do not.
 
 The seventh and eighth were added with dark mode and forced colours. Rule 7 is a **spelling**
 rule rather than a feature: `padding-inline-start` is the same length as `padding-left` and knows

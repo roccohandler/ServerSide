@@ -125,6 +125,58 @@ if (digests.size > 1) {
   );
 }
 
+/*
+ * ============================================================================
+ * THE ANALYTICS HOST AND THE POLICY THAT ALLOWS IT
+ * ============================================================================
+ *
+ * The second pair in this repository that nothing but a guard knows about, and it fails in
+ * the same shape as the first: `VITE_ANALYTICS_SRC` names a host, `vercel.json` allows a
+ * host, and if the two stop agreeing the browser refuses the script silently.
+ *
+ * Every test passes, every build passes, `vite dev` serves no CSP at all so it works
+ * perfectly locally — and in production the analytics simply record nothing. Which is
+ * indistinguishable, from a dashboard, from a site nobody visited. That is a considerably
+ * worse failure than the theme one: a flash of the wrong palette is visible to anybody who
+ * looks, and an empty analytics dashboard looks exactly like a correct analytics dashboard on
+ * a quiet week.
+ *
+ * Only checked when a provider is configured. A build with no analytics has nothing to
+ * disagree about, and demanding a host in the policy for a script that will never load would
+ * be widening the policy to satisfy a guard.
+ * ============================================================================
+ */
+const analyticsSrc = process.env['VITE_ANALYTICS_SRC']?.trim();
+
+if (analyticsSrc) {
+  let origin: string | undefined;
+  try {
+    origin = new URL(analyticsSrc).origin;
+  } catch {
+    failures.push(
+      `VITE_ANALYTICS_SRC is not a URL: ${analyticsSrc}. It has to be the full URL of the ` +
+        `provider's script, because the CSP is matched on its origin.`,
+    );
+  }
+
+  if (origin) {
+    const policy = readFileSync(resolve(root, 'vercel.json'), 'utf8');
+    const directives = ['script-src', 'connect-src'];
+
+    for (const directive of directives) {
+      const value = policy.match(new RegExp(`${directive} ([^;"]+)`))?.[1] ?? '';
+      if (!value.includes(origin)) {
+        failures.push(
+          `vercel.json: ${directive} does not allow ${origin}.\n` +
+            `  ${directive} is: ${value.trim()}\n` +
+            `  Analytics is configured to load from ${analyticsSrc}, so the browser would ` +
+            `refuse it — and the only symptom is a dashboard that stays empty.`,
+        );
+      }
+    }
+  }
+}
+
 if (failures.length > 0) {
   console.error(`\n[csp] ${failures.length} problem(s):\n`);
   for (const failure of failures) console.error(`  - ${failure}\n`);

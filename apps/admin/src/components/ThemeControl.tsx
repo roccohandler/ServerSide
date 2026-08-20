@@ -16,9 +16,15 @@ import styles from './ThemeControl.module.css';
  * control rather than above it — a stacked field here would make the bar two rows tall on
  * every screen in the console to accommodate a setting somebody changes twice a year.
  *
- * Same three options, same stored key, same hook. The owner who signs into the console after
+ * Same two options, same stored key, same hook. The owner who signs into the console after
  * using the customer application finds the theme they already chose, because the preference
  * is one key and both origins read it.
+ *
+ * It was three until DECISION 036 removed `prefers-color-scheme` from `tokens.css`; with no
+ * media query left, "Match my system" resolved to light whatever the system said. The console
+ * loses the option for the same reason the marketing site does, and deliberately in the same
+ * change — a console that offers a theme state the product does not have is the drift the
+ * shared hook exists to prevent.
  *
  * ...except when they are not the same origin, which they are not in production
  * (`admin.example.com` versus `customer.example.com`). `localStorage` is per-origin, so the
@@ -29,7 +35,6 @@ import styles from './ThemeControl.module.css';
  */
 
 const OPTIONS: readonly { value: Theme; label: string }[] = [
-  { value: 'system', label: 'Match my system' },
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
 ];
